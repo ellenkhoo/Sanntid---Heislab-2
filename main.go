@@ -12,11 +12,11 @@ var sendingPort = 20000 + seat
 var server_IP = "10.100.23.204"
 var localIP = "10.100.23.255"
 
-func receiver() {
+func receiver(port int) {
 
 	//Define address to listen to
 	addr := net.UDPAddr{
-		Port: IPport,
+		Port: port,
 		IP:   net.ParseIP("0.0.0.0"),
 	}
 
@@ -36,36 +36,37 @@ func receiver() {
 	buffer := make([]byte, 1024)
 
 	//Read data from server
-	for i := 0; i < 5; i++ {
-		n, RemoteAddr, err := conn.ReadFromUDP(buffer)
-		if err != nil {
-			fmt.Println("Error reading from UDP socket:", err)
-			continue
-		}
+	// for i := 0; i < 5; i++ {
+	// 	n, RemoteAddr, err := conn.ReadFromUDP(buffer)
+	// 	if err != nil {
+	// 		fmt.Println("Error reading from UDP socket:", err)
+	// 		continue
+	// 	}
 
-		//Print received message
-		fmt.Printf("Received %d bytes from %s: %s:", n, RemoteAddr, string(buffer[:n]))
+	// 	//Print received message
+	// 	fmt.Printf("Received %d bytes from %s: %s:", n, RemoteAddr, string(buffer[:n]))
+	// }
+
+	n, RemoteAddr, err := conn.ReadFromUDP(buffer)
+	if err != nil {
+		fmt.Println("Error reading from UDP socket:", err)
 	}
+
+	//Print received message
+	fmt.Printf("Received %d bytes from %s: %s:", n, RemoteAddr, string(buffer[:n]))
 }
 
-func sender() {
+func sender(message string, port int) {
 	addr := net.UDPAddr{
-		Port: sendingPort,
+		Port: port,
 		IP:   net.ParseIP(server_IP),
 	}
 
-	localAddr := net.UDPAddr{
-		//Port: sendingPort,
-		IP: net.ParseIP(localIP),
-	}
-
-	conn, err := net.DialUDP("udp", &localAddr, &addr)
+	conn, err := net.DialUDP("udp", nil, &addr)
 
 	if err != nil {
 		fmt.Println("Error: ", err)
 	}
-
-	message := "Hello World"
 
 	_, err = conn.Write([]byte(message))
 
@@ -74,12 +75,18 @@ func sender() {
 	} else {
 		fmt.Println("Message sent: ", message)
 	}
+
+	defer conn.Close()
 }
 
 func main() {
 
 	//make buffer
 	// buffer := make(chan int, 1024)
-	sender()
-	receiver()
+	message := "Hello World"
+
+	go receiver(sendingPort)
+	go sender(message, sendingPort)
+
+	select {}
 }
