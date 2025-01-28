@@ -1,4 +1,4 @@
-package elevator
+package elevator_io_device
 
 import "fmt"
 
