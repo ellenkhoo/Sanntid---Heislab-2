@@ -1,7 +1,7 @@
 package main
 
 import (
-	"PR_translated_to_go/elevator_io_device"
+	//"PR_translated_to_go/elevator_io_device"
 	"fmt"
 	"time"
 )
@@ -9,8 +9,8 @@ import (
 // Må bruke channels, ikke gjort per nå!
 
 // Skal det deklareres her, eller er det definert i en av de inkluderte filene?
-const N_FLOORS = 4
-const N_BUTTONS = 3
+// const N_FLOORS = 4
+// const N_BUTTONS = 3
 
 // func main() int ?
 func main() {
