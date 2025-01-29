@@ -1,9 +1,12 @@
 package main
 
 import (
+	"PR_translated_to_go/elevator_io_device"
 	"fmt"
 	"time"
 )
+
+// Må bruke channels, ikke gjort per nå!
 
 // Skal det deklareres her, eller er det definert i en av de inkluderte filene?
 const N_FLOORS = 4
@@ -16,7 +19,7 @@ func main() {
 	inputPollRate_ms := 25
 	con_load("elevator.con", con_val("inputPollRate_ms", &inputPollRate_ms, "%d"))
 
-	input := elevio_getInputDevice()
+	input := elevator_io_device.ElevInputDevice()
 
 	if input.floorSensor() == -1 {
 		fsm_onInitBetweenFloors()
