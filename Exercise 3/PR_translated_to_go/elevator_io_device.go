@@ -7,10 +7,10 @@ type Button int
 type Dirn int
 
 const (
-	//knappetyper
-	B_HallUp Button = iota
-	B_HallDown
-	B_Cab
+	//knappetyper, overflødig?
+	// B_HallUp Button = iota
+	// B_HallDown
+	// B_Cab
 
 	//retningstyper starter på ny iota-sekvens
 	D_Up Dirn = iota
