@@ -1,5 +1,4 @@
-package elevator_io_device
-
+package main
 import "fmt"
 
 //definierer enum for Button og Dirn 
@@ -52,7 +51,7 @@ func elevator_hardware_set_button_lamp(b Button, f int, v int){
 }
 
 //funksjonen som simulerer å sette motorretning
-func wrap_motor_direction(d Drin){
+func wrap_motor_direction(d Dirn){
 	elevator_hardware_set_motor_direction(d)
 }
 
@@ -75,10 +74,10 @@ func elevator_hardware_get_floor_sensor_signal() int{
 	return 1 //eks. heisen er i etasje 1
 }
 
-func wrap_request_button(floor int, button Button) int {
-	//simulerer knappetrykk
-	return 0 //eks. ingen knappetrykk registrert
-}
+// func wrap_request_button(floor int, button Button) int {
+// 	//simulerer knappetrykk
+// 	return 0 //eks. ingen knappetrykk registrert
+// }
 
 func elevator_hardware_get_obstruction_signal() bool {
 	//simulerer hindringssensor
@@ -90,7 +89,7 @@ func elevio_getInputDevice() ElevInputDevice{
 	return ElevInputDevice{
 		FloorSensor: elevator_hardware_get_floor_sensor_signal, 
 		RequestButton: wrap_request_button, 
-		Obstruction: elevator_hardware_get_obstruction_signal
+		Obstruction: elevator_hardware_get_obstruction_signal,
 	}
 }
 
@@ -109,10 +108,10 @@ func elevator_hardware_set_floor_indicator(floor int){
 	println("Floor indicator set to:", floor)
 }
 
-func wrap_request_button_light(floor int, button Button, value int){
-	//simulate turning on/off the request button light
-	println("Request button light on floor", floor, "button", button, "set to:", value)
-}
+// func wrap_request_button_light(floor int, button Button, value int){
+// 	//simulate turning on/off the request button light
+// 	println("Request button light on floor", floor, "button", button, "set to:", value)
+// }
 
 func elevator_hardware_set_door_open_lamp(value int){
 	//simulate setting the door open light
@@ -124,10 +123,10 @@ func elevator_hardware_set_stop_lamp(value int){
 	println("Stop button light set to:", value)
 }
 
-func wrap_motor_direction(direction Dirn){
-	//simulate setting motor direction
-	println("Motor direction set to:", direction)
-}
+// func wrap_motor_direction(direction Dirn){
+// 	//simulate setting motor direction
+// 	println("Motor direction set to:", direction)
+// }
 
 //function to return an instance of elevOutputDevice with function assignments
 func elevio_getOutputDevice() ElevOutputDevice {
@@ -155,13 +154,13 @@ var dirnToString = map[Dirn]string{
 
 //funksjoner for å hente tilsvarende string
 func elevio_button_toString(b Button) string{
-	if str, exists := buttonToString[b]; exists {
+	if str, exists := ButtonToString[b]; exists {
 		return str
 	}
 	return "D_UNDEFINED"
 }
 
-func elevio_drin_toString(d Drin) string{
+func elevio_drin_toString(d Dirn) string{
 	if str, exists := dirnToString[d]; exists {
 		return str
 	}

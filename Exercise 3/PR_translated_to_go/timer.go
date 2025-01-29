@@ -1,7 +1,9 @@
-include {
+package main
+
+import (
 	"time"
-	"fmt"
-}
+	
+)
 
 //Her har jeg noe usikkerhet om varaibeltypene blir riktige
 

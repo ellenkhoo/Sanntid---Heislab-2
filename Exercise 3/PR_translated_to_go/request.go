@@ -1,3 +1,8 @@
+package main
+
+
+
+
 //Leter etter bestillinger i høyere etasjer
 func requests_above(e Elevator) int {
 	for f := e.floor+1; f < N_FLOORS; f++ {
@@ -40,9 +45,9 @@ func requests_chooseDirection(e Elevator) DirnBehaviourPair {
 		//Leter først etter ordre over for å prioritere å reise i samme retning
 		if requests_above(e) {
 			return DirnBehaviourPair{D_Up, EB_Moving}
-		} elif requests_here(e) {
+		} else if requests_here(e) {
 			return DirnBehaviourPair{D_Down, EB_DoorOpen}
-		} elif requests_below(e) {
+		} else if requests_below(e) {
 			return DirnBehaviourPair{D_Down, EB_Moving}
 		} else {
 			return DirnBehaviourPair{D_Stop, EB_Idle}
@@ -52,9 +57,9 @@ func requests_chooseDirection(e Elevator) DirnBehaviourPair {
 		//Leter ned først av samme grunn
 		if requests_below(e) {
 			return DirnBehaviourPair{D_Down, EB_Moving}
-		} elif requests_here(e) {
+		} else if requests_here(e) {
 			return DirnBehaviourPair{D_Up, EB_DoorOpen}
-		} elif requests_above(e) {
+		} else if requests_above(e) {
 			return DirnBehaviourPair{D_Up, EB_Moving}
 		} else {
 			return DirnBehaviourPair{D_Stop, EB_Idle}
@@ -63,9 +68,9 @@ func requests_chooseDirection(e Elevator) DirnBehaviourPair {
 	case D_Stop:
 		if requests_here(e) {
 			return DirnBehaviourPair{D_Stop, EB_DoorOpen}
-		} elif requests_below(e) {
+		} else if requests_below(e) {
 			return DirnBehaviourPair{D_Up, EB_Moving}
-		} elif requests_above(e) {
+		} else if requests_above(e) {
 			return DirnBehaviourPair{D_Down, EB_Moving}
 		} else {
 			return DirnBehaviourPair{D_Stop, EB_Idle}
@@ -101,8 +106,8 @@ func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button)
 						  (e.dirn == D_Up && btn_type == B_HallUp)     ||
 						  (e.dirn == D_Down && btn_type == B_HallDown) ||
 						  e.dirn == D_Stop ||
-						  btn_type == B_Cab
-		)
+						  btn_type == B_Cab)
+						
 
 	default:
 		return 0
