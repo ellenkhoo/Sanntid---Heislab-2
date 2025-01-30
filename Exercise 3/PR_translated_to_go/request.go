@@ -106,9 +106,9 @@ func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button)
 		return e.Floor == btn_floor
 
 	case "CV_InDirn":
-		return e.Floor == btn.Floor && ((e.dirn == D_Up && btn_type == B_HallUp) ||
-			(e.dirn == D_Down && btn_type == B_HallDown) ||
-			e.dirn == D_Stop ||
+		return e.Floor == btn_floor && ((e.Dirn == dirnToString[D_Up] && btn_type == B_HallUp) ||
+			(e.Dirn == dirnToString[D_Down] && btn_type == B_HallDown) ||
+			e.Dirn == dirnToString[D_Stop] ||
 			btn_type == B_Cab)
 
 	default:
@@ -118,31 +118,31 @@ func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button)
 
 //Fjerner alle bestillinger i etasjen hvor heisen befinner seg
 func requests_clearAtCurrentFloor(e Elevator) Elevator {
-	switch e.config.clearRequestsVariant {
-	case CV_All:
-		for button := 0; btn < N_BUTTONS; btn++ {
-			e.Requests[e.Floor][btn] = 0
+	switch e.Config.ClearRequestVariant {
+	case "CV_All":
+		for btn := 0; btn < N_BUTTONS; btn++ {
+			e.Requests[e.Floor][btn] = false
 		}
 
-	case CV_InDirn:
-		e.Requests[e.Floor][B_Cab] = 0
+	case "CV_InDirn":
+		e.Requests[e.Floor][B_Cab] = false
 
-		switch e.dirn {
-		case D_Up:
+		switch e.Dirn {
+		case dirnToString[D_Up]:
 			if !requests_above(e) && !e.Requests[e.Floor][B_HallUp] {
-				e.Requests[e.Floor][B_HallDown] = 0
+				e.Requests[e.Floor][B_HallDown] = false
 			}
-			e.Requests[e.Floor][B_HallDown] = 0
+			e.Requests[e.Floor][B_HallDown] = false
 
-		case D_Down:
+		case dirnToString[D_Down]:
 			if !requests_below(e) && !e.Requests[e.Floor][B_HallDown] {
-				e.Requests[e.Floor][B_HallUp] = 0
+				e.Requests[e.Floor][B_HallUp] = false
 			}
-			e.Requests[e.Floor][B_HallDown] = 0
+			e.Requests[e.Floor][B_HallDown] = false
 
 		default:
-			e.Requests[e.Floor][B_HallUp] = 0
-			e.Requests[e.Floor][B_HallDown] = 0
+			e.Requests[e.Floor][B_HallUp] = false
+			e.Requests[e.Floor][B_HallDown] = false
 		}
 
 	default:
