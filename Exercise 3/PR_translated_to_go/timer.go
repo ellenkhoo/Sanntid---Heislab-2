@@ -2,13 +2,12 @@ package main
 
 import (
 	"time"
-	
 )
 
 //Her har jeg noe usikkerhet om varaibeltypene blir riktige
 
 func get_wall_time() float64 {
-	now := time.now()
+	now := time.Now()
 	seconds := float64(now.Unix())
 	microseconds := float64(now.Nanosecond()) / 1e9
 	return seconds + microseconds
@@ -26,6 +25,6 @@ func timer_stop() {
 	timerActive = 0
 }
 
-func timer_timedOut() {
-	return (timerActive && get_wall_time() > timerEndTime)
+func timer_timedOut() bool {
+	return (timerActive == 1 && get_wall_time() > timerEndTime)
 }

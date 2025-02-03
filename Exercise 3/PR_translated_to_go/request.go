@@ -45,7 +45,7 @@ func requests_here(e Elevator) bool {
 //Kanskje det løses bedre med enda en switch case?
 func requests_chooseDirection(e Elevator) DirnBehaviourPair {
 	switch e.Dirn {
-	case elevio_drin_toString(D_Up):
+	case D_Up:
 		//Leter først etter ordre over for å prioritere å reise i samme retning
 		if requests_above(e) {
 			return DirnBehaviourPair{D_Up, EB_Moving}
@@ -57,7 +57,7 @@ func requests_chooseDirection(e Elevator) DirnBehaviourPair {
 			return DirnBehaviourPair{D_Stop, EB_Idle}
 		}
 
-	case elevio_drin_toString(D_Down):
+	case D_Down:
 		//Leter ned først av samme grunn
 		if requests_below(e) {
 			return DirnBehaviourPair{D_Down, EB_Moving}
@@ -69,7 +69,7 @@ func requests_chooseDirection(e Elevator) DirnBehaviourPair {
 			return DirnBehaviourPair{D_Stop, EB_Idle}
 		}
 
-	case dirnToString[D_Stop]:
+	case D_Stop:
 		if requests_here(e) {
 			return DirnBehaviourPair{D_Stop, EB_DoorOpen}
 		} else if requests_below(e) {
@@ -87,11 +87,11 @@ func requests_chooseDirection(e Elevator) DirnBehaviourPair {
 //Sjekker om heisen bør stoppe eller ikke
 func requests_shouldStop(e Elevator) bool {
 	switch e.Dirn {
-	case dirnToString[D_Down]:
+	case D_Down:
 		return e.Requests[e.Floor][B_HallDown] ||
 			e.Requests[e.Floor][B_Cab] ||
 			!requests_below(e)
-	case dirnToString[D_Up]:
+	case D_Up:
 		return e.Requests[e.Floor][B_HallUp] ||
 			e.Requests[e.Floor][B_Cab] ||
 			!requests_above(e)
@@ -106,9 +106,9 @@ func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button)
 		return e.Floor == btn_floor
 
 	case "CV_InDirn":
-		return e.Floor == btn_floor && ((e.Dirn == dirnToString[D_Up] && btn_type == B_HallUp) ||
-			(e.Dirn == dirnToString[D_Down] && btn_type == B_HallDown) ||
-			e.Dirn == dirnToString[D_Stop] ||
+		return e.Floor == btn_floor && ((e.Dirn == D_Up && btn_type == B_HallUp) ||
+			(e.Dirn == D_Down && btn_type == B_HallDown) ||
+			e.Dirn == D_Stop ||
 			btn_type == B_Cab)
 
 	default:
@@ -128,13 +128,13 @@ func requests_clearAtCurrentFloor(e Elevator) Elevator {
 		e.Requests[e.Floor][B_Cab] = false
 
 		switch e.Dirn {
-		case dirnToString[D_Up]:
+		case D_Up:
 			if !requests_above(e) && !e.Requests[e.Floor][B_HallUp] {
 				e.Requests[e.Floor][B_HallDown] = false
 			}
 			e.Requests[e.Floor][B_HallDown] = false
 
-		case dirnToString[D_Down]:
+		case D_Down:
 			if !requests_below(e) && !e.Requests[e.Floor][B_HallDown] {
 				e.Requests[e.Floor][B_HallUp] = false
 			}

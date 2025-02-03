@@ -41,8 +41,8 @@ func eb_toString(eb ElevatorBehaviour) string {
 //elevator struct representerer statene til heisen
 type Elevator struct {
 	Floor     int
-	Dirn      string
-	Behaviour string
+	Dirn      Dirn
+	Behaviour ElevatorBehaviour
 	Requests  [N_FLOORS][N_BUTTONS]bool
 	Config    ElevatorConfig
 }
@@ -94,9 +94,9 @@ type ElevatorConfig struct {
 //funksjonen for å returnere en uinitialisert heis
 func elevator_uninitialized() Elevator {
 	return Elevator{
-		Floor:     -1,        //ugyldug etasje
-		Dirn:      "D_Stop",  //heisen er stoppet
-		Behaviour: "EB_Idle", //inaktiv tilstand
+		Floor:     -1,      //ugyldug etasje
+		Dirn:      D_Stop,  //heisen er stoppet
+		Behaviour: EB_Idle, //inaktiv tilstand
 		Config: ElevatorConfig{
 			ClearRequestVariant: "CV_All", //fjerner alle forespørsler
 			DoorOpenDuration:    3.0,      //3 sekunder døråpning

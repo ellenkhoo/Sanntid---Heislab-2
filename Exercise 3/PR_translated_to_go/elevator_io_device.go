@@ -65,7 +65,7 @@ func elevator_hardware_set_motor_direction(d Dirn) {
 //definerer en sturktur for å holde funksjoner relatert til heisinndata
 type ElevInputDevice struct {
 	FloorSensor   func() int
-	RequestButton func(florr int, button Button) int
+	RequestButton func(floor int, button Button) int
 	Obstruction   func() bool
 }
 

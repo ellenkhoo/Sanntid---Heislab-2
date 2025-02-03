@@ -30,8 +30,8 @@ func (fsm *FSM) setAllLights() {
 // Handle initialization between floors
 func (fsm *FSM) fsm_onInitBetweenFloors() {
 	fsm.od.MotorDirection(D_Down)
-	fsm.el.Dirn = elevio_drin_toString(D_Down) //skal det være string eller int?
-	fsm.el.Behaviour = elevatorBehaviourToString[EB_Moving]
+	fsm.el.Dirn = D_Down //skal det være string eller int?
+	fsm.el.Behaviour = EB_Moving
 }
 
 // Handle button press event
@@ -40,30 +40,30 @@ func (fsm *FSM) fsm_onRequestButtonPress(btn_floor int, btn_type Button) {
 	elevator_print(fsm.el)
 
 	switch fsm.el.Behaviour {
-	case elevatorBehaviourToString[EB_DoorOpen]:
+	case EB_DoorOpen:
 		if requests_shouldClearImmediately(fsm.el, btn_floor, btn_type) {
 			timer_start(fsm.el.Config.DoorOpenDuration)
 		} else {
 			fsm.el.Requests[btn_floor][btn_type] = true
 		}
 
-	case elevatorBehaviourToString[EB_Moving]:
+	case EB_Moving:
 		fsm.el.Requests[btn_floor][btn_type] = true
 
-	case elevatorBehaviourToString[EB_Idle]:
+	case EB_Idle:
 		fsm.el.Requests[btn_floor][btn_type] = true
 		pair := requests_chooseDirection(fsm.el)
-		fsm.el.Dirn = pair.Dirn
-		fsm.el.Behaviour = pair.Behaviour
+		fsm.el.Dirn = pair.dirn
+		fsm.el.Behaviour = pair.behaviour
 
-		switch pair.Behaviour {
-		case elevatorBehaviourToString[EB_DoorOpen]:
+		switch pair.behaviour {
+		case EB_DoorOpen:
 			fsm.od.DoorLight(1)
 			timer_start(fsm.el.Config.DoorOpenDuration)
 			fsm.el = requests_clearAtCurrentFloor(fsm.el)
 
 		case EB_Moving:
-			fsm.od.MotorDirection(stringToDirn[fsm.el.Dirn])
+			fsm.od.MotorDirection(fsm.el.Dirn)
 
 		case EB_Idle:
 			// Do nothing
@@ -84,14 +84,14 @@ func (fsm *FSM) fsm_onFloorArrival(newFloor int) {
 	fsm.od.FloorIndicator(newFloor)
 
 	switch fsm.el.Behaviour {
-	case elevatorBehaviourToString[EB_Moving]:
+	case EB_Moving:
 		if requests_shouldStop(fsm.el) {
 			fsm.od.MotorDirection(D_Stop)
 			fsm.od.DoorLight(1)
 			fsm.el = requests_clearAtCurrentFloor(fsm.el)
 			timer_start(fsm.el.Config.DoorOpenDuration)
 			fsm.setAllLights()
-			fsm.el.Behaviour = elevatorBehaviourToString[EB_DoorOpen]
+			fsm.el.Behaviour = EB_DoorOpen
 		}
 	}
 
@@ -104,19 +104,19 @@ func (fsm *FSM) fsm_onDoorTimeout() {
 	elevator_print(fsm.el)
 
 	switch fsm.el.Behaviour {
-	case elevatorBehaviourToString[EB_DoorOpen]:
+	case EB_DoorOpen:
 		pair := requests_chooseDirection(fsm.el)
-		fsm.el.Dirn = pair.Dirn
-		fsm.el.Behaviour = pair.Behaviour
+		fsm.el.Dirn = pair.dirn
+		fsm.el.Behaviour = pair.behaviour
 
 		switch fsm.el.Behaviour {
-		case elevatorBehaviourToString[EB_DoorOpen]:
+		case EB_DoorOpen:
 			timer_start(fsm.el.Config.DoorOpenDuration)
 			fsm.el = requests_clearAtCurrentFloor(fsm.el)
 			fsm.setAllLights()
-		case elevatorBehaviourToString[EB_Moving], elevatorBehaviourToString[EB_Idle]:
+		case EB_Moving, EB_Idle:
 			fsm.od.DoorLight(0)
-			fsm.od.MotorDirection(stringToDirn[fsm.el.Dirn])
+			fsm.od.MotorDirection(fsm.el.Dirn)
 		}
 
 	}
