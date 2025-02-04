@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 //tar en elevatorBehaviour-verdi som argument og returnerer
 //en peker til en streng som representerer navnet på veriden
@@ -38,7 +41,7 @@ func eb_toString(eb ElevatorBehaviour) string {
 //en tabell som viser bestillinger for hver etasje og knappetype
 //funksjonen skriver ut bestillinger for hver etasje i fallende rekkefølge
 
-//elevator struct representerer statene til heisen
+// elevator struct representerer statene til heisen
 type Elevator struct {
 	Floor     int
 	Dirn      Dirn
@@ -85,13 +88,13 @@ func elevator_print(e Elevator) {
 //funksjonen elevator_uninitialized oppretter og returnerer en uinitialisert heis
 //(en instans av elevator-structen) med standard verdier
 
-//definierer konfigurasjonsstruktur
+// definierer konfigurasjonsstruktur
 type ElevatorConfig struct {
 	ClearRequestVariant string
-	DoorOpenDuration    float64
+	DoorOpenDuration    time.Duration
 }
 
-//funksjonen for å returnere en uinitialisert heis
+// funksjonen for å returnere en uinitialisert heis
 func elevator_uninitialized() Elevator {
 	return Elevator{
 		Floor:     -1,      //ugyldug etasje

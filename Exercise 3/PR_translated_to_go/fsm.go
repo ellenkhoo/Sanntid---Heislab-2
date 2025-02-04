@@ -1,7 +1,9 @@
 package main
 
 import (
+	"Driver/elevio"
 	"fmt"
+	"time"
 )
 
 // Elevator FSM struct
@@ -35,14 +37,14 @@ func (fsm *FSM) fsm_onInitBetweenFloors() {
 }
 
 // Handle button press event
-func (fsm *FSM) fsm_onRequestButtonPress(btn_floor int, btn_type Button) {
-	fmt.Printf("\n\n(%d, %s)\n", btn_floor, elevio_button_toString(btn_type))
+func (fsm *FSM) fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonType, start_timer chan time.Duration) {
+	fmt.Printf("\n\n(%d, %s)\n", btn_floor, btn_type)
 	elevator_print(fsm.el)
 
 	switch fsm.el.Behaviour {
 	case EB_DoorOpen:
 		if requests_shouldClearImmediately(fsm.el, btn_floor, btn_type) {
-			timer_start(fsm.el.Config.DoorOpenDuration)
+			start_timer <- fsm.el.Config.DoorOpenDuration
 		} else {
 			fsm.el.Requests[btn_floor][btn_type] = true
 		}
@@ -59,7 +61,7 @@ func (fsm *FSM) fsm_onRequestButtonPress(btn_floor int, btn_type Button) {
 		switch pair.behaviour {
 		case EB_DoorOpen:
 			fsm.od.DoorLight(1)
-			timer_start(fsm.el.Config.DoorOpenDuration)
+			start_timer <- fsm.el.Config.DoorOpenDuration
 			fsm.el = requests_clearAtCurrentFloor(fsm.el)
 
 		case EB_Moving:
@@ -76,7 +78,7 @@ func (fsm *FSM) fsm_onRequestButtonPress(btn_floor int, btn_type Button) {
 }
 
 // Handle floor arrival event
-func (fsm *FSM) fsm_onFloorArrival(newFloor int) {
+func (fsm *FSM) fsm_onFloorArrival(newFloor int, start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d)\n", newFloor)
 	elevator_print(fsm.el)
 
@@ -89,7 +91,7 @@ func (fsm *FSM) fsm_onFloorArrival(newFloor int) {
 			fsm.od.MotorDirection(D_Stop)
 			fsm.od.DoorLight(1)
 			fsm.el = requests_clearAtCurrentFloor(fsm.el)
-			timer_start(fsm.el.Config.DoorOpenDuration)
+			start_timer <- fsm.el.Config.DoorOpenDuration
 			fsm.setAllLights()
 			fsm.el.Behaviour = EB_DoorOpen
 		}
@@ -100,7 +102,7 @@ func (fsm *FSM) fsm_onFloorArrival(newFloor int) {
 }
 
 // Handle door timeout event
-func (fsm *FSM) fsm_onDoorTimeout() {
+func (fsm *FSM) fsm_onDoorTimeout(start_timer chan time.Duration) {
 	elevator_print(fsm.el)
 
 	switch fsm.el.Behaviour {
@@ -111,7 +113,7 @@ func (fsm *FSM) fsm_onDoorTimeout() {
 
 		switch fsm.el.Behaviour {
 		case EB_DoorOpen:
-			timer_start(fsm.el.Config.DoorOpenDuration)
+			start_timer <- fsm.el.Config.DoorOpenDuration
 			fsm.el = requests_clearAtCurrentFloor(fsm.el)
 			fsm.setAllLights()
 		case EB_Moving, EB_Idle:

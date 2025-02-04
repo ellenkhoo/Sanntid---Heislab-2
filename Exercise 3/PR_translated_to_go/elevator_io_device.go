@@ -1,9 +1,12 @@
 package main
 
-import "fmt"
+import (
+	"Driver/elevio"
+	"fmt"
+)
 
-//definierer enum for Button og Dirn
-type Button int
+// definierer enum for Button og Dirn
+type Button elevio.ButtonType
 type Dirn int
 
 const (
@@ -18,58 +21,58 @@ const (
 	D_Stop
 )
 
-//funksjonen som stimulerer initialisering av heismaskinvare
+// funksjonen som stimulerer initialisering av heismaskinvare
 func init() {
 	elevator_hardware_init()
 }
 
-//simulerer initialisering av heisens maskinvare
+// simulerer initialisering av heisens maskinvare
 func elevator_hardware_init() {
 	fmt.Println("Initialising elevator hardware...")
 	//her kan du vi legge til kode for maskinvareinitialisering
 }
 
-//funksjonen som simulerer å hente signalet fra en knapp på en spesifikk etasje
+// funksjonen som simulerer å hente signalet fra en knapp på en spesifikk etasje
 func wrap_request_button(f int, b Button) int {
 	return elevator_hardware_get_button_signal(b, f)
 }
 
-//simulerer å hente knappesignal for en spesifikk etasje og knapp
+// simulerer å hente knappesignal for en spesifikk etasje og knapp
 func elevator_hardware_get_button_signal(b Button, f int) int {
 	fmt.Printf("Getting button signal for floor %d and button %d\n", f, b)
 	return 1 //simulerer at signalet er aktivert
 }
 
-//funksjonen for å sette en lampe på en knapp (tillater å sette den på eller av)
+// funksjonen for å sette en lampe på en knapp (tillater å sette den på eller av)
 func wrap_request_button_light(f int, b Button, v int) {
 	elevator_hardware_set_button_lamp(b, f, v)
 }
 
-//simulerer å sette lampen til en spesifikk verdi for en knapp på en etasje
+// simulerer å sette lampen til en spesifikk verdi for en knapp på en etasje
 func elevator_hardware_set_button_lamp(b Button, f int, v int) {
 	fmt.Printf("Setting button light for florr %d, buttin %d, value %d\n", f, b, v)
 	//her kan vi legge til kode som setter lampeverdien på en knapp
 }
 
-//funksjonen som simulerer å sette motorretning
+// funksjonen som simulerer å sette motorretning
 func wrap_motor_direction(d Dirn) {
 	elevator_hardware_set_motor_direction(d)
 }
 
-//simulerer å sette motorretningen til heisen
+// simulerer å sette motorretningen til heisen
 func elevator_hardware_set_motor_direction(d Dirn) {
 	fmt.Printf("Setting motor direction to %d\n", d)
 	//her kan vi legge til kode som setter motorens retning
 }
 
-//definerer en sturktur for å holde funksjoner relatert til heisinndata
+// definerer en sturktur for å holde funksjoner relatert til heisinndata
 type ElevInputDevice struct {
 	FloorSensor   func() int
 	RequestButton func(floor int, button Button) int
 	Obstruction   func() bool
 }
 
-//simulerte funksjoner for å etterligne maskinvarefunksjonene
+// simulerte funksjoner for å etterligne maskinvarefunksjonene
 func elevator_hardware_get_floor_sensor_signal() int {
 	//simulerer deteksjon av etasjesensor
 	return 1 //eks. heisen er i etasje 1
@@ -85,7 +88,7 @@ func elevator_hardware_get_obstruction_signal() bool {
 	return false //eks. ingen hindring oppdaget
 }
 
-//funksjon for å returnere en instans av ElevInputDevice
+// funksjon for å returnere en instans av ElevInputDevice
 func elevio_getInputDevice() ElevInputDevice {
 	return ElevInputDevice{
 		FloorSensor:   elevator_hardware_get_floor_sensor_signal,
@@ -94,7 +97,7 @@ func elevio_getInputDevice() ElevInputDevice {
 	}
 }
 
-//elevOutputDevice stuct holds function pointers for controlling elevator output devices
+// elevOutputDevice stuct holds function pointers for controlling elevator output devices
 type ElevOutputDevice struct {
 	FloorIndicator     func(floor int)
 	RequestButtonLight func(floor int, button Button, value int)
@@ -103,7 +106,7 @@ type ElevOutputDevice struct {
 	MotorDirection     func(direvtion Dirn)
 }
 
-//simulated hardware functios to mimic the actual hardware control
+// simulated hardware functios to mimic the actual hardware control
 func elevator_hardware_set_floor_indicator(floor int) {
 	//simulate setting the floor indicator lamp
 	println("Floor indicator set to:", floor)
@@ -129,7 +132,7 @@ func elevator_hardware_set_stop_lamp(value int) {
 // 	println("Motor direction set to:", direction)
 // }
 
-//function to return an instance of elevOutputDevice with function assignments
+// function to return an instance of elevOutputDevice with function assignments
 func elevio_getOutputDevice() ElevOutputDevice {
 	return ElevOutputDevice{
 		FloorIndicator:     elevator_hardware_set_floor_indicator,
@@ -140,7 +143,7 @@ func elevio_getOutputDevice() ElevOutputDevice {
 	}
 }
 
-//mapper knapper og retninger til strenger
+// mapper knapper og retninger til strenger
 var ButtonToString = map[Button]string{
 	B_HallUp:   "B_HallUp",
 	B_HallDown: "B_HallDown",
@@ -159,7 +162,7 @@ var stringToDirn = map[string]Dirn{
 	"D_Stop": D_Stop,
 }
 
-//funksjoner for å hente tilsvarende string
+// funksjoner for å hente tilsvarende string
 func elevio_button_toString(b Button) string {
 	if str, exists := ButtonToString[b]; exists {
 		return str

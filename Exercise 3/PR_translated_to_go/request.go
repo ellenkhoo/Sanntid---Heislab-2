@@ -1,5 +1,7 @@
 package main
 
+import "Driver/elevio"
+
 // Endrer funksjonene til å returnere bools
 
 type DirnBehaviourPair struct {
@@ -100,7 +102,7 @@ func requests_shouldStop(e Elevator) bool {
 	}
 }
 
-func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type Button) bool {
+func requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":
 		return e.Floor == btn_floor
