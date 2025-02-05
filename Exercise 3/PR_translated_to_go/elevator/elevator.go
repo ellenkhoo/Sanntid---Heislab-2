@@ -1,8 +1,9 @@
-package main
+package elevatorpkg
 
 import (
 	"fmt"
 	"time"
+	"elevator_io_device"
 )
 
 //tar en elevatorBehaviour-verdi som argument og returnerer
@@ -44,7 +45,7 @@ func eb_toString(eb ElevatorBehaviour) string {
 // elevator struct representerer statene til heisen
 type Elevator struct {
 	Floor     int
-	Dirn      Dirn
+	Dirn      elevator_io_devicepkg.Dirn
 	Behaviour ElevatorBehaviour
 	Requests  [N_FLOORS][N_BUTTONS]bool
 	Config    ElevatorConfig
@@ -58,11 +59,11 @@ const (
 	B_Cab      = 2
 )
 
-func elevator_print(e Elevator) {
+func Elevator_print(e Elevator) {
 	fmt.Println(" +-----------------+")
-	fmt.Println("|floor = %-2d          |\n", e.Floor)
-	fmt.Println("  |dirn  = %-12.12s|\n", e.Dirn)
-	fmt.Println("  |behav = %-12.12s|\n", e.Behaviour)
+	fmt.Printf("|floor = %-2d          |\n", e.Floor)
+	fmt.Printf("  |dirn  = %-12.12s|\n", e.Dirn)
+	fmt.Printf("  |behav = %-12.12s|\n", e.Behaviour)
 	fmt.Println(" +-----------------+")
 	fmt.Println("  |  | up  | dn  | cab |")
 
@@ -95,10 +96,10 @@ type ElevatorConfig struct {
 }
 
 // funksjonen for å returnere en uinitialisert heis
-func elevator_uninitialized() Elevator {
+func Elevator_uninitialized() Elevator {
 	return Elevator{
 		Floor:     -1,      //ugyldug etasje
-		Dirn:      D_Stop,  //heisen er stoppet
+		Dirn:      elevator_io_devicepkg.D_Stop,  //heisen er stoppet
 		Behaviour: EB_Idle, //inaktiv tilstand
 		Config: ElevatorConfig{
 			ClearRequestVariant: "CV_All", //fjerner alle forespørsler

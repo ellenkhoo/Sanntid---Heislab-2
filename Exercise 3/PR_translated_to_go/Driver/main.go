@@ -1,6 +1,6 @@
 package main
 
-import "Driver/elevio"
+import "Driver-go/elevio"
 import "fmt"
 
 func main(){

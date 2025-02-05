@@ -1,4 +1,4 @@
-package main
+package timerpkg
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ var timerActive bool
 // 	timerActive = 1
 // }
 
-func timer_start(timer *time.Timer, start_timer chan time.Duration) {
+func Timer_start(timer *time.Timer, start_timer chan time.Duration) {
 	for {
 		select {
 		case duration := <-start_timer:
@@ -36,10 +36,10 @@ func timer_start(timer *time.Timer, start_timer chan time.Duration) {
 	// Bør håndtere dør-operasjoner her, siden det bare er avhengig av timeren?
 }
 
-func timer_stop() {
+func Timer_stop() {
 	timerActive = false
 }
 
-func timer_timedOut() bool {
+func Timer_timedOut() bool {
 	return (timerActive == true && get_wall_time().After(timerEndTime))
 }

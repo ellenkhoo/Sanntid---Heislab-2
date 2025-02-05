@@ -2,9 +2,14 @@ package main
 
 import (
 	//"PR_translated_to_go/elevator_io_device"
-	"Driver/elevio"
+	"Driver-go/elevio"
+	"elevator"
+	"elevator_io_device"
 	"fmt"
+	"fsm"
+	requestpkg "request"
 	"time"
+	"timer"
 )
 
 // Må bruke channels, ikke gjort per nå!
@@ -21,9 +26,10 @@ func main() {
 	numFloors := 4
 	elevio.Init("localhost:15657", numFloors)
 
+	var d elevio.MotorDirection = elevio.MD_Up
 	// Initialize fsm
 	// Tror ikke dette egt. er riktig, og at dette med fsm ikke var nødvendig for én heis
-	fsm := FSM{el: Elevator{Floor: 0, Dirn: D_Stop, Behaviour: EB_Idle}, od: elevio_getOutputDevice()}
+	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator{Floor: 0, Dirn: elevator_io_devicepkg.D_Stop, Behaviour: elevatorpkg.EB_Idle}, Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
 
 	//inputPollRate_ms := 25
 	// Hva gjør dette egt?
@@ -37,7 +43,7 @@ func main() {
 	start_timer := make(chan time.Duration)
 
 	// Initialize timer, stop it until needed
-	main_timer := time.NewTimer(time.Duration(fsm.el.Config.DoorOpenDuration))
+	main_timer := time.NewTimer(time.Duration(fsm.El.Config.DoorOpenDuration))
 	main_timer.Stop()
 
 	// Start goroutines
@@ -45,14 +51,14 @@ func main() {
 	go elevio.PollFloorSensor(floors_chan)
 	go elevio.PollObstructionSwitch(obstruction_chan)
 	go elevio.PollStopButton(stop_chan)
-	go timer_start(main_timer, start_timer)
+	go timerpkg.Timer_start(main_timer, start_timer)
 
 	//floor_input := <-floors_chan
 	//input := elevio_getInputDevice()
 
-	if elevio_getInputDevice().FloorSensor() == -1 {
-		fsm.fsm_onInitBetweenFloors()
-	}
+	// if elevio_getInputDevice().FloorSensor() == -1 {
+	// 	fsm.fsm_onInitBetweenFloors()
+	// }
 
 	// Erstatter med channels
 	// for {
@@ -94,19 +100,35 @@ func main() {
 		select {
 		case button_pushed := <-buttons_chan:
 			elevio.SetButtonLamp(button_pushed.Button, button_pushed.Floor, true)
-			fsm.el.Requests[button_pushed.Floor][button_pushed.Button] = true
-			fsm.fsm_onRequestButtonPress(button_pushed.Floor, button_pushed.Button, start_timer)
+			fsm.El.Requests[button_pushed.Floor][button_pushed.Button] = true
+			fsm.Fsm_onRequestButtonPress(button_pushed.Floor, button_pushed.Button, start_timer)
+			pair := requestpkg.Requests_chooseDirection(fsm.El)
+			elevio.SetMotorDirection(elevio.MotorDirection(pair.Dirn))
+
 
 		case floor_input := <-floors_chan:
 			elevio.SetFloorIndicator(floor_input)
 
 			prev := -1
 			if floor_input != -1 && floor_input != prev {
-				fsm.fsm_onFloorArrival(floor_input, start_timer)
+				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
 
+		case obstruction := <-obstruction_chan:
+			if obstruction {
+				elevio.SetMotorDirection(elevio.MD_Stop)
+			} else {
+				elevio.SetMotorDirection(d)
+			}
+
+		// case stop := <-stop_chan:
+		// 	for f := 0; f < numFloors; f++ {
+		// 		for b := elevio.ButtonType(0); b < 3; b++ {	
+		// 			elevio.SetButtonLamp(b, f, false) 
+		// 		}
+		// 	}
 		case <-main_timer.C:
-			fsm.fsm_onDoorTimeout(start_timer)
+			fsm.Fsm_onDoorTimeout(start_timer)
 
 		}
 	}

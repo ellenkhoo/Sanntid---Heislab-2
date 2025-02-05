@@ -1,7 +1,7 @@
-package main
+package elevator_io_devicepkg
 
 import (
-	"Driver/elevio"
+	"Driver-go/elevio"
 	"fmt"
 )
 
@@ -11,9 +11,9 @@ type Dirn int
 
 const (
 	//knappetyper, overflødig?
-	// B_HallUp Button = iota
-	// B_HallDown
-	// B_Cab
+	B_HallUp Button = iota
+	B_HallDown
+	B_Cab
 
 	//retningstyper starter på ny iota-sekvens
 	D_Up Dirn = iota
@@ -133,7 +133,7 @@ func elevator_hardware_set_stop_lamp(value int) {
 // }
 
 // function to return an instance of elevOutputDevice with function assignments
-func elevio_getOutputDevice() ElevOutputDevice {
+func Elevio_getOutputDevice() ElevOutputDevice {
 	return ElevOutputDevice{
 		FloorIndicator:     elevator_hardware_set_floor_indicator,
 		RequestButtonLight: wrap_request_button_light,
@@ -145,9 +145,9 @@ func elevio_getOutputDevice() ElevOutputDevice {
 
 // mapper knapper og retninger til strenger
 var ButtonToString = map[Button]string{
-	B_HallUp:   "B_HallUp",
-	B_HallDown: "B_HallDown",
-	B_Cab:      "B_Cab",
+	Button(elevio.BT_HallUp):   "B_HallUp",
+	Button(elevio.BT_HallDown): "B_HallDown",
+	Button(elevio.BT_Cab):      "B_Cab",
 }
 
 var dirnToString = map[Dirn]string{
