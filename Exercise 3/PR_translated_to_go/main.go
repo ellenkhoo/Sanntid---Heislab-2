@@ -24,12 +24,21 @@ func main() {
 
 	// burde vel ikke måtte definere denne på nytt, er jo definert i elevio
 	numFloors := 4
+	const maxDuration time.Duration = 1<<63-1
+
 	elevio.Init("localhost:15657", numFloors)
 
-	var d elevio.MotorDirection = elevio.MD_Up
+
+
+	
 	// Initialize fsm
 	// Tror ikke dette egt. er riktig, og at dette med fsm ikke var nødvendig for én heis
 	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator{Floor: 0, Dirn: elevator_io_devicepkg.D_Stop, Behaviour: elevatorpkg.EB_Idle}, Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
+	fsm.El.Behaviour = elevatorpkg.EB_Idle
+	fsm.El.Dirn = elevator_io_devicepkg.D_Stop
+	var d elevio.MotorDirection = elevio.MD_Up
+
+	// Skulle man hatt en "clear all requests"-funksjon? Når jeg prøver å kjøre programmet, kjører heisen bare opp.
 
 	//inputPollRate_ms := 25
 	// Hva gjør dette egt?
@@ -117,7 +126,9 @@ func main() {
 		case obstruction := <-obstruction_chan:
 			if obstruction {
 				elevio.SetMotorDirection(elevio.MD_Stop)
+				start_timer <- maxDuration
 			} else {
+				start_timer <- fsm.El.Config.DoorOpenDuration
 				elevio.SetMotorDirection(d)
 			}
 

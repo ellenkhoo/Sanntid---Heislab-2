@@ -50,7 +50,7 @@ func wrap_request_button_light(f int, b Button, v int) {
 
 // simulerer å sette lampen til en spesifikk verdi for en knapp på en etasje
 func elevator_hardware_set_button_lamp(b Button, f int, v int) {
-	fmt.Printf("Setting button light for florr %d, buttin %d, value %d\n", f, b, v)
+	fmt.Printf("Setting button light for floor %d, button %d, value %d\n", f, b, v)
 	//her kan vi legge til kode som setter lampeverdien på en knapp
 }
 
