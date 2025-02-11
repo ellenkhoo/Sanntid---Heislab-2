@@ -11,58 +11,59 @@ type Dirn int
 
 const (
 	//knappetyper, overflødig?
-	B_HallUp Button = iota
-	B_HallDown
-	B_Cab
+	B_HallUp Button = 0
+	B_HallDown Button = 1
+	B_Cab Button = 2
 
 	//retningstyper starter på ny iota-sekvens
-	D_Up Dirn = iota
-	D_Down
-	D_Stop
+	D_Up Dirn = 1
+	D_Down Dirn = -1
+	D_Stop Dirn = 0
 )
 
 // funksjonen som stimulerer initialisering av heismaskinvare
-func init() {
-	elevator_hardware_init()
+func Init() {
+	Elevator_hardware_init()
 }
 
 // simulerer initialisering av heisens maskinvare
-func elevator_hardware_init() {
+func Elevator_hardware_init() {
 	fmt.Println("Initialising elevator hardware...")
 	//her kan du vi legge til kode for maskinvareinitialisering
 }
 
 // funksjonen som simulerer å hente signalet fra en knapp på en spesifikk etasje
-func wrap_request_button(f int, b Button) int {
-	return elevator_hardware_get_button_signal(b, f)
+func Wrap_request_button(f int, b Button) int {
+	return Elevator_hardware_get_button_signal(b, f)
 }
 
 // simulerer å hente knappesignal for en spesifikk etasje og knapp
-func elevator_hardware_get_button_signal(b Button, f int) int {
+func Elevator_hardware_get_button_signal(b Button, f int) int {
 	fmt.Printf("Getting button signal for floor %d and button %d\n", f, b)
 	return 1 //simulerer at signalet er aktivert
 }
 
 // funksjonen for å sette en lampe på en knapp (tillater å sette den på eller av)
-func wrap_request_button_light(f int, b Button, v int) {
-	elevator_hardware_set_button_lamp(b, f, v)
+func Wrap_request_button_light(f int, b Button, v int) {
+	Elevator_hardware_set_button_lamp(b, f, v)
 }
 
 // simulerer å sette lampen til en spesifikk verdi for en knapp på en etasje
-func elevator_hardware_set_button_lamp(b Button, f int, v int) {
+func Elevator_hardware_set_button_lamp(b Button, f int, v int) {
 	fmt.Printf("Setting button light for floor %d, button %d, value %d\n", f, b, v)
 	//her kan vi legge til kode som setter lampeverdien på en knapp
 }
 
 // funksjonen som simulerer å sette motorretning
-func wrap_motor_direction(d Dirn) {
-	elevator_hardware_set_motor_direction(d)
+func Wrap_motor_direction(d elevio.MotorDirection) {
+	Elevator_hardware_set_motor_direction(d)
 }
 
 // simulerer å sette motorretningen til heisen
-func elevator_hardware_set_motor_direction(d Dirn) {
+func Elevator_hardware_set_motor_direction(d elevio.MotorDirection) {
 	fmt.Printf("Setting motor direction to %d\n", d)
 	//her kan vi legge til kode som setter motorens retning
+	elevio.SetMotorDirection(d)
 }
 
 // definerer en sturktur for å holde funksjoner relatert til heisinndata
@@ -73,7 +74,7 @@ type ElevInputDevice struct {
 }
 
 // simulerte funksjoner for å etterligne maskinvarefunksjonene
-func elevator_hardware_get_floor_sensor_signal() int {
+func Elevator_hardware_get_floor_sensor_signal() int {
 	//simulerer deteksjon av etasjesensor
 	return 1 //eks. heisen er i etasje 1
 }
@@ -83,17 +84,17 @@ func elevator_hardware_get_floor_sensor_signal() int {
 // 	return 0 //eks. ingen knappetrykk registrert
 // }
 
-func elevator_hardware_get_obstruction_signal() bool {
+func Elevator_hardware_get_obstruction_signal() bool {
 	//simulerer hindringssensor
 	return false //eks. ingen hindring oppdaget
 }
 
 // funksjon for å returnere en instans av ElevInputDevice
-func elevio_getInputDevice() ElevInputDevice {
+func Elevio_getInputDevice() ElevInputDevice {
 	return ElevInputDevice{
-		FloorSensor:   elevator_hardware_get_floor_sensor_signal,
-		RequestButton: wrap_request_button,
-		Obstruction:   elevator_hardware_get_obstruction_signal,
+		FloorSensor:   Elevator_hardware_get_floor_sensor_signal,
+		RequestButton: Wrap_request_button,
+		Obstruction:   Elevator_hardware_get_obstruction_signal,
 	}
 }
 
@@ -103,11 +104,11 @@ type ElevOutputDevice struct {
 	RequestButtonLight func(floor int, button Button, value int)
 	DoorLight          func(value int)
 	StopButtonLight    func(value int)
-	MotorDirection     func(direvtion Dirn)
+	MotorDirection     func(direction elevio.MotorDirection)
 }
 
 // simulated hardware functios to mimic the actual hardware control
-func elevator_hardware_set_floor_indicator(floor int) {
+func Elevator_hardware_set_floor_indicator(floor int) {
 	//simulate setting the floor indicator lamp
 	println("Floor indicator set to:", floor)
 }
@@ -117,12 +118,12 @@ func elevator_hardware_set_floor_indicator(floor int) {
 // 	println("Request button light on floor", floor, "button", button, "set to:", value)
 // }
 
-func elevator_hardware_set_door_open_lamp(value int) {
+func Elevator_hardware_set_door_open_lamp(value int) {
 	//simulate setting the door open light
 	print("Door light set to:", value)
 }
 
-func elevator_hardware_set_stop_lamp(value int) {
+func Elevator_hardware_set_stop_lamp(value int) {
 	//simulate setting the stop lamp
 	println("Stop button light set to:", value)
 }
@@ -135,11 +136,11 @@ func elevator_hardware_set_stop_lamp(value int) {
 // function to return an instance of elevOutputDevice with function assignments
 func Elevio_getOutputDevice() ElevOutputDevice {
 	return ElevOutputDevice{
-		FloorIndicator:     elevator_hardware_set_floor_indicator,
-		RequestButtonLight: wrap_request_button_light,
-		DoorLight:          elevator_hardware_set_door_open_lamp,
-		StopButtonLight:    elevator_hardware_set_stop_lamp,
-		MotorDirection:     wrap_motor_direction,
+		FloorIndicator:     Elevator_hardware_set_floor_indicator,
+		RequestButtonLight: Wrap_request_button_light,
+		DoorLight:          Elevator_hardware_set_door_open_lamp,
+		StopButtonLight:    Elevator_hardware_set_stop_lamp,
+		MotorDirection:     Wrap_motor_direction,
 	}
 }
 
@@ -150,28 +151,28 @@ var ButtonToString = map[Button]string{
 	Button(elevio.BT_Cab):      "B_Cab",
 }
 
-var dirnToString = map[Dirn]string{
+var DirnToString = map[Dirn]string{
 	D_Up:   "D_Up",
 	D_Down: "D_Down",
 	D_Stop: "D_Stop",
 }
 
-var stringToDirn = map[string]Dirn{
+var StringToDirn = map[string]Dirn{
 	"D_Up":   D_Up,
 	"D_Down": D_Down,
 	"D_Stop": D_Stop,
 }
 
 // funksjoner for å hente tilsvarende string
-func elevio_button_toString(b Button) string {
+func Elevio_button_toString(b Button) string {
 	if str, exists := ButtonToString[b]; exists {
 		return str
 	}
 	return "D_UNDEFINED"
 }
 
-func elevio_drin_toString(d Dirn) string {
-	if str, exists := dirnToString[d]; exists {
+func Elevio_drin_toString(d Dirn) string {
+	if str, exists := DirnToString[d]; exists {
 		return str
 	}
 	return "D_UNDEFINED"

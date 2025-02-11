@@ -7,7 +7,7 @@ import (
 
 //Her har jeg noe usikkerhet om varaibeltypene blir riktige
 
-func get_wall_time() time.Time {
+func Get_wall_time() time.Time {
 	// now := time.Now()
 	// seconds := float64(now.Unix())
 	// microseconds := float64(now.Nanosecond()) / 1e9
@@ -41,5 +41,5 @@ func Timer_stop() {
 }
 
 func Timer_timedOut() bool {
-	return (timerActive == true && get_wall_time().After(timerEndTime))
+	return (timerActive && Get_wall_time().After(timerEndTime))
 }

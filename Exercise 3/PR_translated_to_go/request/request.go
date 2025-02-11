@@ -2,13 +2,13 @@ package requestpkg
 
 import ("Driver-go/elevio"
 		"elevator"
-		"elevator_io_device"
+		// "elevator_io_device"
 )
 
 // Endrer funksjonene til å returnere bools
 
 type DirnBehaviourPair struct {
-	Dirn      elevator_io_devicepkg.Dirn
+	Dirn      elevio.MotorDirection
 	Behaviour elevatorpkg.ElevatorBehaviour
 }
 
@@ -50,53 +50,53 @@ func Requests_here(e elevatorpkg.Elevator) bool {
 //Kanskje det løses bedre med enda en switch case?
 func Requests_chooseDirection(e elevatorpkg.Elevator) DirnBehaviourPair {
 	switch e.Dirn {
-	case elevator_io_devicepkg.D_Up:
+	case elevio.MD_Up:
 		//Leter først etter ordre over for å prioritere å reise i samme retning
 		if Requests_above(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Up, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
 		} else if Requests_here(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Down, elevatorpkg.EB_DoorOpen}
+			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_DoorOpen}
 		} else if Requests_below(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Down, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Stop, elevatorpkg.EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
 		}
 
-	case elevator_io_devicepkg.D_Down:
+	case elevio.MD_Down:
 		//Leter ned først av samme grunn
 		if Requests_below(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Down, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
 		} else if Requests_here(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Up, elevatorpkg.EB_DoorOpen}
+			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_DoorOpen}
 		} else if Requests_above(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Up, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Stop, elevatorpkg.EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
 		}
 
-	case elevator_io_devicepkg.D_Stop:
+	case elevio.MD_Stop:
 		if Requests_here(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Stop, elevatorpkg.EB_DoorOpen}
+			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_DoorOpen}
 		} else if Requests_below(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Up, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
 		} else if Requests_above(e) {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Down, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevator_io_devicepkg.D_Stop, elevatorpkg.EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
 		}
 	default:
-		return DirnBehaviourPair{elevator_io_devicepkg.D_Stop, elevatorpkg.EB_Idle}
+		return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
 	}
 }
 
 //Sjekker om heisen bør stoppe eller ikke
 func Requests_shouldStop(e elevatorpkg.Elevator) bool {
 	switch e.Dirn {
-	case elevator_io_devicepkg.D_Down:
+	case elevio.MD_Down:
 		return e.Requests[e.Floor][elevatorpkg.B_HallDown] ||
 			e.Requests[e.Floor][elevatorpkg.B_Cab] ||
 			!Requests_below(e)
-	case elevator_io_devicepkg.D_Up:
+	case elevio.MD_Up:
 		return e.Requests[e.Floor][elevatorpkg.B_HallUp] ||
 			e.Requests[e.Floor][elevatorpkg.B_Cab] ||
 			!Requests_above(e)
@@ -111,9 +111,9 @@ func Requests_shouldClearImmediately(e elevatorpkg.Elevator, btn_floor int, btn_
 		return e.Floor == btn_floor
 
 	case "CV_InDirn":
-		return e.Floor == btn_floor && ((e.Dirn == elevator_io_devicepkg.D_Up && btn_type == elevatorpkg.B_HallUp) ||
-			(e.Dirn == elevator_io_devicepkg.D_Down && btn_type == elevatorpkg.B_HallDown) ||
-			e.Dirn == elevator_io_devicepkg.D_Stop ||
+		return e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevatorpkg.B_HallUp) ||
+			(e.Dirn == elevio.MD_Down && btn_type == elevatorpkg.B_HallDown) ||
+			e.Dirn == elevio.MD_Stop ||
 			btn_type == elevatorpkg.B_Cab)
 
 	default:
@@ -133,13 +133,13 @@ func Requests_clearAtCurrentFloor(e elevatorpkg.Elevator) elevatorpkg.Elevator {
 		e.Requests[e.Floor][elevatorpkg.B_Cab] = false
 
 		switch e.Dirn {
-		case elevator_io_devicepkg.D_Up:
+		case elevio.MD_Up:
 			if !Requests_above(e) && !e.Requests[e.Floor][elevatorpkg.B_HallUp] {
 				e.Requests[e.Floor][elevatorpkg.B_HallDown] = false
 			}
 			e.Requests[e.Floor][elevatorpkg.B_HallDown] = false
 
-		case elevator_io_devicepkg.D_Down:
+		case elevio.MD_Down:
 			if !Requests_below(e) && !e.Requests[e.Floor][elevatorpkg.B_HallDown] {
 				e.Requests[e.Floor][elevatorpkg.B_HallUp] = false
 			}

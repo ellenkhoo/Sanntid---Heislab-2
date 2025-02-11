@@ -20,6 +20,8 @@ import (
 
 // func main() int ?
 func main() {
+
+
 	fmt.Println("Started!")
 
 	// burde vel ikke måtte definere denne på nytt, er jo definert i elevio
@@ -33,10 +35,27 @@ func main() {
 	
 	// Initialize fsm
 	// Tror ikke dette egt. er riktig, og at dette med fsm ikke var nødvendig for én heis
-	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator{Floor: 0, Dirn: elevator_io_devicepkg.D_Stop, Behaviour: elevatorpkg.EB_Idle}, Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
-	fsm.El.Behaviour = elevatorpkg.EB_Idle
-	fsm.El.Dirn = elevator_io_devicepkg.D_Stop
-	var d elevio.MotorDirection = elevio.MD_Up
+	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator_uninitialized(), Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
+
+	//Kanskje bruk denne under om heisen skal init-es med floor = 1
+	// elevatorpkg.Elevator{Floor: 0, Dirn: elevator_io_devicepkg.D_Stop, Behaviour: elevatorpkg.EB_Idle}
+
+	// fsm.El.Behaviour = elevatorpkg.EB_Idle
+	// fsm.El.Dirn = elevator_io_devicepkg.D_Stop
+	var d elevio.MotorDirection
+	fsm.Fsm_onInitBetweenFloors()
+	fmt.Printf("Init between floor")
+
+	fsm.SetAllLights()
+	fmt.Printf("Current floor: %d \n", fsm.El.Floor)
+	fmt.Printf("Current Dirn: %d \n", fsm.El.Dirn)
+
+	// for f := fsm.El.Floor + 1; f < elevatorpkg.N_FLOORS; f++ {
+	// 	for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
+	// 		fsm.El.Requests[f][btn] = false
+	// 		elevio.SetButtonLamp(elevator_io_devicepkg.Button(btn), f, false)
+	// 	}
+	// }
 
 	// Skulle man hatt en "clear all requests"-funksjon? Når jeg prøver å kjøre programmet, kjører heisen bare opp.
 
@@ -108,8 +127,11 @@ func main() {
 	for {
 		select {
 		case button_pushed := <-buttons_chan:
+			fmt.Printf("Button pushed")
 			elevio.SetButtonLamp(button_pushed.Button, button_pushed.Floor, true)
+			fmt.Printf("Button light at floor %d set to true", button_pushed.Floor)
 			fsm.El.Requests[button_pushed.Floor][button_pushed.Button] = true
+			fmt.Printf("Request at floor %d added to queue", button_pushed.Floor)
 			fsm.Fsm_onRequestButtonPress(button_pushed.Floor, button_pushed.Button, start_timer)
 			pair := requestpkg.Requests_chooseDirection(fsm.El)
 			elevio.SetMotorDirection(elevio.MotorDirection(pair.Dirn))

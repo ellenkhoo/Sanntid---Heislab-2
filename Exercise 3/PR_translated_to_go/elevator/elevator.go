@@ -1,9 +1,10 @@
 package elevatorpkg
 
 import (
+	"Driver-go/elevio"
+	// "elevator_io_device"
 	"fmt"
 	"time"
-	"elevator_io_device"
 )
 
 //tar en elevatorBehaviour-verdi som argument og returnerer
@@ -23,14 +24,14 @@ const (
 	EB_Moving
 )
 
-var elevatorBehaviourToString = map[ElevatorBehaviour]string{
+var ElevatorBehaviourToString = map[ElevatorBehaviour]string{
 	EB_Idle:     "EB_Idle",
 	EB_DoorOpen: "EB_DoorOpen",
 	EB_Moving:   "EB_Moving",
 }
 
-func eb_toString(eb ElevatorBehaviour) string {
-	if str, exists := elevatorBehaviourToString[eb]; exists {
+func Eb_toString(eb ElevatorBehaviour) string {
+	if str, exists := ElevatorBehaviourToString[eb]; exists {
 		return str
 	}
 	return "EB_UNDEFINED"
@@ -45,7 +46,7 @@ func eb_toString(eb ElevatorBehaviour) string {
 // elevator struct representerer statene til heisen
 type Elevator struct {
 	Floor     int
-	Dirn      elevator_io_devicepkg.Dirn
+	Dirn      elevio.MotorDirection
 	Behaviour ElevatorBehaviour
 	Requests  [N_FLOORS][N_BUTTONS]bool
 	Config    ElevatorConfig
@@ -99,7 +100,7 @@ type ElevatorConfig struct {
 func Elevator_uninitialized() Elevator {
 	return Elevator{
 		Floor:     -1,      //ugyldug etasje
-		Dirn:      elevator_io_devicepkg.D_Stop,  //heisen er stoppet
+		Dirn:      elevio.MD_Stop,  //heisen er stoppet
 		Behaviour: EB_Idle, //inaktiv tilstand
 		Config: ElevatorConfig{
 			ClearRequestVariant: "CV_All", //fjerner alle forespørsler

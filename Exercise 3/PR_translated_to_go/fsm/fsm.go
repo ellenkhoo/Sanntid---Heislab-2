@@ -34,8 +34,8 @@ func (fsm *FSM) SetAllLights() {
 
 // Handle initialization between floors
 func (fsm *FSM) Fsm_onInitBetweenFloors() {
-	fsm.Od.MotorDirection(elevator_io_devicepkg.D_Down)
-	fsm.El.Dirn = elevator_io_devicepkg.D_Down //skal det være string eller int?
+	fsm.Od.MotorDirection(elevio.MD_Up)
+	fsm.El.Dirn = elevio.MD_Up //skal det være string eller int?
 	fsm.El.Behaviour = elevatorpkg.EB_Moving
 }
 
@@ -91,7 +91,7 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 	switch fsm.El.Behaviour {
 	case elevatorpkg.EB_Moving:
 		if requestpkg.Requests_shouldStop(fsm.El) {
-			fsm.Od.MotorDirection(elevator_io_devicepkg.D_Stop)
+			fsm.Od.MotorDirection(elevio.MD_Stop)
 			fsm.Od.DoorLight(1)
 			fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
 			start_timer <- fsm.El.Config.DoorOpenDuration
