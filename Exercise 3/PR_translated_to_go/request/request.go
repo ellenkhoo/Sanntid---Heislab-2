@@ -1,8 +1,9 @@
 package requestpkg
 
-import ("Driver-go/elevio"
-		"elevator"
-		// "elevator_io_device"
+import (
+	"Driver-go/elevio"
+	elevatorpkg "elevator"
+	// "elevator_io_device"
 )
 
 // Endrer funksjonene til å returnere bools
@@ -12,7 +13,15 @@ type DirnBehaviourPair struct {
 	Behaviour elevatorpkg.ElevatorBehaviour
 }
 
-//Leter etter bestillinger i høyere etasjer
+func Clear_all_requests() {
+	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
+		for b := elevio.ButtonType(0); b < 3; b++ {
+			elevio.SetButtonLamp(b, f, false)
+		}
+	}
+}
+
+// Leter etter bestillinger i høyere etasjer
 func Requests_above(e elevatorpkg.Elevator) bool {
 	for f := e.Floor + 1; f < elevatorpkg.N_FLOORS; f++ {
 		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
@@ -24,7 +33,7 @@ func Requests_above(e elevatorpkg.Elevator) bool {
 	return false
 }
 
-//Lete etter bestillinger i lavere etasjer
+// Lete etter bestillinger i lavere etasjer
 func Requests_below(e elevatorpkg.Elevator) bool {
 	for f := 0; f < e.Floor; f++ {
 		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
@@ -36,7 +45,7 @@ func Requests_below(e elevatorpkg.Elevator) bool {
 	return false
 }
 
-//Leter etter bestillinger i etasjen hvor heisen befinner seg
+// Leter etter bestillinger i etasjen hvor heisen befinner seg
 func Requests_here(e elevatorpkg.Elevator) bool {
 	for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
 		if e.Requests[e.Floor][btn] {
@@ -46,8 +55,8 @@ func Requests_here(e elevatorpkg.Elevator) bool {
 	return false
 }
 
-//Ikke så stor fan av hva som skjer inne i hver case her
-//Kanskje det løses bedre med enda en switch case?
+// Ikke så stor fan av hva som skjer inne i hver case her
+// Kanskje det løses bedre med enda en switch case?
 func Requests_chooseDirection(e elevatorpkg.Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case elevio.MD_Up:
@@ -89,7 +98,7 @@ func Requests_chooseDirection(e elevatorpkg.Elevator) DirnBehaviourPair {
 	}
 }
 
-//Sjekker om heisen bør stoppe eller ikke
+// Sjekker om heisen bør stoppe eller ikke
 func Requests_shouldStop(e elevatorpkg.Elevator) bool {
 	switch e.Dirn {
 	case elevio.MD_Down:
@@ -121,7 +130,7 @@ func Requests_shouldClearImmediately(e elevatorpkg.Elevator, btn_floor int, btn_
 	}
 }
 
-//Fjerner alle bestillinger i etasjen hvor heisen befinner seg
+// Fjerner alle bestillinger i etasjen hvor heisen befinner seg
 func Requests_clearAtCurrentFloor(e elevatorpkg.Elevator) elevatorpkg.Elevator {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":

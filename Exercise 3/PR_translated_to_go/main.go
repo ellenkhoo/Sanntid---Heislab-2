@@ -3,13 +3,13 @@ package main
 import (
 	//"PR_translated_to_go/elevator_io_device"
 	"Driver-go/elevio"
-	"elevator"
-	"elevator_io_device"
+	elevatorpkg "elevator"
+	elevator_io_devicepkg "elevator_io_device"
 	"fmt"
-	"fsm"
+	fsmpkg "fsm"
 	requestpkg "request"
 	"time"
-	"timer"
+	timerpkg "timer"
 )
 
 // Må bruke channels, ikke gjort per nå!
@@ -21,27 +21,24 @@ import (
 // func main() int ?
 func main() {
 
-
 	fmt.Println("Started!")
 
 	// burde vel ikke måtte definere denne på nytt, er jo definert i elevio
 	numFloors := 4
-	const maxDuration time.Duration = 1<<63-1
+	const maxDuration time.Duration = 1<<63 - 1
 
 	elevio.Init("localhost:15657", numFloors)
 
-
-
-	
-	// Initialize fsm
-	// Tror ikke dette egt. er riktig, og at dette med fsm ikke var nødvendig for én heis
 	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator_uninitialized(), Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
+
+	// ikke testet om denne funker
+	requestpkg.Clear_all_requests()
 
 	//Kanskje bruk denne under om heisen skal init-es med floor = 1
 	// elevatorpkg.Elevator{Floor: 0, Dirn: elevator_io_devicepkg.D_Stop, Behaviour: elevatorpkg.EB_Idle}
-
 	// fsm.El.Behaviour = elevatorpkg.EB_Idle
 	// fsm.El.Dirn = elevator_io_devicepkg.D_Stop
+
 	var d elevio.MotorDirection
 	fsm.Fsm_onInitBetweenFloors()
 	fmt.Printf("Init between floor")
@@ -81,49 +78,6 @@ func main() {
 	go elevio.PollStopButton(stop_chan)
 	go timerpkg.Timer_start(main_timer, start_timer)
 
-	//floor_input := <-floors_chan
-	//input := elevio_getInputDevice()
-
-	// if elevio_getInputDevice().FloorSensor() == -1 {
-	// 	fsm.fsm_onInitBetweenFloors()
-	// }
-
-	// Erstatter med channels
-	// for {
-	// 	{ // Request button
-	// 		var prev [N_FLOORS][N_BUTTONS]int
-	// 		for floor := 0; floor < N_FLOORS; floor++ {
-	// 			for b := 0; b < N_BUTTONS; b++ {
-	// 				button := Button(b)
-	// 				v := input.RequestButton(floor, button)
-	// 				if v != 0 && v != prev[floor][button] {
-	// 					fsm.fsm_onRequestButtonPress(floor, button)
-	// 				}
-	// 				prev[floor][button] = v
-	// 			}
-	// 		}
-	// 	}
-
-	// 	{ // Floor sensor
-	// 		prev := -1
-	// 		f := input.FloorSensor()
-	// 		if f != -1 && f != prev {
-	// 			fsm.fsm_onFloorArrival(f)
-	// 		}
-	// 		prev = f
-	// 	}
-
-	// 	{ // Timer
-	// 		if timer_timedOut() {
-	// 			timer_stop()
-	// 			fsm.fsm_onDoorTimeout()
-	// 		}
-	// 	}
-
-	// 	time.Sleep(time.Duration(inputPollRate_ms) * time.Millisecond)
-
-	// }
-
 	for {
 		select {
 		case button_pushed := <-buttons_chan:
@@ -135,7 +89,6 @@ func main() {
 			fsm.Fsm_onRequestButtonPress(button_pushed.Floor, button_pushed.Button, start_timer)
 			pair := requestpkg.Requests_chooseDirection(fsm.El)
 			elevio.SetMotorDirection(elevio.MotorDirection(pair.Dirn))
-
 
 		case floor_input := <-floors_chan:
 			elevio.SetFloorIndicator(floor_input)
@@ -154,12 +107,9 @@ func main() {
 				elevio.SetMotorDirection(d)
 			}
 
-		// case stop := <-stop_chan:
-		// 	for f := 0; f < numFloors; f++ {
-		// 		for b := elevio.ButtonType(0); b < 3; b++ {	
-		// 			elevio.SetButtonLamp(b, f, false) 
-		// 		}
-		// 	}
+		case <-stop_chan:
+			requestpkg.Clear_all_requests()
+
 		case <-main_timer.C:
 			fsm.Fsm_onDoorTimeout(start_timer)
 

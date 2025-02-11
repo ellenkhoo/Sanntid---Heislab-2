@@ -1,12 +1,12 @@
 package fsmpkg
 
 import (
-	"fmt"
-	"time"
-	"elevator"
-	"elevator_io_device"
 	"Driver-go/elevio"
-	"request"
+	elevatorpkg "elevator"
+	elevator_io_devicepkg "elevator_io_device"
+	"fmt"
+	requestpkg "request"
+	"time"
 )
 
 // Elevator FSM struct

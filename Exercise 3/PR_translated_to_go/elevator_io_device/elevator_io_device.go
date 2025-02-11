@@ -2,6 +2,7 @@ package elevator_io_devicepkg
 
 import (
 	"Driver-go/elevio"
+	// elevatorpkg "elevator"
 	"fmt"
 )
 
@@ -11,12 +12,12 @@ type Dirn int
 
 const (
 	//knappetyper, overflødig?
-	B_HallUp Button = 0
+	B_HallUp   Button = 0
 	B_HallDown Button = 1
-	B_Cab Button = 2
+	B_Cab      Button = 2
 
 	//retningstyper starter på ny iota-sekvens
-	D_Up Dirn = 1
+	D_Up   Dirn = 1
 	D_Down Dirn = -1
 	D_Stop Dirn = 0
 )
