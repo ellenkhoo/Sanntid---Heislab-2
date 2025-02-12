@@ -61,9 +61,9 @@ func Requests_chooseDirection(e elevatorpkg.Elevator) DirnBehaviourPair {
 	switch e.Dirn {
 	case elevio.MD_Up:
 		//Leter først etter ordre over for å prioritere å reise i samme retning
-		if Requests_above(e) {
+		if Requests_above(e){
 			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
-		} else if Requests_here(e) {
+		} else if Requests_here(e){
 			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_DoorOpen}
 		} else if Requests_below(e) {
 			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
@@ -77,19 +77,19 @@ func Requests_chooseDirection(e elevatorpkg.Elevator) DirnBehaviourPair {
 			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
 		} else if Requests_here(e) {
 			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_DoorOpen}
-		} else if Requests_above(e) {
+		} else if Requests_above(e){
 			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
 		} else {
 			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
 		}
 
 	case elevio.MD_Stop:
-		if Requests_here(e) {
+		if Requests_here(e){
 			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_DoorOpen}
-		} else if Requests_below(e) {
-			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
-		} else if Requests_above(e) {
+		} else if Requests_below(e){
 			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
+		} else if Requests_above(e){
+			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
 		} else {
 			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
 		}
@@ -146,7 +146,7 @@ func Requests_clearAtCurrentFloor(e elevatorpkg.Elevator) elevatorpkg.Elevator {
 			if !Requests_above(e) && !e.Requests[e.Floor][elevatorpkg.B_HallUp] {
 				e.Requests[e.Floor][elevatorpkg.B_HallDown] = false
 			}
-			e.Requests[e.Floor][elevatorpkg.B_HallDown] = false
+			e.Requests[e.Floor][elevatorpkg.B_HallUp] = false
 
 		case elevio.MD_Down:
 			if !Requests_below(e) && !e.Requests[e.Floor][elevatorpkg.B_HallDown] {

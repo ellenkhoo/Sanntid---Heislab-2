@@ -45,14 +45,15 @@ func Elevator_hardware_get_button_signal(b Button, f int) int {
 }
 
 // funksjonen for å sette en lampe på en knapp (tillater å sette den på eller av)
-func Wrap_request_button_light(f int, b Button, v int) {
+func Wrap_request_button_light(f int, b elevio.ButtonType, v bool) {
 	Elevator_hardware_set_button_lamp(b, f, v)
 }
 
 // simulerer å sette lampen til en spesifikk verdi for en knapp på en etasje
-func Elevator_hardware_set_button_lamp(b Button, f int, v int) {
+func Elevator_hardware_set_button_lamp(b elevio.ButtonType, f int, v bool) {
 	fmt.Printf("Setting button light for floor %d, button %d, value %d\n", f, b, v)
 	//her kan vi legge til kode som setter lampeverdien på en knapp
+	elevio.SetButtonLamp(b, f, v)
 }
 
 // funksjonen som simulerer å sette motorretning
@@ -80,11 +81,6 @@ func Elevator_hardware_get_floor_sensor_signal() int {
 	return 1 //eks. heisen er i etasje 1
 }
 
-// func wrap_request_button(floor int, button Button) int {
-// 	//simulerer knappetrykk
-// 	return 0 //eks. ingen knappetrykk registrert
-// }
-
 func Elevator_hardware_get_obstruction_signal() bool {
 	//simulerer hindringssensor
 	return false //eks. ingen hindring oppdaget
@@ -102,7 +98,7 @@ func Elevio_getInputDevice() ElevInputDevice {
 // elevOutputDevice stuct holds function pointers for controlling elevator output devices
 type ElevOutputDevice struct {
 	FloorIndicator     func(floor int)
-	RequestButtonLight func(floor int, button Button, value int)
+	RequestButtonLight func(floor int, button elevio.ButtonType, value bool)
 	DoorLight          func(value int)
 	StopButtonLight    func(value int)
 	MotorDirection     func(direction elevio.MotorDirection)
@@ -114,11 +110,6 @@ func Elevator_hardware_set_floor_indicator(floor int) {
 	println("Floor indicator set to:", floor)
 }
 
-// func wrap_request_button_light(floor int, button Button, value int){
-// 	//simulate turning on/off the request button light
-// 	println("Request button light on floor", floor, "button", button, "set to:", value)
-// }
-
 func Elevator_hardware_set_door_open_lamp(value int) {
 	//simulate setting the door open light
 	print("Door light set to:", value)
@@ -128,11 +119,6 @@ func Elevator_hardware_set_stop_lamp(value int) {
 	//simulate setting the stop lamp
 	println("Stop button light set to:", value)
 }
-
-// func wrap_motor_direction(direction Dirn){
-// 	//simulate setting motor direction
-// 	println("Motor direction set to:", direction)
-// }
 
 // function to return an instance of elevOutputDevice with function assignments
 func Elevio_getOutputDevice() ElevOutputDevice {
@@ -178,22 +164,3 @@ func Elevio_drin_toString(d Dirn) string {
 	}
 	return "D_UNDEFINED"
 }
-
-//eks. i main
-/*
-func main() {
-    inputDevice := GetInputDevice()
-
-    fmt.Println("Floor Sensor:", inputDevice.FloorSensor())
-    fmt.Println("Request Button:", inputDevice.RequestButton(2, B_HallUp))
-    fmt.Println("Obstruction:", inputDevice.Obstruction())
-
-	outputDevice := GetOutputDevice()
-
-    outputDevice.FloorIndicator(3)
-    outputDevice.RequestButtonLight(2, B_HallUp, 1)
-    outputDevice.DoorLight(1)
-    outputDevice.StopButtonLight(0)
-    outputDevice.MotorDirection(DirnUp)
-}
-*/

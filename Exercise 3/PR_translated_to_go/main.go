@@ -12,12 +12,6 @@ import (
 	timerpkg "timer"
 )
 
-// Må bruke channels, ikke gjort per nå!
-
-// Skal det deklareres her, eller er det definert i en av de inkluderte filene?
-// const N_FLOORS = 4
-// const N_BUTTONS = 3
-
 // func main() int ?
 func main() {
 
@@ -34,12 +28,8 @@ func main() {
 	// ikke testet om denne funker
 	requestpkg.Clear_all_requests()
 
-	//Kanskje bruk denne under om heisen skal init-es med floor = 1
-	// elevatorpkg.Elevator{Floor: 0, Dirn: elevator_io_devicepkg.D_Stop, Behaviour: elevatorpkg.EB_Idle}
-	// fsm.El.Behaviour = elevatorpkg.EB_Idle
-	// fsm.El.Dirn = elevator_io_devicepkg.D_Stop
 
-	var d elevio.MotorDirection
+
 	fsm.Fsm_onInitBetweenFloors()
 	fmt.Printf("Init between floor")
 
@@ -47,18 +37,6 @@ func main() {
 	fmt.Printf("Current floor: %d \n", fsm.El.Floor)
 	fmt.Printf("Current Dirn: %d \n", fsm.El.Dirn)
 
-	// for f := fsm.El.Floor + 1; f < elevatorpkg.N_FLOORS; f++ {
-	// 	for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
-	// 		fsm.El.Requests[f][btn] = false
-	// 		elevio.SetButtonLamp(elevator_io_devicepkg.Button(btn), f, false)
-	// 	}
-	// }
-
-	// Skulle man hatt en "clear all requests"-funksjon? Når jeg prøver å kjøre programmet, kjører heisen bare opp.
-
-	//inputPollRate_ms := 25
-	// Hva gjør dette egt?
-	//con_load("elevator.con", con_val("inputPollRate_ms", &inputPollRate_ms, "%d"))
 
 	// Initialize channels
 	buttons_chan := make(chan elevio.ButtonEvent)
@@ -78,6 +56,7 @@ func main() {
 	go elevio.PollStopButton(stop_chan)
 	go timerpkg.Timer_start(main_timer, start_timer)
 
+	var prevFloor = -1
 	for {
 		select {
 		case button_pushed := <-buttons_chan:
@@ -93,18 +72,19 @@ func main() {
 		case floor_input := <-floors_chan:
 			elevio.SetFloorIndicator(floor_input)
 
-			prev := -1
-			if floor_input != -1 && floor_input != prev {
+			if floor_input != -1 && floor_input != prevFloor {
 				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
+			prevFloor = floor_input
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
 				elevio.SetMotorDirection(elevio.MD_Stop)
 				start_timer <- maxDuration
+
 			} else {
+				main_timer.Stop()
 				start_timer <- fsm.El.Config.DoorOpenDuration
-				elevio.SetMotorDirection(d)
 			}
 
 		case <-stop_chan:
@@ -112,7 +92,7 @@ func main() {
 
 		case <-main_timer.C:
 			fsm.Fsm_onDoorTimeout(start_timer)
-
+			elevio.SetDoorOpenLamp(false)
 		}
 	}
 }

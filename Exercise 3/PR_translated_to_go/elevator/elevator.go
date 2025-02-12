@@ -86,10 +86,6 @@ func Elevator_print(e Elevator) {
 	fmt.Println(" +-----------------------+")
 }
 
-//
-//funksjonen elevator_uninitialized oppretter og returnerer en uinitialisert heis
-//(en instans av elevator-structen) med standard verdier
-
 // definierer konfigurasjonsstruktur
 type ElevatorConfig struct {
 	ClearRequestVariant string
@@ -103,28 +99,8 @@ func Elevator_uninitialized() Elevator {
 		Dirn:      elevio.MD_Stop,  //heisen er stoppet
 		Behaviour: EB_Idle, //inaktiv tilstand
 		Config: ElevatorConfig{
-			ClearRequestVariant: "CV_All", //fjerner alle forespørsler
-			DoorOpenDuration:    3.0,      //3 sekunder døråpning
+			ClearRequestVariant: "CV_InDirn", //fjerner alle forespørsler
+			DoorOpenDuration:    3.0 * time.Second,      //3 sekunder døråpning
 		},
 	}
 }
-
-/*
-func main() {
-	e := Elevator{
-		Floor:     2,
-		Dirn:      "UP",
-		Behaviour: EB_Moving,
-		Requests: [N_FLOORS][N_BUTTONS]bool{
-			{false, false, true},
-			{true, false, false},
-			{false, true, false},
-			{false, false, false},
-		},
-	}
-	elevatorPrint(e)
-
-	elevator := ElevatorUninitialized()
-	fmt.Println(elevator)
-}
-*/
