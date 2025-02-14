@@ -55,7 +55,7 @@ func main() {
 	fmt.Printf("Current floor: %d \n", fsm.El.Floor)
 	fmt.Printf("Current Dirn: %d \n", fsm.El.Dirn)
 
-	var prevFloor = -1
+	// var prevFloor = -1
 	for {
 		select {
 		case order := <-buttons_chan:
@@ -77,7 +77,7 @@ func main() {
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d", floor_input)
 
-			if floor_input != -1 && floor_input != prevFloor {
+			if floor_input != -1 && floor_input != fsm.El.PrevFloor {
 				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
 			//Floor indicator skal settes i "onFloorArrival"
