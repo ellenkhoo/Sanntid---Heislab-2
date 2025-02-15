@@ -12,7 +12,6 @@ import (
 	timerpkg "timer"
 )
 
-// func main() int ?
 func main() {
 
 	fmt.Println("Started!")
@@ -33,15 +32,15 @@ func main() {
 	start_timer := make(chan time.Duration)
 
 	// Initialize timer, stop it until needed
-	main_timer := time.NewTimer(time.Duration(fsm.El.Config.DoorOpenDuration))
-	main_timer.Stop()
+	timer := time.NewTimer(time.Duration(fsm.El.Config.DoorOpenDuration))
+	timer.Stop()
 
 	// Start goroutines
 	go elevio.PollButtons(buttons_chan)
 	go elevio.PollFloorSensor(floors_chan)
 	go elevio.PollObstructionSwitch(obstruction_chan)
 	go elevio.PollStopButton(stop_chan)
-	go timerpkg.Timer_start(main_timer, start_timer)
+	go timerpkg.Timer_start(timer, start_timer)
 
 	requestpkg.Clear_all_requests(fsm.El)
 	fsm.SetAllLights()
@@ -51,41 +50,23 @@ func main() {
 		fmt.Printf("Init between floor")
 	}
 
-	//fsm.SetAllLights()
-	fmt.Printf("Current floor: %d \n", fsm.El.Floor)
-	fmt.Printf("Current Dirn: %d \n", fsm.El.Dirn)
+	// fmt.Printf("Current floor: %d \n", fsm.El.Floor)
+	// fmt.Printf("Current Dirn: %d \n", fsm.El.Dirn)
 
-	// var prevFloor = -1
 	for {
 		select {
 		case order := <-buttons_chan:
-			fmt.Print("Button pushed")
+			fmt.Printf("Button pushed. Order at floor: %d", order.Floor)
 			if !(fsm.El.Requests[order.Floor][order.Button]) {
 				fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
 			}
 
-			// Alt dette gjøres av "fsm_onRequestButtonPress"
-			// fmt.Printf("Button pushed")
-			// elevio.SetButtonLamp(order.Button, order.Floor, true)
-			// fmt.Printf("Button light at floor %d set to true", order.Floor)
-			// fsm.El.Requests[order.Floor][order.Button] = true
-			// fmt.Printf("Request at floor %d added to queue", order.Floor)
-			// fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
-			// pair := requestpkg.Requests_chooseDirection(fsm.El)
-			// elevio.SetMotorDirection(elevio.MotorDirection(pair.Dirn))
-
 		case floor_input := <-floors_chan:
-			fmt.Printf("Floor sensor: %d", floor_input)
+			fmt.Printf("Floor sensor: %d\n", floor_input)
 
 			if floor_input != -1 && floor_input != fsm.El.PrevFloor {
 				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
-			//Floor indicator skal settes i "onFloorArrival"
-			// elevio.SetFloorIndicator(floor_input)
-			// if floor_input != -1 && floor_input != prevFloor {
-			// 	fsm.Fsm_onFloorArrival(floor_input, start_timer)
-			// }
-			// prevFloor = floor_input
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
@@ -96,22 +77,18 @@ func main() {
 				start_timer <- fsm.El.Config.DoorOpenDuration
 			}
 
-			// if obstruction {
-			// 	elevio.SetMotorDirection(elevio.MD_Stop)
-			// 	start_timer <- maxDuration
+		// Denne casen funker ikke, og forstår ikke helt hvorfor. Ikke en del av specsene, men vil gjerne snakke med studass for å forstå
+		// case stop := <-stop_chan:
+		// 	if stop {
+		// 		fmt.Println("Stop button pushed")
+		// 		fsm.Od.MotorDirection(elevio.MD_Stop)
+		// 		requestpkg.Clear_all_requests(fsm.El)
+		// 		fsm.SetAllLights()
 
-			// } else {
-			// 	main_timer.Stop()
-			// 	start_timer <- fsm.El.Config.DoorOpenDuration
-			// }
+		// 	}
 
-		case <-stop_chan:
-			requestpkg.Clear_all_requests(fsm.El)
-			fsm.SetAllLights()
-
-		case <-main_timer.C:
+		case <-timer.C:
 			fsm.Fsm_onDoorTimeout(start_timer)
-			//elevio.SetDoorOpenLamp(false)
 		}
 	}
 }

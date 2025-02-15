@@ -3,6 +3,7 @@ package requestpkg
 import (
 	"Driver-go/elevio"
 	elevatorpkg "elevator"
+	"fmt"
 	// "elevator_io_device"
 )
 
@@ -14,19 +15,27 @@ type DirnBehaviourPair struct {
 }
 
 // Denne er kanskje overflødig
-func Clear_all_lights() {
-	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
-		for b := elevio.ButtonType(0); b < 3; b++ {
-			elevio.SetButtonLamp(b, f, false)
-		}
-	}
-}
+// func Clear_all_lights() {
 
-// Ikke testet!
+// 	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
+// 		for b := elevio.ButtonType(0); b < 3; b++ {
+// 			elevio.SetButtonLamp(b, f, false)
+// 		}
+// 	}
+// }
+
 func Clear_all_requests(e elevatorpkg.Elevator) {
+	fmt.Printf("Clearing all requests!\n")
 	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
 		for b := 0; b < elevatorpkg.N_BUTTONS; b++ {
 			e.Requests[f][b] = false
+		}
+	}
+	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
+		for b := 0; b < elevatorpkg.N_BUTTONS; b++ {
+			if e.Requests[f][b] {
+				fmt.Printf("Order at floor %d not cleared", f)
+			}
 		}
 	}
 }

@@ -15,16 +15,9 @@ type FSM struct {
 	Od elevator_io_devicepkg.ElevOutputDevice
 }
 
-// FLytte til et annet sted?
-func ConvertBoolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
 // Set all elevator lights
 func (fsm *FSM) SetAllLights() {
+	print("Setting all lights\n")
 	for floor := 0; floor < elevatorpkg.N_FLOORS; floor++ {
 		for btn := elevio.ButtonType(0); btn < elevatorpkg.N_BUTTONS; btn++ {
 			fsm.Od.RequestButtonLight(floor, btn, fsm.El.Requests[floor][btn])
@@ -35,7 +28,7 @@ func (fsm *FSM) SetAllLights() {
 // Handle initialization between floors
 func (fsm *FSM) Fsm_onInitBetweenFloors() {
 	fsm.Od.MotorDirection(elevio.MD_Up)
-	fsm.El.Dirn = elevio.MD_Up //skal det være string eller int?
+	fsm.El.Dirn = elevio.MD_Up
 	fsm.El.Behaviour = elevatorpkg.EB_Moving
 }
 
@@ -63,7 +56,7 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 
 		switch pair.Behaviour {
 		case elevatorpkg.EB_DoorOpen:
-			fsm.Od.DoorLight(0)
+			elevio.SetDoorOpenLamp(false)
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
 
@@ -87,7 +80,7 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 
 	fsm.El.PrevFloor = fsm.El.Floor
 	fsm.El.Floor = newFloor
-	
+
 	elevio.SetFloorIndicator(newFloor)
 
 	switch fsm.El.Behaviour {
@@ -96,7 +89,6 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
 			elevio.SetDoorOpenLamp(true)
-			// fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.SetAllLights()
