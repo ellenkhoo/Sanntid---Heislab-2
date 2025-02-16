@@ -64,7 +64,7 @@ func main() {
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
 
-			if floor_input != -1 && floor_input != fsm.El.PrevFloor {
+			if floor_input != -1 && floor_input != fsm.El.Floor {
 				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
 

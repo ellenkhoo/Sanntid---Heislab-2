@@ -96,13 +96,12 @@ type ElevatorConfig struct {
 // funksjonen for å returnere en uinitialisert heis
 func Elevator_uninitialized() Elevator {
 	return Elevator{
-		Floor:     -1,      //ugyldig etasje
-		PrevFloor: -1,
-		Dirn:      elevio.MD_Stop,  //heisen er stoppet
-		Behaviour: EB_Idle, //inaktiv tilstand
+		Floor:     -1,             //ugyldig etasje
+		Dirn:      elevio.MD_Stop, //heisen er stoppet
+		Behaviour: EB_Idle,        //inaktiv tilstand
 		Config: ElevatorConfig{
-			ClearRequestVariant: "CV_InDirn", //fjerner alle forespørsler
-			DoorOpenDuration:    3.0 * time.Second,      //3 sekunder døråpning
+			ClearRequestVariant: "CV_InDirn",       //fjerner alle forespørsler
+			DoorOpenDuration:    3.0 * time.Second, //3 sekunder døråpning
 		},
 	}
 }

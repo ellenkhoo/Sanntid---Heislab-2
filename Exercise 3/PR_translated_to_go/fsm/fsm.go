@@ -78,7 +78,7 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 	fmt.Printf("\n\n(%d)\n", newFloor)
 	elevatorpkg.Elevator_print(fsm.El)
 
-	fsm.El.PrevFloor = fsm.El.Floor
+	// fsm.El.PrevFloor = fsm.El.Floor
 	fsm.El.Floor = newFloor
 
 	elevio.SetFloorIndicator(newFloor)
