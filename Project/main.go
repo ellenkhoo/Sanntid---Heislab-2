@@ -20,9 +20,9 @@ import (
 func main() {
 
 	if len(os.Args) > 1 && os.Args[1] == "slave" {
-		communicationpkg.Comm_slaveConnectToMaster()
+		conn := communicationpkg.Comm_slaveConnectToMaster()
 	} else {
-		communicationpkg.Comm_masterConnectToSlave()
+		conn := communicationpkg.Comm_masterConnectToSlave()
 	}
 
 	fmt.Println("Started!")

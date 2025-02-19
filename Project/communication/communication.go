@@ -1,20 +1,20 @@
 package communicationpkg
 
 import (
-	"net"
-	"fmt"
 	"bufio"
-	"time"
-	"strconv"
+	"fmt"
+	"net"
+	// "bufio"
+	// "time"
+	// "strconv"
 )
 
 const (
-	lab_IP = "10.100.23.29"
-	sandra_IP = "10.22.216.146"
+	lab_IP = "10.100.23.29:8080"
+	sandra_IP = "10.22.216.146:8080"
 )
 
-func Comm_masterConnectToSlave () {
-	var counter int = 0
+func Comm_masterConnectToSlave () (conn net.Conn){
 	ln, err := net.Listen("tcp", lab_IP)
 	if err != nil {
 		fmt.Println("Error starting master:", err)
@@ -22,60 +22,47 @@ func Comm_masterConnectToSlave () {
 	}
 	defer ln.Close()
 
-	number := counter
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			fmt.Println("Error accepting connection:", err)
 			continue
-		}
-		fmt.Printf("Master accepted connection\n")
-
-		writer := bufio.NewWriter(conn)
-
-		for {
-			fmt.Printf("Master sent: %d\n", number)
-			_, err := writer.WriteString(strconv.Itoa(number) + "\n")
-			writer.Flush()
-			if err != nil {
-				fmt.Println("Error writing to backup:", err)
-				break
-			}
-			number++
-			time.Sleep(1 * time.Second)
+		} else {
+			return conn
 		}
 
 	}
 }
 
-func Comm_slaveConnectToMaster () {
+func Comm_slaveConnectToMaster () (conn net.Conn) {
 	for {
-		conn, err := net.Dial("tcp", sandra_IP)
+		conn, err := net.Dial("tcp", lab_IP)
 		if err != nil {
 			fmt.Println("Error Starting backup:", err)
 		} else {
-			fmt.Println("Backup connected succesfully")
+			return conn
 		}
 		defer conn.Close()
+	}
+}
 
-		reader := bufio.NewScanner(conn)
+func Comm_sendMessage (message string, conn net.Conn) {
 
-		for reader.Scan() {
-			text := reader.Text()
-			num, err := strconv.Atoi(text)
-			if err != nil {
-				fmt.Println("Error reading from master:", err)
-				break
-			}
-			fmt.Printf("Number received: %d \n", num)
-		}
-		if err := reader.Err(); err != nil {
-			fmt.Println("Master connection lost")
-			conn.Close()
+	_, err := conn.Write([]byte(message))
+	if err != nil {
+		fmt.Printf("Error writing message")
+	}
+}
+
+func Comm_receiveMessage (conn net.Conn) {
+	reader := bufio.NewReader(conn)
+	
+	for {
+		message, err := reader.ReadString('\x00')
+		if err != nil {
+			fmt.Println("Error reading from connection: ", err)
 			return
 		}
-		conn.Close()
-	
-	time.Sleep(1 * time.Second)
+		fmt.Println("Received message: ", message)
 	}
 }

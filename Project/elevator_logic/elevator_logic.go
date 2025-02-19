@@ -51,6 +51,7 @@ func ElevLogic_runMaster (fsm fsmpkg.FSM, maxDuration time.Duration) {
 			fmt.Printf("Button pushed. Order at floor: %d", order.Floor)
 			if !(fsm.El.Requests[order.Floor][order.Button]) {
 				fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
+				Comm_sendMessage(order, )
 			}
 
 		case floor_input := <-floors_chan:
