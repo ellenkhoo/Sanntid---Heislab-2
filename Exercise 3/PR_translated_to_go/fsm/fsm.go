@@ -88,10 +88,11 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 		if requestpkg.Requests_shouldStop(fsm.El) {
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
+			fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
 			elevio.SetDoorOpenLamp(true)
+			fsm.SetAllLights()
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
-			fsm.SetAllLights()
 			fsm.El.Behaviour = elevatorpkg.EB_DoorOpen
 		}
 	}
@@ -103,8 +104,8 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 // Handle door timeout event
 func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
 	elevatorpkg.Elevator_print(fsm.El)
-	fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
-	fsm.SetAllLights()
+	
+	// fsm.SetAllLights()
 
 	switch fsm.El.Behaviour {
 	case elevatorpkg.EB_DoorOpen:

@@ -53,7 +53,7 @@ func runMaster(counter int) {
 			_, err := writer.WriteString(strconv.Itoa(number) + "\n")
 			writer.Flush()
 			if err != nil {
-				fmt.Println("Error writing to master:", err)
+				fmt.Println("Error writing to backup:", err)
 				break
 			}
 			number++
@@ -97,7 +97,7 @@ func runBackup() {
 }
 
 func runNewBackup(backupCounter int) {
-	cmd := exec.Command("gnome-terminal", "--", "bash", "-c", fmt.Sprintf("go run test.go backup %d", backupCounter))
+	cmd := exec.Command("gnome-terminal", "--", "bash", "-c", fmt.Sprintf("go run main.go backup %d", backupCounter))
 	err := cmd.Start()
 	if err != nil {
 		fmt.Println("Error starting new backup:", err)
