@@ -1,30 +1,20 @@
-package main
+package elevator_logicpkg
 
 import (
 	//"PR_translated_to_go/elevator_io_device"
 	"Driver-go/elevio"
 	elevatorpkg "elevator"
-	elevator_io_devicepkg "elevator_io_device"
+	// elevator_io_devicepkg "elevator_io_device"
 	"fmt"
 	fsmpkg "fsm"
 	requestpkg "request"
 	"time"
 	timerpkg "timer"
+	// "communicationpkg"
+	// "elevator_logicpkg"
 )
 
-func main() {
-
-	fmt.Println("Started!")
-
-	// burde vel ikke måtte definere denne på nytt, er jo definert i elevio
-	numFloors := 4
-	const maxDuration time.Duration = 1<<63 - 1
-
-	elevio.Init("localhost:15657", numFloors)
-
-	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator_uninitialized(), Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
-
-	fmt.Printf("Elevator role: %d\n", fsm.El.Role)
+func ElevLogic_runMaster (fsm fsmpkg.FSM, maxDuration time.Duration) {
 
 	// Initialize channels
 	buttons_chan := make(chan elevio.ButtonEvent)
@@ -78,17 +68,7 @@ func main() {
 			} else {
 				start_timer <- fsm.El.Config.DoorOpenDuration
 			}
-
-		// Denne casen funker ikke, og forstår ikke helt hvorfor. Ikke en del av specsene, men vil gjerne snakke med studass for å forstå
-		// case stop := <-stop_chan:
-		// 	if stop {
-		// 		fmt.Println("Stop button pushed")
-		// 		fsm.Od.MotorDirection(elevio.MD_Stop)
-		// 		requestpkg.Clear_all_requests(fsm.El)
-		// 		fsm.SetAllLights()
-
-		// 	}
-
+			
 		case <-timer.C:
 			fsm.Fsm_onDoorTimeout(start_timer)
 		}
