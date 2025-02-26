@@ -83,17 +83,20 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 
 	elevio.SetFloorIndicator(newFloor)
 
+	
+
 	switch fsm.El.Behaviour {
 	case elevatorpkg.EB_Moving:
 		if requestpkg.Requests_shouldStop(fsm.El) {
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
-			fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
+			//fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
 			elevio.SetDoorOpenLamp(true)
-			fsm.SetAllLights()
+			//fsm.SetAllLights()
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = elevatorpkg.EB_DoorOpen
+			// Send beskjed til master 
 		}
 	}
 

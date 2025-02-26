@@ -33,9 +33,9 @@ const (
 )
 
 var ElevatorBehaviourToString = map[ElevatorBehaviour]string{
-	EB_Idle:     "EB_Idle",
-	EB_DoorOpen: "EB_DoorOpen",
-	EB_Moving:   "EB_Moving",
+	EB_Idle:     "idle",
+	EB_DoorOpen: "doorOpen",
+	EB_Moving:   "moving",
 }
 
 func Eb_toString(eb ElevatorBehaviour) string {
@@ -51,15 +51,32 @@ func Eb_toString(eb ElevatorBehaviour) string {
 //en tabell som viser bestillinger for hver etasje og knappetype
 //funksjonen skriver ut bestillinger for hver etasje i fallende rekkefølge
 
+type HRAElevState struct {
+    Behavior    *int        `json:"behaviour"` //Pass på å gjøre dette til string før state sendes
+    Floor       int         `json:"floor"` 
+    Direction   *int 	    `json:"direction"`
+    CabRequests []bool      `json:"cabRequests"`
+}
+
+type HRAInput struct {
+    HallRequests    [][2]bool                   `json:"hallRequests"`
+    States          map[string]HRAElevState     `json:"states"`
+}
+
 // elevator struct representerer statene til heisen
 type Elevator struct {
+	IP 		  int //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
 	Role 	  ElevatorRole
 	Floor     int
 	PrevFloor int
 	Dirn      elevio.MotorDirection
 	Behaviour ElevatorBehaviour
-	Requests  [N_FLOORS][N_BUTTONS]bool
+	HallRequests [N_FLOORS][N_BUTTONS-1]bool 
+	CabRequests [N_FLOORS]bool
+	AssignedRequests [N_FLOORS][N_BUTTONS-1]bool
+	RequestsToDo  [N_FLOORS][N_BUTTONS]bool
 	Config    ElevatorConfig
+	State HRAElevState
 }
 
 const (
@@ -70,6 +87,13 @@ const (
 	B_Cab      = 2
 )
 
+// Nytt, usikkert
+type ElevatorOrder struct {
+	Order elevio.ButtonEvent
+	ElevatorIP 	  int
+}
+
+//
 
 
 func Elevator_print(e Elevator) {
@@ -86,7 +110,7 @@ func Elevator_print(e Elevator) {
 			if (f == N_FLOORS-1 && btn == B_HallUp) || (f == 0 && btn == B_HallDown) {
 				fmt.Print("|       ")
 			} else {
-				if e.Requests[f][btn] {
+				if e.RequestsToDo[f][btn] {
 					fmt.Print("|   #   ")
 				} else {
 					fmt.Print("|   -   ")
@@ -107,13 +131,21 @@ type ElevatorConfig struct {
 // funksjonen for å returnere en uinitialisert heis
 func Elevator_uninitialized() Elevator {
 	return Elevator{
+		IP: 000,
 		Role: 0, // Defaul role: slave
 		Floor:     -1,             //ugyldig etasje
 		Dirn:      elevio.MD_Stop, //heisen er stoppet
 		Behaviour: EB_Idle,        //inaktiv tilstand
+		HallRequests: [N_FLOORS][N_BUTTONS-1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
+		CabRequests: [N_FLOORS]bool{false, false, false, false},
+		AssignedRequests: [N_FLOORS][N_BUTTONS-1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
+		RequestsToDo: [N_FLOORS][N_BUTTONS]bool{{false, false, false}, {false, false, false}, {false, false, false}, {false, false, false}},
 		Config: ElevatorConfig{
 			ClearRequestVariant: "CV_InDirn",       //fjerner alle forespørsler
 			DoorOpenDuration:    3.0 * time.Second, //3 sekunder døråpning
+		},
+		State: {
+			HRAElevState.Behavior := &Be
 		},
 	}
 }

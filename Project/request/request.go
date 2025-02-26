@@ -28,12 +28,12 @@ func Clear_all_requests(e elevatorpkg.Elevator) {
 	fmt.Printf("Clearing all requests!\n")
 	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
 		for b := 0; b < elevatorpkg.N_BUTTONS; b++ {
-			e.Requests[f][b] = false
+			e.RequestsToDo[f][b] = false
 		}
 	}
 	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
 		for b := 0; b < elevatorpkg.N_BUTTONS; b++ {
-			if e.Requests[f][b] {
+			if e.RequestsToDo[f][b] {
 				fmt.Printf("Order at floor %d not cleared", f)
 			}
 		}
@@ -44,7 +44,7 @@ func Clear_all_requests(e elevatorpkg.Elevator) {
 func Requests_above(e elevatorpkg.Elevator) bool {
 	for f := e.Floor + 1; f < elevatorpkg.N_FLOORS; f++ {
 		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
-			if e.Requests[f][btn] {
+			if e.RequestsToDo[f][btn] {
 				return true
 			}
 		}
@@ -56,7 +56,7 @@ func Requests_above(e elevatorpkg.Elevator) bool {
 func Requests_below(e elevatorpkg.Elevator) bool {
 	for f := 0; f < e.Floor; f++ {
 		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
-			if e.Requests[f][btn] {
+			if e.RequestsToDo[f][btn] {
 				return true
 			}
 		}
@@ -67,7 +67,7 @@ func Requests_below(e elevatorpkg.Elevator) bool {
 // Leter etter bestillinger i etasjen hvor heisen befinner seg
 func Requests_here(e elevatorpkg.Elevator) bool {
 	for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
-		if e.Requests[e.Floor][btn] {
+		if e.RequestsToDo[e.Floor][btn] {
 			return true
 		}
 	}
@@ -121,12 +121,12 @@ func Requests_chooseDirection(e elevatorpkg.Elevator) DirnBehaviourPair {
 func Requests_shouldStop(e elevatorpkg.Elevator) bool {
 	switch e.Dirn {
 	case elevio.MD_Down:
-		return e.Requests[e.Floor][elevatorpkg.B_HallDown] ||
-			e.Requests[e.Floor][elevatorpkg.B_Cab] ||
+		return e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] ||
+			e.RequestsToDo[e.Floor][elevatorpkg.B_Cab] ||
 			!Requests_below(e)
 	case elevio.MD_Up:
-		return e.Requests[e.Floor][elevatorpkg.B_HallUp] ||
-			e.Requests[e.Floor][elevatorpkg.B_Cab] ||
+		return e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] ||
+			e.RequestsToDo[e.Floor][elevatorpkg.B_Cab] ||
 			!Requests_above(e)
 	default:
 		return true
@@ -154,28 +154,28 @@ func Requests_clearAtCurrentFloor(e elevatorpkg.Elevator) elevatorpkg.Elevator {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":
 		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
-			e.Requests[e.Floor][btn] = false
+			e.RequestsToDo[e.Floor][btn] = false
 		}
 
 	case "CV_InDirn":
-		e.Requests[e.Floor][elevatorpkg.B_Cab] = false
+		e.RequestsToDo[e.Floor][elevatorpkg.B_Cab] = false
 
 		switch e.Dirn {
 		case elevio.MD_Up:
-			if !Requests_above(e) && !e.Requests[e.Floor][elevatorpkg.B_HallUp] {
-				e.Requests[e.Floor][elevatorpkg.B_HallDown] = false
+			if !Requests_above(e) && !e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] {
+				e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] = false
 			}
-			e.Requests[e.Floor][elevatorpkg.B_HallUp] = false
+			e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] = false
 
 		case elevio.MD_Down:
-			if !Requests_below(e) && !e.Requests[e.Floor][elevatorpkg.B_HallDown] {
-				e.Requests[e.Floor][elevatorpkg.B_HallUp] = false
+			if !Requests_below(e) && !e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] {
+				e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] = false
 			}
-			e.Requests[e.Floor][elevatorpkg.B_HallDown] = false
+			e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] = false
 
 		default:
-			e.Requests[e.Floor][elevatorpkg.B_HallUp] = false
-			e.Requests[e.Floor][elevatorpkg.B_HallDown] = false
+			e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] = false
+			e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] = false
 		}
 
 	default:

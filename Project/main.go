@@ -9,6 +9,7 @@ import (
 	"elevator_logicpkg"
 	"fmt"
 	fsmpkg "fsm"
+	"net"
 
 	// requestpkg "request"
 	"time"
@@ -19,10 +20,12 @@ import (
 
 func main() {
 
+	var conn net.Conn
+
 	if len(os.Args) > 1 && os.Args[1] == "slave" {
-		conn := communicationpkg.Comm_slaveConnectToMaster()
+		conn = communicationpkg.Comm_slaveConnectToMaster()
 	} else {
-		conn := communicationpkg.Comm_masterConnectToSlave()
+		conn = communicationpkg.Comm_masterConnectToSlave()
 	}
 
 	fmt.Println("Started!")
@@ -35,5 +38,5 @@ func main() {
 
 	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator_uninitialized(), Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
 
-	elevator_logicpkg.ElevLogic_runMaster(fsm, maxDuration)
+	elevator_logicpkg.ElevLogic_runMaster(fsm, maxDuration, conn)
 }

@@ -1,6 +1,7 @@
 package communicationpkg
 
 import (
+	"Driver-go/elevio"
 	"bufio"
 	"fmt"
 	"net"
@@ -65,4 +66,29 @@ func Comm_receiveMessage (conn net.Conn) {
 		}
 		fmt.Println("Received message: ", message)
 	}
+}
+
+func Comm_sendReceivedOrder(order elevio.ButtonEvent, IP int, conn net.Conn) {
+	//sender ordre til master når en ordre er motatt 
+	//Sender også med heisens IP-adresse, slik at cab-calls registreres på riktig heis
+
+}
+
+func Comm_masterReceiveOrder() {
+	//Finn ut hvilken type melding som har kommet
+	//send ordreliste/matrise til backup
+	//avvent bekreftelse fra backup
+		//Kjør fordelingsalgoritme
+		//Send ordreliste -> setAllLights()
+}
+
+func Comm_slaveReceiveRequests() {
+	//Bekrefte lister
+	//Oppdater RequestsToDo
+	//setAllLights()
+	//Utføre requests (gjøres kontinuerlig)
+}
+
+func Comm_arrivedAtFloor() {
+	//Send state til master
 }

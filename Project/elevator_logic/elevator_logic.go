@@ -10,11 +10,12 @@ import (
 	requestpkg "request"
 	"time"
 	timerpkg "timer"
-	// "communicationpkg"
+	"communicationpkg"
+	"net"
 	// "elevator_logicpkg"
 )
 
-func ElevLogic_runMaster (fsm fsmpkg.FSM, maxDuration time.Duration) {
+func ElevLogic_runMaster (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.Conn) {
 
 	// Initialize channels
 	buttons_chan := make(chan elevio.ButtonEvent)
@@ -49,10 +50,18 @@ func ElevLogic_runMaster (fsm fsmpkg.FSM, maxDuration time.Duration) {
 		select {
 		case order := <-buttons_chan:
 			fmt.Printf("Button pushed. Order at floor: %d", order.Floor)
-			if !(fsm.El.Requests[order.Floor][order.Button]) {
-				fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
-				Comm_sendMessage(order, )
+			// If cab call
+			if order.Button == elevatorpkg.B_Cab {
+				fsm.El.CabRequests[order.Floor] = true
 			}
+			
+			// Send beskjed til master: ordre + state
+
+
+			// if !(fsm.El.Requests[order.Floor][order.Button]) {
+			// 	fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
+			// 	communicationpkg.Comm_sendReceivedOrder(order, fsm.El.IP, conn)
+			// }
 
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
