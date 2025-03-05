@@ -2,7 +2,6 @@ package elevator
 
 import (
 	"Driver-go/elevio"
-	// "elevator_io_device"
 	"fmt"
 	"time"
 )

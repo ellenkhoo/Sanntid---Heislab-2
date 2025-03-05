@@ -106,14 +106,9 @@ func Comm_sendCurrentState (state interface{}, conn net.Conn) {
 	_, err = conn.Write(data)
 	if err != nil {
 		fmt.Println("Failed to send state: ", err)
+		return
 	}
-	return 
+	 
 }
 
-// func Comm_arrivedAtFloor(states elevatorpkg.ElevStates, conn net.Conn) {
-// 	err := Comm_sendMessage(states, conn)
-// 	if err != nil {
-// 		fmt.Printf("Error sending status: %v\n", err)
-// 	}
-// }
 

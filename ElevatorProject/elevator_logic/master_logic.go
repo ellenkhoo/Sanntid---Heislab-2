@@ -60,6 +60,7 @@ func MasterLogic_handleElevatorConnection(conn net.Conn) {
 }
 
 
+// Not finished with this, we are struggeling
 func MasterLogic_runHRAUpdater() {
 	for {
 		time.Sleep(1*time.Second)
@@ -85,7 +86,7 @@ func MasterLogic_runHRAUpdater() {
 					continue
 				}
 
-				comm.Comm_sendMessage("hall_request", hallrequest, conn)
+				comm.Comm_sendMessage(hallrequest, conn)
 			}
 		}
 	}

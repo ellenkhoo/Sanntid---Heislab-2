@@ -1,4 +1,4 @@
-module PR_translated_to_go
+module ElevatorProject
 
 require Driver-go v0.0.0
 

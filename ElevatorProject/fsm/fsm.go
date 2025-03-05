@@ -39,7 +39,7 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 
 	switch fsm.El.Behaviour {
 	case elevator.EB_DoorOpen:
-		if requestpkg.Requests_shouldClearImmediately(fsm.El, btn_floor, btn_type) {
+		if request.Requests_shouldClearImmediately(fsm.El, btn_floor, btn_type) {
 			start_timer <- fsm.El.Config.DoorOpenDuration
 		} else {
 			fsm.El.RequestsToDo[btn_floor][btn_type] = true
@@ -50,7 +50,7 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 
 	case elevator.EB_Idle:
 		fsm.El.RequestsToDo[btn_floor][btn_type] = true
-		pair := requestpkg.Requests_chooseDirection(fsm.El)
+		pair := request.Requests_chooseDirection(fsm.El)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
 
@@ -58,7 +58,7 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 		case elevator.EB_DoorOpen:
 			elevio.SetDoorOpenLamp(false)
 			start_timer <- fsm.El.Config.DoorOpenDuration
-			fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
+			fsm.El = request.Requests_clearAtCurrentFloor(fsm.El)
 
 		case elevator.EB_Moving:
 			fsm.Od.MotorDirection(fsm.El.Dirn)
@@ -87,10 +87,10 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 
 	switch fsm.El.Behaviour {
 	case elevator.EB_Moving:
-		if requestpkg.Requests_shouldStop(fsm.El) {
+		if request.Requests_shouldStop(fsm.El) {
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
-			//fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
+			//fsm.El = request.Requests_clearAtCurrentFloor(fsm.El)
 			elevio.SetDoorOpenLamp(true)
 			//fsm.SetAllLights()
 			start_timer <- fsm.El.Config.DoorOpenDuration
@@ -112,14 +112,14 @@ func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
 
 	switch fsm.El.Behaviour {
 	case elevator.EB_DoorOpen:
-		pair := requestpkg.Requests_chooseDirection(fsm.El)
+		pair := request.Requests_chooseDirection(fsm.El)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
 
 		switch fsm.El.Behaviour {
 		case elevator.EB_DoorOpen:
 			start_timer <- fsm.El.Config.DoorOpenDuration
-			fsm.El = requestpkg.Requests_clearAtCurrentFloor(fsm.El)
+			fsm.El = request.Requests_clearAtCurrentFloor(fsm.El)
 			fsm.SetAllLights()
 		case elevator.EB_Moving, elevator.EB_Idle:
 			elevio.SetDoorOpenLamp(false)
