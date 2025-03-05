@@ -51,17 +51,25 @@ func Eb_toString(eb ElevatorBehaviour) string {
 //en tabell som viser bestillinger for hver etasje og knappetype
 //funksjonen skriver ut bestillinger for hver etasje i fallende rekkefølge
 
-type HRAElevState struct {
-    Behavior    *int        `json:"behaviour"` //Pass på å gjøre dette til string før state sendes
-    Floor       int         `json:"floor"` 
-    Direction   *int 	    `json:"direction"`
-    CabRequests []bool      `json:"cabRequests"`
-}
+// type HRAElevState struct {
+//     Behavior    *int        `json:"behaviour"` //Pass på å gjøre dette til string før state sendes
+//     Floor       int         `json:"floor"` 
+//     Direction   *int 	    `json:"direction"`
+//     CabRequests []bool      `json:"cabRequests"`
+// }
 
-type HRAInput struct {
-    HallRequests    [][2]bool                   `json:"hallRequests"`
-    States          map[string]HRAElevState     `json:"states"`
+// type HRAInput struct {
+//     HallRequests    [][2]bool                   `json:"hallRequests"`
+//     States          map[string]HRAElevState     `json:"states"`
+// }
+
+type ElevStates struct {
+    Behaviour    string      
+    Floor       int          
+    Direction   string      
+    CabRequests []bool      
 }
+//placeholder
 
 // elevator struct representerer statene til heisen
 type Elevator struct {
