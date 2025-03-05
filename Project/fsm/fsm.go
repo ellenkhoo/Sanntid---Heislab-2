@@ -20,7 +20,7 @@ func (fsm *FSM) SetAllLights() {
 	print("Setting all lights\n")
 	for floor := 0; floor < elevatorpkg.N_FLOORS; floor++ {
 		for btn := elevio.ButtonType(0); btn < elevatorpkg.N_BUTTONS; btn++ {
-			fsm.Od.RequestButtonLight(floor, btn, fsm.El.Requests[floor][btn])
+			fsm.Od.RequestButtonLight(floor, btn, fsm.El.RequestsToDo[floor][btn])
 		}
 	}
 }
@@ -42,14 +42,14 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 		if requestpkg.Requests_shouldClearImmediately(fsm.El, btn_floor, btn_type) {
 			start_timer <- fsm.El.Config.DoorOpenDuration
 		} else {
-			fsm.El.Requests[btn_floor][btn_type] = true
+			fsm.El.RequestsToDo[btn_floor][btn_type] = true
 		}
 
 	case elevatorpkg.EB_Moving:
-		fsm.El.Requests[btn_floor][btn_type] = true
+		fsm.El.RequestsToDo[btn_floor][btn_type] = true
 
 	case elevatorpkg.EB_Idle:
-		fsm.El.Requests[btn_floor][btn_type] = true
+		fsm.El.RequestsToDo[btn_floor][btn_type] = true
 		pair := requestpkg.Requests_chooseDirection(fsm.El)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour

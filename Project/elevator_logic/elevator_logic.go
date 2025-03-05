@@ -10,7 +10,7 @@ import (
 	requestpkg "request"
 	"time"
 	timerpkg "timer"
-	"communicationpkg"
+	// "communicationpkg"
 	"net"
 	// "elevator_logicpkg"
 )
