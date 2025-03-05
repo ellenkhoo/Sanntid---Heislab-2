@@ -1,4 +1,4 @@
-package elevatorpkg
+package elevator
 
 import (
 	"Driver-go/elevio"
@@ -45,12 +45,6 @@ func Eb_toString(eb ElevatorBehaviour) string {
 	return "EB_UNDEFINED"
 }
 
-//
-//funksjonen elevator_print skriver ut en visuell representasjon av tilstanden til en
-//heis. den viser informasjon som; heisens etasje, retning, (elevio_dirn_toString), behavior(eb_toString)
-//en tabell som viser bestillinger for hver etasje og knappetype
-//funksjonen skriver ut bestillinger for hver etasje i fallende rekkefølge
-
 // type HRAElevState struct {
 //     Behavior    *int        `json:"behaviour"` //Pass på å gjøre dette til string før state sendes
 //     Floor       int         `json:"floor"` 
@@ -67,7 +61,8 @@ type ElevStates struct {
     Behaviour    string      
     Floor       int          
     Direction   string      
-    CabRequests []bool      
+    CabRequests []bool 
+	ID 			int    //string? 
 }
 //placeholder
 

@@ -1,16 +1,18 @@
-package elevator_logicpkg
-
+package elevator_logic
 
 import (
+	"elevator"
 	"encoding/json"
 	"fmt"
+	"hra"
 	"net"
 	"sync"
 	"time"
-	"Driver-go/elevio"
+	"comm"
+	"strconv"
 )
 
-var allElevStates = make(map[int]elevio.ElevStates)
+var allElevStates = make(map[int]elevator.ElevStates)
 var globalHallRequest [][2]bool
 var activeElevatorConnections = make(map[int]net.Conn)
 var mutex sync.Mutex
@@ -43,7 +45,7 @@ func MasterLogic_handleElevatorConnection(conn net.Conn) {
 	decoder := json.NewDecoder(conn)
 
 	for {
-		var state elevio.ElevStates
+		var state elevator.ElevStates
 		err := decoder.Decode(&state)
 		if err != nil {
 			fmt.Println("Error decoding elevator state: ", err)
@@ -63,7 +65,7 @@ func MasterLogic_runHRAUpdater() {
 		time.Sleep(1*time.Second)
 
 		mutex.Lock()
-		hallAssignments := SendStateToHRA(allElevStates, globalHallRequest)
+		hallAssignments := hra.SendStateToHRA(allElevStates, globalHallRequest)
 		mutex.Unlock()
 
 		if hallAssignments != nil {
@@ -83,7 +85,7 @@ func MasterLogic_runHRAUpdater() {
 					continue
 				}
 
-				Comm_sendMessage("hall_request", hallrequest, conn)
+				comm.Comm_sendMessage("hall_request", hallrequest, conn)
 			}
 		}
 	}

@@ -10,4 +10,5 @@ use (
 	"./timer"
 	"./communication"
 	"./elevator_logic"
+	"./hra"
 )

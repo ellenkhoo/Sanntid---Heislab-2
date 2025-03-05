@@ -1,4 +1,4 @@
-package communicationpkg
+package comm
 
 import (
 	"Driver-go/elevio"
@@ -8,11 +8,12 @@ import (
 	// "bufio"
 	// "time"
 	// "strconv"
+	"encoding/json"
 )
 
 const (
 	lab_IP = "10.100.23.29:8080"
-	sandra_IP = "10.22.216.146:8080"
+	local_IP = "10.22.216.146:8080"
 )
 
 func Comm_masterConnectToSlave () (conn net.Conn){
@@ -48,15 +49,15 @@ func Comm_slaveConnectToMaster () (conn net.Conn) {
 }
 
 func Comm_sendMessage (message interface{}, conn net.Conn) {
-	data, err := json.Marshal(message)
-	if err != nil {
-		fmt.Println("Error encoding message: ", err)
+	data, err1 := json.Marshal(message)
+	if err1 != nil {
+		fmt.Println("Error encoding message: ", err1)
 		return
 	}
 
-	_, err := conn.Write([]byte(message))
-	if err != nil {
-		fmt.Printf("Error writing message")
+	_, err2 := conn.Write(data)
+	if err2 != nil {
+		fmt.Println("Error writing message: ", err2)
 	}
 }
 
@@ -109,10 +110,10 @@ func Comm_sendCurrentState (state interface{}, conn net.Conn) {
 	return 
 }
 
-func Comm_arrivedAtFloor(states elevatorpkg.ElevStates, conn net.Conn) {
-	err := Comm_sendMessage(states, conn)
-	if err != nil {
-		fmt.Printf("Error sending status: %v\n", err)
-	}
-}
+// func Comm_arrivedAtFloor(states elevatorpkg.ElevStates, conn net.Conn) {
+// 	err := Comm_sendMessage(states, conn)
+// 	if err != nil {
+// 		fmt.Printf("Error sending status: %v\n", err)
+// 	}
+// }
 

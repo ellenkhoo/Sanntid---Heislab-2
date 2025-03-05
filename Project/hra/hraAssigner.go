@@ -1,5 +1,5 @@
 
-package hraAssigner
+package hra
 
 import "os/exec"
 import "fmt"
@@ -24,14 +24,14 @@ type HRAInput struct {
 
 
 //gjør om elevstate og hallrequest til riktig format til HRA exec-fil
-func SendStateToHRA(allElevStates map[int]elevatorpkg.ElevStates, globalHallRequest [][2]bool) *map[string][][2]bool {
+func SendStateToHRA(allElevStates map[int]elevator.ElevStates, globalHallRequest [][2]bool) *map[string][][2]bool {
     inputFormatHRA := make(map[string]HRAElevState)
     for id, state range allElevStates{
-        inputFormatHRA[fmt.sprintf("%d", id)] = HRAElevState{
-            Behaviour: state.Behaviour
-            Floor: state.Floor
-            Direction: state.Direction
-            CabRequests: state.CabRequests
+        inputFormatHRA[fmt.Sprintf("%d", id)] = HRAElevState{
+            Behaviour: state.Behaviour,
+            Floor: state.Floor,
+            Direction: state.Direction,
+            CabRequests: state.CabRequests,
         }
     }
     input := HRAInput {

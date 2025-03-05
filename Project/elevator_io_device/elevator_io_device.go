@@ -1,8 +1,7 @@
-package elevator_io_devicepkg
+package elevator_io_device
 
 import (
 	"Driver-go/elevio"
-	// elevatorpkg "elevator"
 	"fmt"
 )
 

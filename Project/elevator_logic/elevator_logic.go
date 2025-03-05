@@ -1,18 +1,14 @@
-package elevator_logicpkg
+package elevator_logic
 
 import (
-	//"PR_translated_to_go/elevator_io_device"
 	"Driver-go/elevio"
-	elevatorpkg "elevator"
-	// elevator_io_devicepkg "elevator_io_device"
+	"elevator"
 	"fmt"
-	fsmpkg "fsm"
-	requestpkg "request"
+	"fsm"
+	"request"
 	"time"
-	timerpkg "timer"
-	// "communicationpkg"
+	"timer"
 	"net"
-	// "elevator_logicpkg"
 )
 
 func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.Conn) {
@@ -51,7 +47,7 @@ func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.
 		case order := <-buttons_chan:
 			fmt.Printf("Button pushed. Order at floor: %d", order.Floor)
 			// If cab call
-			if order.Button == elevatorpkg.B_Cab {
+			if order.Button == elevator.B_Cab {
 				fsm.El.CabRequests[order.Floor] = true
 			}
 			
@@ -82,7 +78,7 @@ func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
-				if fsm.El.Behaviour == elevatorpkg.EB_DoorOpen {
+				if fsm.El.Behaviour == elevator.EB_DoorOpen {
 					start_timer <- maxDuration
 				}
 			} else {

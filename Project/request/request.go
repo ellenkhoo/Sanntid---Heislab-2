@@ -1,38 +1,26 @@
-package requestpkg
+package request
 
 import (
 	"Driver-go/elevio"
-	elevatorpkg "elevator"
+	"elevator"
 	"fmt"
-	// "elevator_io_device"
 )
-
-// Endrer funksjonene til å returnere bools
 
 type DirnBehaviourPair struct {
 	Dirn      elevio.MotorDirection
-	Behaviour elevatorpkg.ElevatorBehaviour
+	Behaviour elevator.ElevatorBehaviour
 }
 
-// Denne er kanskje overflødig
-// func Clear_all_lights() {
 
-// 	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
-// 		for b := elevio.ButtonType(0); b < 3; b++ {
-// 			elevio.SetButtonLamp(b, f, false)
-// 		}
-// 	}
-// }
-
-func Clear_all_requests(e elevatorpkg.Elevator) {
+func Clear_all_requests(e elevator.Elevator) {
 	fmt.Printf("Clearing all requests!\n")
-	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
-		for b := 0; b < elevatorpkg.N_BUTTONS; b++ {
+	for f := 0; f < elevator.N_FLOORS; f++ {
+		for b := 0; b < elevator.N_BUTTONS; b++ {
 			e.RequestsToDo[f][b] = false
 		}
 	}
-	for f := 0; f < elevatorpkg.N_FLOORS; f++ {
-		for b := 0; b < elevatorpkg.N_BUTTONS; b++ {
+	for f := 0; f < elevator.N_FLOORS; f++ {
+		for b := 0; b < elevator.N_BUTTONS; b++ {
 			if e.RequestsToDo[f][b] {
 				fmt.Printf("Order at floor %d not cleared", f)
 			}
@@ -40,10 +28,10 @@ func Clear_all_requests(e elevatorpkg.Elevator) {
 	}
 }
 
-// Leter etter bestillinger i høyere etasjer
-func Requests_above(e elevatorpkg.Elevator) bool {
-	for f := e.Floor + 1; f < elevatorpkg.N_FLOORS; f++ {
-		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
+
+func Requests_above(e elevator.Elevator) bool {
+	for f := e.Floor + 1; f < elevator.N_FLOORS; f++ {
+		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
 			if e.RequestsToDo[f][btn] {
 				return true
 			}
@@ -52,10 +40,10 @@ func Requests_above(e elevatorpkg.Elevator) bool {
 	return false
 }
 
-// Lete etter bestillinger i lavere etasjer
-func Requests_below(e elevatorpkg.Elevator) bool {
+
+func Requests_below(e elevator.Elevator) bool {
 	for f := 0; f < e.Floor; f++ {
-		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
+		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
 			if e.RequestsToDo[f][btn] {
 				return true
 			}
@@ -64,9 +52,9 @@ func Requests_below(e elevatorpkg.Elevator) bool {
 	return false
 }
 
-// Leter etter bestillinger i etasjen hvor heisen befinner seg
-func Requests_here(e elevatorpkg.Elevator) bool {
-	for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
+
+func Requests_here(e elevator.Elevator) bool {
+	for btn := 0; btn < elevator.N_BUTTONS; btn++ {
 		if e.RequestsToDo[e.Floor][btn] {
 			return true
 		}
@@ -76,106 +64,103 @@ func Requests_here(e elevatorpkg.Elevator) bool {
 
 // Ikke så stor fan av hva som skjer inne i hver case her
 // Kanskje det løses bedre med enda en switch case?
-func Requests_chooseDirection(e elevatorpkg.Elevator) DirnBehaviourPair {
+func Requests_chooseDirection(e elevator.Elevator) DirnBehaviourPair {
 	switch e.Dirn {
+		// Leter først etter ordre i samme retning
 	case elevio.MD_Up:
-		//Leter først etter ordre over for å prioritere å reise i samme retning
 		if Requests_above(e) {
-			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_Moving}
 		} else if Requests_here(e) {
-			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_DoorOpen}
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_DoorOpen}
 		} else if Requests_below(e) {
-			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 		}
 
 	case elevio.MD_Down:
-		//Leter ned først av samme grunn
 		if Requests_below(e) {
-			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_Moving}
 		} else if Requests_here(e) {
-			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_DoorOpen}
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_DoorOpen}
 		} else if Requests_above(e) {
-			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 		}
 
 	case elevio.MD_Stop:
 		if Requests_here(e) {
-			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_DoorOpen}
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_DoorOpen}
 		} else if Requests_below(e) {
-			return DirnBehaviourPair{elevio.MD_Down, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Down, elevator.EB_Moving}
 		} else if Requests_above(e) {
-			return DirnBehaviourPair{elevio.MD_Up, elevatorpkg.EB_Moving}
+			return DirnBehaviourPair{elevio.MD_Up, elevator.EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
+			return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 		}
 	default:
-		return DirnBehaviourPair{elevio.MD_Stop, elevatorpkg.EB_Idle}
+		return DirnBehaviourPair{elevio.MD_Stop, elevator.EB_Idle}
 	}
 }
 
-// Sjekker om heisen bør stoppe eller ikke
-func Requests_shouldStop(e elevatorpkg.Elevator) bool {
+func Requests_shouldStop(e elevator.Elevator) bool {
 	switch e.Dirn {
 	case elevio.MD_Down:
-		return e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] ||
-			e.RequestsToDo[e.Floor][elevatorpkg.B_Cab] ||
+		return e.RequestsToDo[e.Floor][elevator.B_HallDown] ||
+			e.RequestsToDo[e.Floor][elevator.B_Cab] ||
 			!Requests_below(e)
 	case elevio.MD_Up:
-		return e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] ||
-			e.RequestsToDo[e.Floor][elevatorpkg.B_Cab] ||
+		return e.RequestsToDo[e.Floor][elevator.B_HallUp] ||
+			e.RequestsToDo[e.Floor][elevator.B_Cab] ||
 			!Requests_above(e)
 	default:
 		return true
 	}
 }
 
-func Requests_shouldClearImmediately(e elevatorpkg.Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
+func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":
 		return e.Floor == btn_floor
 
 	case "CV_InDirn":
-		return e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevatorpkg.B_HallUp) ||
-			(e.Dirn == elevio.MD_Down && btn_type == elevatorpkg.B_HallDown) ||
+		return e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevator.B_HallUp) ||
+			(e.Dirn == elevio.MD_Down && btn_type == elevator.B_HallDown) ||
 			e.Dirn == elevio.MD_Stop ||
-			btn_type == elevatorpkg.B_Cab)
+			btn_type == elevator.B_Cab)
 
 	default:
 		return false
 	}
 }
 
-// Fjerner alle bestillinger i etasjen hvor heisen befinner seg
-func Requests_clearAtCurrentFloor(e elevatorpkg.Elevator) elevatorpkg.Elevator {
+func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":
-		for btn := 0; btn < elevatorpkg.N_BUTTONS; btn++ {
+		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
 			e.RequestsToDo[e.Floor][btn] = false
 		}
 
 	case "CV_InDirn":
-		e.RequestsToDo[e.Floor][elevatorpkg.B_Cab] = false
+		e.RequestsToDo[e.Floor][elevator.B_Cab] = false
 
 		switch e.Dirn {
 		case elevio.MD_Up:
-			if !Requests_above(e) && !e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] {
-				e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] = false
+			if !Requests_above(e) && !e.RequestsToDo[e.Floor][elevator.B_HallUp] {
+				e.RequestsToDo[e.Floor][elevator.B_HallDown] = false
 			}
-			e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] = false
+			e.RequestsToDo[e.Floor][elevator.B_HallUp] = false
 
 		case elevio.MD_Down:
-			if !Requests_below(e) && !e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] {
-				e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] = false
+			if !Requests_below(e) && !e.RequestsToDo[e.Floor][elevator.B_HallDown] {
+				e.RequestsToDo[e.Floor][elevator.B_HallUp] = false
 			}
-			e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] = false
+			e.RequestsToDo[e.Floor][elevator.B_HallDown] = false
 
 		default:
-			e.RequestsToDo[e.Floor][elevatorpkg.B_HallUp] = false
-			e.RequestsToDo[e.Floor][elevatorpkg.B_HallDown] = false
+			e.RequestsToDo[e.Floor][elevator.B_HallUp] = false
+			e.RequestsToDo[e.Floor][elevator.B_HallDown] = false
 		}
 
 	default:
