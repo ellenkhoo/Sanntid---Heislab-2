@@ -47,7 +47,12 @@ func Comm_slaveConnectToMaster () (conn net.Conn) {
 	}
 }
 
-func Comm_sendMessage (message string, conn net.Conn) {
+func Comm_sendMessage (message interface{}, conn net.Conn) {
+	data, err := json.Marshal(message)
+	if err != nil {
+		fmt.Println("Error encoding message: ", err)
+		return
+	}
 
 	_, err := conn.Write([]byte(message))
 	if err != nil {
@@ -89,6 +94,25 @@ func Comm_slaveReceiveRequests() {
 	//Utføre requests (gjøres kontinuerlig)
 }
 
-func Comm_arrivedAtFloor() {
-	//Send state til master
+
+func Comm_sendCurrentState (state interface{}, conn net.Conn) {
+	data, err := json.Marshal(state)
+	if err != nil {
+		fmt.Println("Failed to encode state: ", err)
+		return
+	}
+
+	_, err = conn.Write(data)
+	if err != nil {
+		fmt.Println("Failed to send state: ", err)
+	}
+	return 
 }
+
+func Comm_arrivedAtFloor(states elevatorpkg.ElevStates, conn net.Conn) {
+	err := Comm_sendMessage(states, conn)
+	if err != nil {
+		fmt.Printf("Error sending status: %v\n", err)
+	}
+}
+

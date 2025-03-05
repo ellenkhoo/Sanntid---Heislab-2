@@ -15,7 +15,7 @@ import (
 	// "elevator_logicpkg"
 )
 
-func ElevLogic_runMaster (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.Conn) {
+func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.Conn) {
 
 	// Initialize channels
 	buttons_chan := make(chan elevio.ButtonEvent)
@@ -57,6 +57,16 @@ func ElevLogic_runMaster (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.Co
 			
 			// Send beskjed til master: ordre + state
 
+				//hente alle state fra heisene og deretter kjøre FunctionHRA, får da en output om hvor heisen skal gå til alle heiser
+				// output := hraAssigner.FunctionHRA(states, hallrequests)
+				// for id, hallrequests := range *output {
+				// 	elevatorID, err := strconv.Atoi(id)
+				// 	if err != nil {
+				// 		fmt.Println("Error: ", err)
+				// 	}
+				// 	hallrequests -> denne må sendes til heis med samme elevator id som variabel elevatorID
+
+				// }
 
 			// if !(fsm.El.Requests[order.Floor][order.Button]) {
 			// 	fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
