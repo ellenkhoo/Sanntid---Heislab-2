@@ -1,4 +1,4 @@
-package timerpkg
+package timers
 
 import (
 	"fmt"

@@ -1,11 +1,11 @@
-package fsmpkg
+package fsm
 
 import (
-	"Driver-go/elevio"
-	"elevator"
-	"elevator_io_device"
+	"ElevatorProject/Driver"
+	"ElevatorProject/elevator"
+	"ElevatorProject/elevator_io_device"
+	"ElevatorProject/request"
 	"fmt"
-	"request"
 	"time"
 )
 

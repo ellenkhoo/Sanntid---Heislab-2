@@ -1,17 +1,17 @@
 package elevator_logic
 
 import (
-	"Driver-go/elevio"
-	"elevator"
+	elevio "ElevatorProject/Driver"
+	"ElevatorProject/elevator"
+	"ElevatorProject/fsm"
+	"ElevatorProject/request"
+	"ElevatorProject/timers"
 	"fmt"
-	"fsm"
-	"request"
-	"time"
-	"timer"
 	"net"
+	"time"
 )
 
-func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.Conn) {
+func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn) {
 
 	// Initialize channels
 	buttons_chan := make(chan elevio.ButtonEvent)
@@ -29,7 +29,7 @@ func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.
 	go elevio.PollFloorSensor(floors_chan)
 	go elevio.PollObstructionSwitch(obstruction_chan)
 	go elevio.PollStopButton(stop_chan)
-	go timerpkg.Timer_start(timer, start_timer)
+	go timers.Timer_start(timer, start_timer)
 
 	request.Clear_all_requests(fsm.El)
 	fsm.SetAllLights()
@@ -49,10 +49,10 @@ func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.
 			}
 			// Send beskjed til master: ordre + state
 
-				// if !(fsm.El.Requests[order.Floor][order.Button]) {
-				// 	fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
-				// 	communicationpkg.Comm_sendReceivedOrder(order, fsm.El.IP, conn)
-				// }
+			// if !(fsm.El.Requests[order.Floor][order.Button]) {
+			// 	fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
+			// 	communicationpkg.Comm_sendReceivedOrder(order, fsm.El.IP, conn)
+			// }
 
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
@@ -69,7 +69,7 @@ func ElevLogic_runElevator (fsm fsmpkg.FSM, maxDuration time.Duration, conn net.
 			} else {
 				start_timer <- fsm.El.Config.DoorOpenDuration
 			}
-			
+
 		case <-timer.C:
 			fsm.Fsm_onDoorTimeout(start_timer)
 		}

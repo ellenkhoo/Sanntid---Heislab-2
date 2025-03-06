@@ -1,7 +1,7 @@
 package comm
 
 import (
-	"Driver-go/elevio"
+	"ElevatorProject/Driver"
 	"bufio"
 	"fmt"
 	"net"
@@ -97,6 +97,7 @@ func Comm_slaveReceiveRequests() {
 
 
 func Comm_sendCurrentState (state interface{}, conn net.Conn) {
+	
 	data, err := json.Marshal(state)
 	if err != nil {
 		fmt.Println("Failed to encode state: ", err)

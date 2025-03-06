@@ -1,7 +1,7 @@
 package elevator
 
 import (
-	"Driver-go/elevio"
+	elevio "ElevatorProject/Driver"
 	"fmt"
 	"time"
 )
@@ -26,9 +26,9 @@ const (
 type ElevatorRole int
 
 const (
-	Slave ElevatorRole = 0
-	Primary = 1
-	Backup = 2
+	Slave   ElevatorRole = 0
+	Primary              = 1
+	Backup               = 2
 )
 
 var ElevatorBehaviourToString = map[ElevatorBehaviour]string{
@@ -46,7 +46,7 @@ func Eb_toString(eb ElevatorBehaviour) string {
 
 // type HRAElevState struct {
 //     Behavior    *int        `json:"behaviour"` //Pass på å gjøre dette til string før state sendes
-//     Floor       int         `json:"floor"` 
+//     Floor       int         `json:"floor"`
 //     Direction   *int 	    `json:"direction"`
 //     CabRequests []bool      `json:"cabRequests"`
 // }
@@ -57,28 +57,29 @@ func Eb_toString(eb ElevatorBehaviour) string {
 // }
 
 type ElevStates struct {
-    Behaviour    string      
-    Floor       int          
-    Direction   string      
-    CabRequests []bool 
-	ID 			int    //string? 
+	Behaviour   string
+	Floor       int
+	Direction   string
+	CabRequests []bool
+	ID          int //string?
 }
+
 //placeholder
 
 // elevator struct representerer statene til heisen
 type Elevator struct {
-	IP 		  int //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
-	Role 	  ElevatorRole
-	Floor     int
-	PrevFloor int
-	Dirn      elevio.MotorDirection
-	Behaviour ElevatorBehaviour
-	HallRequests [N_FLOORS][N_BUTTONS-1]bool 
-	CabRequests [N_FLOORS]bool
-	AssignedRequests [N_FLOORS][N_BUTTONS-1]bool
-	RequestsToDo  [N_FLOORS][N_BUTTONS]bool
-	Config    ElevatorConfig
-	State HRAElevState
+	IP               int //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
+	Role             ElevatorRole
+	Floor            int
+	PrevFloor        int
+	Dirn             elevio.MotorDirection
+	Behaviour        ElevatorBehaviour
+	HallRequests     [N_FLOORS][N_BUTTONS - 1]bool
+	CabRequests      [N_FLOORS]bool
+	AssignedRequests [N_FLOORS][N_BUTTONS - 1]bool
+	RequestsToDo     [N_FLOORS][N_BUTTONS]bool
+	Config           ElevatorConfig
+	//State HRAElevState
 }
 
 const (
@@ -91,12 +92,11 @@ const (
 
 // Nytt, usikkert
 type ElevatorOrder struct {
-	Order elevio.ButtonEvent
-	ElevatorIP 	  int
+	Order      elevio.ButtonEvent
+	ElevatorIP int
 }
 
 //
-
 
 func Elevator_print(e Elevator) {
 	fmt.Println(" +-----------------+")
@@ -133,21 +133,21 @@ type ElevatorConfig struct {
 // funksjonen for å returnere en uinitialisert heis
 func Elevator_uninitialized() Elevator {
 	return Elevator{
-		IP: 000,
-		Role: 0, // Defaul role: slave
-		Floor:     -1,             //ugyldig etasje
-		Dirn:      elevio.MD_Stop, //heisen er stoppet
-		Behaviour: EB_Idle,        //inaktiv tilstand
-		HallRequests: [N_FLOORS][N_BUTTONS-1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
-		CabRequests: [N_FLOORS]bool{false, false, false, false},
-		AssignedRequests: [N_FLOORS][N_BUTTONS-1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
-		RequestsToDo: [N_FLOORS][N_BUTTONS]bool{{false, false, false}, {false, false, false}, {false, false, false}, {false, false, false}},
+		IP:               000,
+		Role:             0,              // Defaul role: slave
+		Floor:            -1,             //ugyldig etasje
+		Dirn:             elevio.MD_Stop, //heisen er stoppet
+		Behaviour:        EB_Idle,        //inaktiv tilstand
+		HallRequests:     [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
+		CabRequests:      [N_FLOORS]bool{false, false, false, false},
+		AssignedRequests: [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
+		RequestsToDo:     [N_FLOORS][N_BUTTONS]bool{{false, false, false}, {false, false, false}, {false, false, false}, {false, false, false}},
 		Config: ElevatorConfig{
 			ClearRequestVariant: "CV_InDirn",       //fjerner alle forespørsler
 			DoorOpenDuration:    3.0 * time.Second, //3 sekunder døråpning
 		},
-		State: {
-			HRAElevState.Behavior := &Be
-		},
+		// State: {
+		// 	HRAElevState.Behavior := &Be
+		// },
 	}
 }

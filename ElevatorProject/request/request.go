@@ -1,8 +1,8 @@
 package request
 
 import (
-	"Driver-go/elevio"
-	"elevator"
+	"ElevatorProject/Driver"
+	"ElevatorProject/elevator"
 	"fmt"
 )
 

@@ -1,7 +1,7 @@
 package elevator_io_device
 
 import (
-	"Driver-go/elevio"
+	"ElevatorProject/Driver"
 	"fmt"
 )
 

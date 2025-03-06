@@ -1,14 +1,14 @@
 package elevator_logic
 
 import (
-	"elevator"
+	"ElevatorProject/elevator"
 	"encoding/json"
+	"ElevatorProject/hra"
+	"ElevatorProject/comm"
 	"fmt"
-	"hra"
 	"net"
 	"sync"
 	"time"
-	"comm"
 	"strconv"
 )
 
