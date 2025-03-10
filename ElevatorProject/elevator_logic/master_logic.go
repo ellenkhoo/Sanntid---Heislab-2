@@ -1,25 +1,24 @@
 package elevator_logic
 
 import (
-	"ElevatorProject/elevator"
-	"encoding/json"
-	"ElevatorProject/hra"
 	"ElevatorProject/comm"
+	"ElevatorProject/elevator"
+	"ElevatorProject/hra"
+	"encoding/json"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
 )
 
-var allElevStates = make(map[int]elevator.ElevStates)
-var globalHallRequest [][2]bool
-var activeElevatorConnections = make(map[int]net.Conn)
+// var allElevStates = make(map[int]elevator.ElevStates)
+// var globalHallRequest [][2]bool
+// var activeElevatorConnections = make(map[int]net.Conn)
 var mutex sync.Mutex
 
-
 func MasterLogic_StartMasterServer(port string) {
-	ln, err := net.Listen("tcp" , port)
+	ln, err := net.Listen("tcp", port)
 	if err != nil {
 		fmt.Println("Error starting master: ", err)
 		return
@@ -37,8 +36,6 @@ func MasterLogic_StartMasterServer(port string) {
 		go MasterLogic_handleElevatorConnection(conn)
 	}
 }
-
-
 
 func MasterLogic_handleElevatorConnection(conn net.Conn) {
 	defer conn.Close()
@@ -59,11 +56,10 @@ func MasterLogic_handleElevatorConnection(conn net.Conn) {
 	}
 }
 
-
 // Not finished with this, we are struggeling
 func MasterLogic_runHRAUpdater() {
 	for {
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 
 		mutex.Lock()
 		hallAssignments := hra.SendStateToHRA(allElevStates, globalHallRequest)

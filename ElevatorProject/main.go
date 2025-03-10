@@ -1,7 +1,10 @@
 package main
 
 import (
+	"ElevatorProject/elevator"
+	"ElevatorProject/hra"
 	"ElevatorProject/roles"
+	"fmt"
 )
 
 func main() {
@@ -21,19 +24,19 @@ func main() {
 
 	// HRA test
 
-	// var elevst1 = elevator.ElevStates{Behaviour: "moving", Floor: 0, Direction: "up", CabRequests: []bool{false, false, false, false}, ID: 0}
-	// var elevst2 = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, ID: 1}
+	var elevst1 = elevator.ElevStates{Behaviour: "moving", Floor: 0, Direction: "up", CabRequests: []bool{false, false, false, false}, IP: conn1_ip}
+	var elevst2 = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: conn2_ip}
 
-	// var allElevStates = make(map[int]elevator.ElevStates)
+	var allElevStates = make(map[string]elevator.ElevStates)
 
-	// allElevStates[10] = elevst1
-	// allElevStates[2] = elevst2
+	allElevStates[conn1_ip] = elevst1
+	allElevStates[conn2_ip] = elevst2
 
-	// output := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {false, false}})
+	assignedRequests := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {false, false}})
 
-	// for k, v := range *output {
-	// 	fmt.Printf("%6v :  %+v\n", k, v)
-	// }
+	for k, v := range *assignedRequests {
+		fmt.Printf("%6v :  %+v\n", k, v)
+	}
 
 	// 	var conn net.Conn
 

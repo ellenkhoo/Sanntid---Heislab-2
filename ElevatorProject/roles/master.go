@@ -5,11 +5,17 @@ import (
 	"sync"
 )
 
+//master-init()?
+
+// ac := roles.CreateActiveConnections()
+// var allElevStates = make(map[string]elevator.ElevStates)
+// var globalHallRequests [][2]bool
+
+// Keeping track of connections
 type Connection struct {
 	IP   string
 	Rank int
 }
-
 type ActiveConnections struct {
 	mu    sync.Mutex
 	conns []Connection
@@ -29,7 +35,6 @@ func (ac *ActiveConnections) AddConnection(ip string) {
 			return
 		}
 	}
-
 	// Assign the next availiable rank
 	rank := len(ac.conns) + 1
 	ac.conns = append(ac.conns, Connection{IP: ip, Rank: rank})
@@ -67,4 +72,8 @@ func (ac *ActiveConnections) ListConnections() {
 	for _, conn := range ac.conns {
 		fmt.Printf("IP: %s, Rank: %d\n", conn.IP, conn.Rank)
 	}
+}
+
+func sendAssignedRequests(assignedRequests *map[string][][2]bool) {
+
 }

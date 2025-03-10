@@ -61,14 +61,14 @@ type ElevStates struct {
 	Floor       int
 	Direction   string
 	CabRequests []bool
-	ID          int //string?
+	IP          string
 }
 
 //placeholder
 
 // elevator struct representerer statene til heisen
 type Elevator struct {
-	IP               int //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
+	IP               string //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
 	Role             ElevatorRole
 	Floor            int
 	PrevFloor        int
@@ -133,7 +133,7 @@ type ElevatorConfig struct {
 // funksjonen for å returnere en uinitialisert heis
 func Elevator_uninitialized() Elevator {
 	return Elevator{
-		IP:               000,
+		IP:               "0.0.0.0",
 		Role:             0,              // Defaul role: slave
 		Floor:            -1,             //ugyldig etasje
 		Dirn:             elevio.MD_Stop, //heisen er stoppet

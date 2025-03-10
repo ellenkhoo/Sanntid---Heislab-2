@@ -24,7 +24,7 @@ type HRAInput struct {
 }
 
 // gjør om elevstate og hallrequest til riktig format til HRA exec-fil
-func SendStateToHRA(allElevStates map[int]elevator.ElevStates, globalHallRequest [][2]bool) *map[string][][2]bool {
+func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequest [][2]bool) *map[string][][2]bool {
 	inputFormatHRA := make(map[string]HRAElevState)
 	for id, state := range allElevStates {
 		inputFormatHRA[fmt.Sprintf("%d", id)] = HRAElevState{
