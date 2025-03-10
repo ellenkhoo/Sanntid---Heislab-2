@@ -1,23 +1,24 @@
 package comm
 
 import (
-	"ElevatorProject/Driver"
+	elevio "ElevatorProject/Driver"
 	"bufio"
 	"fmt"
 	"net"
+
 	// "bufio"
 	// "time"
 	// "strconv"
 	"encoding/json"
 )
 
-const (
-	lab_IP = "10.100.23.29:8080"
-	local_IP = "10.22.216.146:8080"
-)
+// const (
+// 	lab_IP = "10.100.23.29:8080"
+// 	local_IP = "10.22.216.146:8080"
+// )
 
-func Comm_masterConnectToSlave () (conn net.Conn){
-	ln, err := net.Listen("tcp", lab_IP)
+func Comm_listenAndAccept(IP string) (conn net.Conn) {
+	ln, err := net.Listen("tcp", IP)
 	if err != nil {
 		fmt.Println("Error starting master:", err)
 		return
@@ -36,19 +37,19 @@ func Comm_masterConnectToSlave () (conn net.Conn){
 	}
 }
 
-func Comm_slaveConnectToMaster () (conn net.Conn) {
-	for {
-		conn, err := net.Dial("tcp", lab_IP)
-		if err != nil {
-			fmt.Println("Error Starting backup:", err)
-		} else {
-			return conn
-		}
-		defer conn.Close()
-	}
-}
+// func Comm_slaveConnectToMaster() (conn net.Conn) {
+// 	for {
+// 		conn, err := net.Dial("tcp", lab_IP)
+// 		if err != nil {
+// 			fmt.Println("Error Starting backup:", err)
+// 		} else {
+// 			return conn
+// 		}
+// 		defer conn.Close()
+// 	}
+// }
 
-func Comm_sendMessage (message interface{}, conn net.Conn) {
+func Comm_sendMessage(message interface{}, conn net.Conn) {
 	data, err1 := json.Marshal(message)
 	if err1 != nil {
 		fmt.Println("Error encoding message: ", err1)
@@ -61,9 +62,9 @@ func Comm_sendMessage (message interface{}, conn net.Conn) {
 	}
 }
 
-func Comm_receiveMessage (conn net.Conn) {
+func Comm_receiveMessage(conn net.Conn) {
 	reader := bufio.NewReader(conn)
-	
+
 	for {
 		message, err := reader.ReadString('\x00')
 		if err != nil {
@@ -75,7 +76,7 @@ func Comm_receiveMessage (conn net.Conn) {
 }
 
 func Comm_sendReceivedOrder(order elevio.ButtonEvent, IP int, conn net.Conn) {
-	//sender ordre til master når en ordre er motatt 
+	//sender ordre til master når en ordre er motatt
 	//Sender også med heisens IP-adresse, slik at cab-calls registreres på riktig heis
 
 }
@@ -84,8 +85,8 @@ func Comm_masterReceiveOrder() {
 	//Finn ut hvilken type melding som har kommet
 	//send ordreliste/matrise til backup
 	//avvent bekreftelse fra backup
-		//Kjør fordelingsalgoritme
-		//Send ordreliste -> setAllLights()
+	//Kjør fordelingsalgoritme
+	//Send ordreliste -> setAllLights()
 }
 
 func Comm_slaveReceiveRequests() {
@@ -95,9 +96,8 @@ func Comm_slaveReceiveRequests() {
 	//Utføre requests (gjøres kontinuerlig)
 }
 
+func Comm_sendCurrentState(state interface{}, conn net.Conn) {
 
-func Comm_sendCurrentState (state interface{}, conn net.Conn) {
-	
 	data, err := json.Marshal(state)
 	if err != nil {
 		fmt.Println("Failed to encode state: ", err)
@@ -109,7 +109,5 @@ func Comm_sendCurrentState (state interface{}, conn net.Conn) {
 		fmt.Println("Failed to send state: ", err)
 		return
 	}
-	 
+
 }
-
-

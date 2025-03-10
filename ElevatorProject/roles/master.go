@@ -1,7 +1,9 @@
 package roles
 
 import (
+	"encoding/json"
 	"fmt"
+	"net"
 	"sync"
 )
 
@@ -15,6 +17,7 @@ import (
 type Connection struct {
 	IP   string
 	Rank int
+	Conn net.Conn
 }
 type ActiveConnections struct {
 	mu    sync.Mutex
@@ -35,9 +38,18 @@ func (ac *ActiveConnections) AddConnection(ip string) {
 			return
 		}
 	}
+
+	// Må ha noe på denne formen?
+	// Establish the connection
+	conn, err := net.Dial("tcp", ip+":8080")
+	if err != nil {
+		fmt.Println("Failed to connect to", ip, ":", err)
+		return
+	}
+
 	// Assign the next availiable rank
 	rank := len(ac.conns) + 1
-	ac.conns = append(ac.conns, Connection{IP: ip, Rank: rank})
+	ac.conns = append(ac.conns, Connection{IP: ip, Rank: rank, Conn: conn})
 }
 
 func (ac *ActiveConnections) RemoveConnection(ip string) {
@@ -49,6 +61,7 @@ func (ac *ActiveConnections) RemoveConnection(ip string) {
 	for i, conn := range ac.conns {
 		if conn.IP == ip {
 			index = i
+			// conn.Conn.Close() // Close the connection before removal
 			break
 		}
 	}
@@ -63,6 +76,8 @@ func (ac *ActiveConnections) RemoveConnection(ip string) {
 	for i := range ac.conns {
 		ac.conns[i].Rank = i + 1
 	}
+
+	fmt.Println("Successfully removed connection to", ip)
 }
 
 func (ac *ActiveConnections) ListConnections() {
@@ -74,6 +89,35 @@ func (ac *ActiveConnections) ListConnections() {
 	}
 }
 
-func sendAssignedRequests(assignedRequests *map[string][][2]bool) {
+func SendAssignedRequests(assignedRequests *map[string][][2]bool, activeConnections *ActiveConnections) {
+	activeConnections.mu.Lock()
+	defer activeConnections.mu.Unlock()
 
+	for _, connInfo := range activeConnections.conns {
+		requests, exists := (*assignedRequests)[connInfo.IP]
+		fmt.Printf("Checking requests for IP: '%s'\n", connInfo.IP)
+		for k := range *assignedRequests {
+			fmt.Printf("Available key in assignedRequests: '%s'\n", k)
+		}
+
+		if !exists {
+			fmt.Printf("No requests found for %s", connInfo.IP)
+			continue
+		}
+
+		data, err := json.Marshal(requests)
+		if err != nil {
+			fmt.Println("Failed to serialize data for ", connInfo.IP)
+			continue
+		}
+
+		_, err = connInfo.Conn.Write(data)
+		if err != nil {
+			fmt.Println("Failed to send data to ", connInfo.IP, ":", err)
+			continue
+		} else {
+			fmt.Println("Successfully sent data to ", connInfo.IP)
+		}
+
+	}
 }

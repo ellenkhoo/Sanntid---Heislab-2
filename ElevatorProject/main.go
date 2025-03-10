@@ -1,6 +1,7 @@
 package main
 
 import (
+	"ElevatorProject/comm"
 	"ElevatorProject/elevator"
 	"ElevatorProject/hra"
 	"ElevatorProject/roles"
@@ -9,34 +10,60 @@ import (
 
 func main() {
 
-	// AddConnections test
+	// Vi må ha en måte å vite IP til de ulike PC-ene. Er det lov å bare sjekke det manuelt før man starter programmet?
+	// Bruk UDP for å broadcaste!
+
+	// Test, sende til egen PC
 
 	ac := roles.CreateActiveConnections()
-	conn1_ip := "1.2.3.4"
-	conn2_ip := "5.6.7.8"
-	ac.AddConnection(conn1_ip)
-	ac.AddConnection(conn2_ip)
+	port := ":8080"
+	conn_ip := "127.0.0.1"
+	go ac.AddConnection(conn_ip)
+	go comm.Comm_listenAndAccept(conn_ip + port)
 
-	ac.ListConnections()
-
-	ac.RemoveConnection(conn1_ip)
-	ac.ListConnections()
-
-	// HRA test
-
-	var elevst1 = elevator.ElevStates{Behaviour: "moving", Floor: 0, Direction: "up", CabRequests: []bool{false, false, false, false}, IP: conn1_ip}
-	var elevst2 = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: conn2_ip}
+	var elevst = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: conn_ip}
 
 	var allElevStates = make(map[string]elevator.ElevStates)
 
-	allElevStates[conn1_ip] = elevst1
-	allElevStates[conn2_ip] = elevst2
+	allElevStates[conn_ip] = elevst
+	ac.ListConnections()
 
 	assignedRequests := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {false, false}})
 
 	for k, v := range *assignedRequests {
-		fmt.Printf("%6v :  %+v\n", k, v)
+		fmt.Printf("%s :  %+v\n", k, v)
 	}
+
+	roles.SendAssignedRequests(assignedRequests, ac)
+
+	// AddConnections test
+
+	// ac := roles.CreateActiveConnections()
+	// conn1_ip := "1.2.3.4"
+	// conn2_ip := "5.6.7.8"
+	// ac.AddConnection(conn1_ip)
+	// ac.AddConnection(conn2_ip)
+
+	// ac.ListConnections()
+
+	// ac.RemoveConnection(conn1_ip)
+	// ac.ListConnections()
+
+	// // HRA test
+
+	// var elevst1 = elevator.ElevStates{Behaviour: "moving", Floor: 0, Direction: "up", CabRequests: []bool{false, false, false, false}, IP: conn1_ip}
+	// var elevst2 = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: conn2_ip}
+
+	// var allElevStates = make(map[string]elevator.ElevStates)
+
+	// allElevStates[conn1_ip] = elevst1
+	// allElevStates[conn2_ip] = elevst2
+
+	// assignedRequests := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {false, false}})
+
+	// for k, v := range *assignedRequests {
+	// 	fmt.Printf("%6v :  %+v\n", k, v)
+	// }
 
 	// 	var conn net.Conn
 
