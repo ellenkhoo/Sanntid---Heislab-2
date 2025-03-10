@@ -10,8 +10,21 @@ import (
 
 func main() {
 
-	// Vi må ha en måte å vite IP til de ulike PC-ene. Er det lov å bare sjekke det manuelt før man starter programmet?
-	// Bruk UDP for å broadcaste!
+	// Actual main program, ish
+
+	masterIP, found := comm.ListenForMaster()
+
+	if found {
+		rank, _ := comm.ConnectToMaster(masterIP) // bør man returnere conn også og sende den inn i backup/slave?
+		if rank == 2 {
+			go roles.StartBackup()
+		} else if rank > 2 {
+			go roles.StartSlave()
+		}
+	} else {
+		go comm.AnnounceMaster()
+		roles.StartMaster()
+	}
 
 	// Test, sende til egen PC
 
@@ -28,7 +41,7 @@ func main() {
 	allElevStates[conn_ip] = elevst
 	ac.ListConnections()
 
-	assignedRequests := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {false, false}})
+	assignedRequests := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {true, false}})
 
 	for k, v := range *assignedRequests {
 		fmt.Printf("%s :  %+v\n", k, v)

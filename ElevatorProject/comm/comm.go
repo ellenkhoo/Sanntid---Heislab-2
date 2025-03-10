@@ -4,7 +4,10 @@ import (
 	elevio "ElevatorProject/Driver"
 	"bufio"
 	"fmt"
+	"io"
+	"math/rand/v2"
 	"net"
+	"time"
 
 	// "bufio"
 	// "time"
@@ -16,6 +19,11 @@ import (
 // 	lab_IP = "10.100.23.29:8080"
 // 	local_IP = "10.22.216.146:8080"
 // )
+
+// should this be moved to someplace else?
+func RandRange(min, max int) int {
+	return rand.IntN(max-min) + min
+}
 
 func Comm_listenAndAccept(IP string) (conn net.Conn) {
 	ln, err := net.Listen("tcp", IP)
@@ -34,6 +42,94 @@ func Comm_listenAndAccept(IP string) (conn net.Conn) {
 			return conn
 		}
 
+	}
+}
+
+func ListenForMaster() (string, bool) {
+	addr := net.UDPAddr{Port: 9999, IP: net.ParseIP("0.0.0.0")} //change port?
+	conn, err := net.ListenUDP("udp", &addr)
+	if err != nil {
+		fmt.Println("Error starting UDP listener:", err)
+		return "", false //no existing master
+	}
+
+	defer conn.Close()
+
+	buffer := make([]byte, 1024)
+	t := time.Duration(RandRange(1, 10))
+	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond)) //ensures that only one remains master
+	_, remoteAddr, err := conn.ReadFromUDP(buffer)
+	if err != nil {
+		fmt.Println("No master found, becoming master.")
+		return "", false
+	}
+
+	fmt.Println("Master found at: ", remoteAddr.IP.String())
+	return remoteAddr.IP.String(), true
+}
+
+func AnnounceMaster() {
+	addr, _ := net.ResolveUDPAddr("udp", "255.255.255.255:9999")
+	conn, _ := net.DialUDP("udp", nil, addr)
+	defer conn.Close()
+
+	for {
+		msg := "I am Master"
+		conn.Write([]byte(msg))
+		time.Sleep(2 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
+	}
+}
+
+func ConnectToMaster(masterIP string) (int, net.Conn) {
+	conn, err := net.Dial("tcp", masterIP+":8080")
+	if err != nil {
+		fmt.Println("Error connecting to master:", err)
+		return 0, nil
+	}
+
+	//defer conn.Close() //want to use conn later in the program
+
+	buffer := make([]byte, 1024)
+	n, _ := conn.Read(buffer)
+	if err != nil {
+		fmt.Println("Error reading from master:", err)
+		return 0, nil
+	}
+
+	var rank int
+	_, err = fmt.Sscanf(string(buffer[:n]), "You have rank %d\n", &rank)
+	if err != nil {
+		fmt.Println("Error parsing rank:", err)
+		return 0, nil
+	}
+
+	fmt.Printf("Connected to master at %s and received rank %d\n: ", masterIP, rank)
+	return rank, conn
+}
+
+func ReceiveAssignedRequests(conn net.Conn) {
+	defer conn.Close() //why do we need to do that?
+
+	for {
+		buffer := make([]byte, 4096) //might have to adjust size
+		n, err := conn.Read(buffer)
+		if err != nil {
+			if err == io.EOF {
+				fmt.Println("Connection closed by master")
+			} else {
+				fmt.Println("Error reading data:", err)
+			}
+			return
+		}
+
+		var receivedRequests [][2]bool
+		err = json.Unmarshal(buffer[:n], &receivedRequests)
+		if err != nil {
+			fmt.Println("Failed to decode assigned requests:", err)
+			continue
+		}
+
+		// do somthing with receivedRequests
 	}
 }
 
