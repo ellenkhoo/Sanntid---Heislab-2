@@ -41,13 +41,13 @@ func Comm_listenAndAccept(IP string) (conn net.Conn) {
 		} else {
 			return conn
 		}
-
 	}
 }
 
-func ListenForMaster() (string, bool) {
-	addr := net.UDPAddr{Port: 9999, IP: net.ParseIP("0.0.0.0")} //change port?
-	conn, err := net.ListenUDP("udp", &addr)
+func ListenForMaster(port string) (string, bool) {
+	// addr := net.UDPAddr{Port: 9999, IP: net.ParseIP("0.0.0.0")} //change port?
+	addr, _ := net.ResolveUDPAddr("udp", "0.0.0.0"+":"+port)
+	conn, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		fmt.Println("Error starting UDP listener:", err)
 		return "", false //no existing master
@@ -56,7 +56,8 @@ func ListenForMaster() (string, bool) {
 	defer conn.Close()
 
 	buffer := make([]byte, 1024)
-	t := time.Duration(RandRange(1, 10))
+	t := time.Duration(RandRange(500, 1000))
+	fmt.Printf("Waiting for %d ms\n", t)
 	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond)) //ensures that only one remains master
 	_, remoteAddr, err := conn.ReadFromUDP(buffer)
 	if err != nil {
@@ -68,9 +69,16 @@ func ListenForMaster() (string, bool) {
 	return remoteAddr.IP.String(), true
 }
 
-func AnnounceMaster() {
-	addr, _ := net.ResolveUDPAddr("udp", "255.255.255.255:9999")
-	conn, _ := net.DialUDP("udp", nil, addr)
+func AnnounceMaster(localIP string, port string) {
+	fmt.Println("Announcing master")
+	broadcastAddr := "255.255.255.255" + ":" + port
+	// addr, _ := net.ResolveUDPAddr("udp", "255.255.255.255:9999")
+	conn, err := net.Dial("udp", broadcastAddr)
+	//conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		fmt.Println("Error starting UDP listener:", err)
+		return
+	}
 	defer conn.Close()
 
 	for {
@@ -80,14 +88,14 @@ func AnnounceMaster() {
 	}
 }
 
-func ConnectToMaster(masterIP string) (int, net.Conn, bool) {
-	conn, err := net.Dial("tcp", masterIP+":8080")
+func ConnectToMaster(masterIP string, listenPort string) (int, net.Conn, bool) {
+	conn, err := net.Dial("tcp", masterIP+":"+listenPort)
 	if err != nil {
 		fmt.Println("Error connecting to master:", err)
 		return 0, nil, false
 	}
 
-	//defer conn.Close() //want to use conn later in the program
+	defer conn.Close() //want to use conn later in the program
 
 	buffer := make([]byte, 1024)
 	n, _ := conn.Read(buffer)

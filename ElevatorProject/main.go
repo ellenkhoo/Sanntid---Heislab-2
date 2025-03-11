@@ -2,54 +2,74 @@ package main
 
 import (
 	"ElevatorProject/comm"
-	"ElevatorProject/elevator"
-	"ElevatorProject/hra"
 	"ElevatorProject/roles"
 	"fmt"
+	"time"
 )
 
 func main() {
 
 	// Actual main program, ish
 
-	masterIP, found := comm.ListenForMaster()
+	localIp := "127.0.0.1"
+
+	// masse greier for å få det til å kjøre på samme pc, sikker helt unødvednig
+	var listenPort string
+	var broadcastPort string
+
+	//Instance 1
+	// broadcastPort = "8081"
+	// listenPort = "8082"
+
+	// //Instance 2
+	// broadcastPort = "8082"
+	// listenPort = "8081"
+
+	//Instance 3
+	broadcastPort = "8081"
+	listenPort = "8083"
+
+	masterIP, found := comm.ListenForMaster(listenPort)
 
 	if found {
-		rank, conn, success := comm.ConnectToMaster(masterIP) // bør man returnere conn også og sende den inn i backup/slave?
+		rank, conn, success := comm.ConnectToMaster(masterIP, "8081")
 		if success {
 			if rank == 2 {
+				fmt.Println("Going to start backup")
 				go roles.StartBackup(conn)
+				time.Sleep(5 * time.Second)
 			} else if rank > 2 {
 				go roles.StartSlave(conn)
+				time.Sleep(5 * time.Second)
 			}
 		}
 	} else {
-		go comm.AnnounceMaster()
-		roles.StartMaster()
+		go comm.AnnounceMaster(localIp, broadcastPort)
+		go roles.StartMaster(broadcastPort)
 	}
 
 	// Test, sende til egen PC
 
-	ac := roles.CreateActiveConnections()
-	port := ":8080"
-	conn_ip := "127.0.0.1"
-	go ac.AddConnection(conn_ip)
-	go comm.Comm_listenAndAccept(conn_ip + port)
+	// ac := roles.CreateActiveConnections()
+	// port := ":8080"
+	// conn_ip := "127.0.0.1"
+	// go ac.AddConnection(conn_ip)
+	// go comm.Comm_listenAndAccept(conn_ip + port)
 
-	var elevst = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: conn_ip}
+	// var elevst = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: conn_ip}
 
-	var allElevStates = make(map[string]elevator.ElevStates)
+	// var allElevStates = make(map[string]elevator.ElevStates)
 
-	allElevStates[conn_ip] = elevst
-	ac.ListConnections()
+	// allElevStates[conn_ip] = elevst
+	// ac.ListConnections()
 
-	assignedRequests := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {true, false}})
+	// assignedRequests := hra.SendStateToHRA(allElevStates, [][2]bool{{false, false}, {false, true}, {false, false}, {true, false}})
 
-	for k, v := range *assignedRequests {
-		fmt.Printf("%s :  %+v\n", k, v)
-	}
+	// for k, v := range *assignedRequests {
+	// 	fmt.Printf("%s :  %+v\n", k, v)
+	// }
 
-	roles.SendAssignedRequests(assignedRequests, ac)
+	// roles.SendAssignedRequests(assignedRequests, ac)
 
 	// AddConnections test
 
@@ -100,4 +120,6 @@ func main() {
 
 	// 	elevator_logic.ElevLogic_runElevator(fsm, maxDuration, conn)
 	//
+
+	select {}
 }
