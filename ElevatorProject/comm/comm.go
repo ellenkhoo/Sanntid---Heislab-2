@@ -80,11 +80,11 @@ func AnnounceMaster() {
 	}
 }
 
-func ConnectToMaster(masterIP string) (int, net.Conn) {
+func ConnectToMaster(masterIP string) (int, net.Conn, bool) {
 	conn, err := net.Dial("tcp", masterIP+":8080")
 	if err != nil {
 		fmt.Println("Error connecting to master:", err)
-		return 0, nil
+		return 0, nil, false
 	}
 
 	//defer conn.Close() //want to use conn later in the program
@@ -93,18 +93,18 @@ func ConnectToMaster(masterIP string) (int, net.Conn) {
 	n, _ := conn.Read(buffer)
 	if err != nil {
 		fmt.Println("Error reading from master:", err)
-		return 0, nil
+		return 0, nil, false
 	}
 
 	var rank int
 	_, err = fmt.Sscanf(string(buffer[:n]), "You have rank %d\n", &rank)
 	if err != nil {
 		fmt.Println("Error parsing rank:", err)
-		return 0, nil
+		return 0, nil, false
 	}
 
 	fmt.Printf("Connected to master at %s and received rank %d\n: ", masterIP, rank)
-	return rank, conn
+	return rank, conn, true
 }
 
 func ReceiveAssignedRequests(conn net.Conn) {

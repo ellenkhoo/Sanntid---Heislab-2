@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"time"
 )
 
 //master-init()?
@@ -139,11 +140,17 @@ func SendAssignedRequests(assignedRequests *map[string][][2]bool, activeConnecti
 }
 
 func StartMaster() {
-	ln, _ := net.Listen("tcp", ":8080")
-	ac := CreateActiveConnections()
 
+	fmt.Println("Starting master")
 	for {
-		conn, _ := ln.Accept()
-		go ac.handleConnection(conn)
+		time.Sleep(5 * time.Second)
+		fmt.Println("Still master")
 	}
+	// ln, _ := net.Listen("tcp", ":8080")
+	// ac := CreateActiveConnections()
+
+	// for {
+	// 	conn, _ := ln.Accept()
+	// 	go ac.handleConnection(conn)
+	// }
 }

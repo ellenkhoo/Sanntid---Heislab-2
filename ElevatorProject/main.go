@@ -15,11 +15,13 @@ func main() {
 	masterIP, found := comm.ListenForMaster()
 
 	if found {
-		rank, _ := comm.ConnectToMaster(masterIP) // bør man returnere conn også og sende den inn i backup/slave?
-		if rank == 2 {
-			go roles.StartBackup()
-		} else if rank > 2 {
-			go roles.StartSlave()
+		rank, conn, success := comm.ConnectToMaster(masterIP) // bør man returnere conn også og sende den inn i backup/slave?
+		if success {
+			if rank == 2 {
+				go roles.StartBackup(conn)
+			} else if rank > 2 {
+				go roles.StartSlave(conn)
+			}
 		}
 	} else {
 		go comm.AnnounceMaster()
