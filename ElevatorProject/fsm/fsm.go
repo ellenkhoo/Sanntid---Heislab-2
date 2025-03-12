@@ -79,7 +79,7 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 	elevator.Elevator_print(fsm.El)
 
 	// fsm.El.PrevFloor = fsm.El.Floor
-	fsm.El.Floor = newFloor
+	fsm.El.ElevStates.Floor = newFloor
 
 	elevio.SetFloorIndicator(newFloor)
 
@@ -88,7 +88,7 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 	switch fsm.El.Behaviour {
 	case elevator.EB_Moving:
 		if request.Requests_shouldStop(fsm.El) {
-			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.Floor)
+			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.ElevStates.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
 			//fsm.El = request.Requests_clearAtCurrentFloor(fsm.El)
 			elevio.SetDoorOpenLamp(true)

@@ -2,16 +2,19 @@ package elevator_logic
 
 import (
 	elevio "ElevatorProject/Driver"
+	//"ElevatorProject/comm"
 	"ElevatorProject/elevator"
 	"ElevatorProject/fsm"
 	"ElevatorProject/request"
 	"ElevatorProject/timers"
 	"fmt"
-	"net"
 	"time"
+	//"net"
 )
 
-func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn) {
+func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration) { //add conn
+
+	fmt.Println("Arrived at runElevator")
 
 	// Initialize channels
 	buttons_chan := make(chan elevio.ButtonEvent)
@@ -45,7 +48,7 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn
 			fmt.Printf("Button pushed. Order at floor: %d", order.Floor)
 			// If cab call
 			if order.Button == elevator.B_Cab {
-				fsm.El.CabRequests[order.Floor] = true
+				//fsm.El.ElevStates.CabRequests[order.Floor] = true
 			}
 			// Send beskjed til master: ordre + state
 
@@ -53,13 +56,18 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn
 			// 	fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
 			// 	communicationpkg.Comm_sendReceivedOrder(order, fsm.El.IP, conn)
 			// }
+			//send current state
+
+			//comm.Comm_sendCurrentState(fsm.El.ElevStates, conn )
 
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
 
-			if floor_input != -1 && floor_input != fsm.El.Floor {
+			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
 				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
+			//send current state
+
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {

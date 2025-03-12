@@ -30,7 +30,7 @@ func Clear_all_requests(e elevator.Elevator) {
 
 
 func Requests_above(e elevator.Elevator) bool {
-	for f := e.Floor + 1; f < elevator.N_FLOORS; f++ {
+	for f := e.ElevStates.Floor + 1; f < elevator.N_FLOORS; f++ {
 		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
 			if e.RequestsToDo[f][btn] {
 				return true
@@ -42,7 +42,7 @@ func Requests_above(e elevator.Elevator) bool {
 
 
 func Requests_below(e elevator.Elevator) bool {
-	for f := 0; f < e.Floor; f++ {
+	for f := 0; f < e.ElevStates.Floor; f++ {
 		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
 			if e.RequestsToDo[f][btn] {
 				return true
@@ -55,7 +55,7 @@ func Requests_below(e elevator.Elevator) bool {
 
 func Requests_here(e elevator.Elevator) bool {
 	for btn := 0; btn < elevator.N_BUTTONS; btn++ {
-		if e.RequestsToDo[e.Floor][btn] {
+		if e.RequestsToDo[e.ElevStates.Floor][btn] {
 			return true
 		}
 	}
@@ -107,12 +107,12 @@ func Requests_chooseDirection(e elevator.Elevator) DirnBehaviourPair {
 func Requests_shouldStop(e elevator.Elevator) bool {
 	switch e.Dirn {
 	case elevio.MD_Down:
-		return e.RequestsToDo[e.Floor][elevator.B_HallDown] ||
-			e.RequestsToDo[e.Floor][elevator.B_Cab] ||
+		return e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallDown] ||
+			e.RequestsToDo[e.ElevStates.Floor][elevator.B_Cab] ||
 			!Requests_below(e)
 	case elevio.MD_Up:
-		return e.RequestsToDo[e.Floor][elevator.B_HallUp] ||
-			e.RequestsToDo[e.Floor][elevator.B_Cab] ||
+		return e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallUp] ||
+			e.RequestsToDo[e.ElevStates.Floor][elevator.B_Cab] ||
 			!Requests_above(e)
 	default:
 		return true
@@ -122,10 +122,10 @@ func Requests_shouldStop(e elevator.Elevator) bool {
 func Requests_shouldClearImmediately(e elevator.Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":
-		return e.Floor == btn_floor
+		return e.ElevStates.Floor == btn_floor
 
 	case "CV_InDirn":
-		return e.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevator.B_HallUp) ||
+		return e.ElevStates.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == elevator.B_HallUp) ||
 			(e.Dirn == elevio.MD_Down && btn_type == elevator.B_HallDown) ||
 			e.Dirn == elevio.MD_Stop ||
 			btn_type == elevator.B_Cab)
@@ -139,28 +139,28 @@ func Requests_clearAtCurrentFloor(e elevator.Elevator) elevator.Elevator {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":
 		for btn := 0; btn < elevator.N_BUTTONS; btn++ {
-			e.RequestsToDo[e.Floor][btn] = false
+			e.RequestsToDo[e.ElevStates.Floor][btn] = false
 		}
 
 	case "CV_InDirn":
-		e.RequestsToDo[e.Floor][elevator.B_Cab] = false
+		e.RequestsToDo[e.ElevStates.Floor][elevator.B_Cab] = false
 
 		switch e.Dirn {
 		case elevio.MD_Up:
-			if !Requests_above(e) && !e.RequestsToDo[e.Floor][elevator.B_HallUp] {
-				e.RequestsToDo[e.Floor][elevator.B_HallDown] = false
+			if !Requests_above(e) && !e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallUp] {
+				e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallDown] = false
 			}
-			e.RequestsToDo[e.Floor][elevator.B_HallUp] = false
+			e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallUp] = false
 
 		case elevio.MD_Down:
-			if !Requests_below(e) && !e.RequestsToDo[e.Floor][elevator.B_HallDown] {
-				e.RequestsToDo[e.Floor][elevator.B_HallUp] = false
+			if !Requests_below(e) && !e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallDown] {
+				e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallUp] = false
 			}
-			e.RequestsToDo[e.Floor][elevator.B_HallDown] = false
+			e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallDown] = false
 
 		default:
-			e.RequestsToDo[e.Floor][elevator.B_HallUp] = false
-			e.RequestsToDo[e.Floor][elevator.B_HallDown] = false
+			e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallUp] = false
+			e.RequestsToDo[e.ElevStates.Floor][elevator.B_HallDown] = false
 		}
 
 	default:

@@ -84,7 +84,7 @@ func AnnounceMaster(localIP string, port string) {
 	for {
 		msg := "I am Master"
 		conn.Write([]byte(msg))
-		time.Sleep(2 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
+		time.Sleep(1 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
 	}
 }
 

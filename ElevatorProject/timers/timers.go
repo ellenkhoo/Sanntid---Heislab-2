@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+const MaxDuration time.Duration = 1<<63 - 1
+
+
 func Timer_start(timer *time.Timer, start_timer chan time.Duration) {
 	for {
 		select {
@@ -16,3 +19,4 @@ func Timer_start(timer *time.Timer, start_timer chan time.Duration) {
 
 	// Bør håndtere dør-operasjoner her, siden det bare er avhengig av timeren?
 }
+

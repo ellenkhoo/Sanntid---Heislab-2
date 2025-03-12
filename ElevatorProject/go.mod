@@ -1,7 +1,7 @@
 module ElevatorProject
 
-require Driver-go v0.0.0
-
 replace Driver => ./Driver
+
+replace Network-go => ./Network-go
 
 go 1.22.1

@@ -1,16 +1,21 @@
 package main
 
 import (
-	"ElevatorProject/comm"
+// 	"ElevatorProject/comm"
 	"ElevatorProject/roles"
-	"fmt"
-	"time"
+ 	"ElevatorProject/network"
+	
+// 	"fmt"
+// 	"time"
+// 
 )
 
 func main() {
+	go networkUDP.InitNetwork()
+	go roles.InitElevator()
 
 	// Actual main program, ish
-
+/*
 	localIp := "127.0.0.1"
 
 	// masse greier for å få det til å kjøre på samme pc, sikker helt unødvednig
@@ -24,7 +29,8 @@ func main() {
 	// //Instance 2
 	// broadcastPort = "8082"
 	// listenPort = "8081"
-
+*/
+	/*
 	//Instance 3
 	broadcastPort = "8081"
 	listenPort = "8083"
@@ -47,6 +53,7 @@ func main() {
 		go comm.AnnounceMaster(localIp, broadcastPort)
 		go roles.StartMaster(broadcastPort)
 	}
+		*/
 
 	// Test, sende til egen PC
 

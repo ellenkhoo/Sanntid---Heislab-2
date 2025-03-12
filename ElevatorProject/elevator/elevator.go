@@ -60,7 +60,7 @@ type ElevStates struct {
 	Behaviour   string
 	Floor       int
 	Direction   string
-	CabRequests []bool
+	CabRequests [][2]bool
 	IP          string
 }
 
@@ -68,14 +68,15 @@ type ElevStates struct {
 
 // elevator struct representerer statene til heisen
 type Elevator struct {
-	IP               string //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
+	ElevStates 		 ElevStates
+	//IP               string //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
 	Role             ElevatorRole
-	Floor            int
+	//Floor            int
 	PrevFloor        int
 	Dirn             elevio.MotorDirection
 	Behaviour        ElevatorBehaviour
 	HallRequests     [N_FLOORS][N_BUTTONS - 1]bool
-	CabRequests      [N_FLOORS]bool
+	//CabRequests      [N_FLOORS]bool
 	AssignedRequests [N_FLOORS][N_BUTTONS - 1]bool
 	RequestsToDo     [N_FLOORS][N_BUTTONS]bool
 	Config           ElevatorConfig
@@ -100,7 +101,7 @@ type ElevatorOrder struct {
 
 func Elevator_print(e Elevator) {
 	fmt.Println(" +-----------------+")
-	fmt.Printf("|floor = %-2d          |\n", e.Floor)
+	fmt.Printf("|floor = %-2d          |\n", e.ElevStates.Floor)
 	fmt.Printf("  |dirn  = %-12.12s|\n", e.Dirn)
 	fmt.Printf("  |behav = %-12.12s|\n", e.Behaviour)
 	fmt.Println(" +-----------------+")
@@ -133,14 +134,16 @@ type ElevatorConfig struct {
 // funksjonen for å returnere en uinitialisert heis
 func Elevator_uninitialized() Elevator {
 	return Elevator{
-		IP:               "0.0.0.0",
+		ElevStates: ElevStates{
+			IP: "0.0.0.0",
+			Floor: -1,             //ugyldig etasje,
+			CabRequests: [][2]bool{{false, false}, {false, false}, {false, false}, {false, false}},
+			
+		},
 		Role:             0,              // Defaul role: slave
-		Floor:            -1,             //ugyldig etasje
 		Dirn:             elevio.MD_Stop, //heisen er stoppet
 		Behaviour:        EB_Idle,        //inaktiv tilstand
 		HallRequests:     [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
-		CabRequests:      [N_FLOORS]bool{false, false, false, false},
-		AssignedRequests: [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
 		RequestsToDo:     [N_FLOORS][N_BUTTONS]bool{{false, false, false}, {false, false, false}, {false, false, false}, {false, false, false}},
 		Config: ElevatorConfig{
 			ClearRequestVariant: "CV_InDirn",       //fjerner alle forespørsler
