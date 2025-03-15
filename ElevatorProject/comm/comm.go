@@ -118,7 +118,7 @@ func ConnectToMaster(masterIP string, listenPort string) (int, net.Conn, bool) {
 }
 
 func ReceiveAssignedRequests(conn net.Conn) {
-	defer conn.Close() //why do we need to do that?
+	defer conn.Close() //why do we need to do that? Might have to remove in order to keep the conn for the entirety of the program
 
 	for {
 		buffer := make([]byte, 4096) //might have to adjust size
@@ -142,18 +142,6 @@ func ReceiveAssignedRequests(conn net.Conn) {
 		// do somthing with receivedRequests
 	}
 }
-
-// func Comm_slaveConnectToMaster() (conn net.Conn) {
-// 	for {
-// 		conn, err := net.Dial("tcp", lab_IP)
-// 		if err != nil {
-// 			fmt.Println("Error Starting backup:", err)
-// 		} else {
-// 			return conn
-// 		}
-// 		defer conn.Close()
-// 	}
-// }
 
 func Comm_sendMessage(message interface{}, conn net.Conn) {
 	data, err1 := json.Marshal(message)
@@ -183,15 +171,88 @@ func Comm_receiveMessage(conn net.Conn) {
 
 func Comm_sendReceivedOrder(order elevio.ButtonEvent, conn net.Conn) {
 	//sender ordre til master når en ordre er motatt
+	if conn == nil {
+		fmt.Println("Connection is nil")
+		return
+	}
 
+	data, err := json.Marshal(order)
+	if err != nil {
+		fmt.Println("Failed to encode order: ", err)
+		return
+	}
+
+	// TEST
+	message := "order:" + string(data)
+	_, err = conn.Write([]byte(message))
+
+	fmt.Println("Sending data:", message) // Log the raw JSON data
+
+	//_, err = conn.Write(data)
+	if err != nil {
+		fmt.Println("Failed to send order: ", err)
+		return
+	}
+	fmt.Println("Sent current order to master.\n")
 }
 
-func Comm_masterReceiveOrder() {
+func Comm_masterReceive(conn net.Conn) {
 	//Finn ut hvilken type melding som har kommet
 	//send ordreliste/matrise til backup
 	//avvent bekreftelse fra backup
 	//Kjør fordelingsalgoritme
 	//Send ordreliste -> setAllLights()
+
+
+	fmt.Println("Arrived at Comm_masterReceiveOrder")
+
+	if conn == nil {
+		fmt.Println("Connection is nil")
+		return
+	}
+
+	// Buffer to hold incoming data
+	buffer := make([]byte, 1024)
+
+	for {
+		fmt.Println("Reading loop")
+		// Read data from the connection
+		n, err := conn.Read(buffer)
+		if err != nil {
+			fmt.Println("Error receiving data:", err)
+			return
+		}
+
+		// Read the message and check its prefix
+		message := string(buffer[:n])
+
+		// Check if the message starts with "order" or "state"
+		if len(message) >= 5 && message[:5] == "order" {
+			var order elevio.ButtonEvent
+			err := json.Unmarshal([]byte(message[6:]), &order) // Skip "order:"
+			if err != nil {
+				fmt.Println("Failed to unmarshal order:", err)
+				return
+			}
+			fmt.Printf("Received order: Floor %d, Button %d\n", order.Floor, order.Button)
+			continue
+
+		} 
+		if len(message) >= 5 && message[:5] == "state" {
+			fmt.Println("Received state message")
+			// var state elevator.ElevStates
+			// err := json.Unmarshal([]byte(message[6:]), &state) // Skip "state:"
+			// if err != nil {
+			// 	fmt.Println("Failed to unmarshal state:", err)
+			// 	return
+			// }
+			// fmt.Printf("Received state: Behaviour %s, Floor %d, Direction %s\n", state.Behaviour, state.Floor, state.Direction)
+			continue
+		} 
+
+		fmt.Println("Received unrecognized message type")
+	}
+	
 }
 
 func Comm_slaveReceiveRequests() {
@@ -204,16 +265,25 @@ func Comm_slaveReceiveRequests() {
 // might be easier to understand by changing to 'state ElevStates' instead of interface{}
 func Comm_sendCurrentState(state interface{}, conn net.Conn) {
 
+	if conn == nil {
+		fmt.Println("Connection is nil")
+		return
+	}
+
 	data, err := json.Marshal(state)
 	if err != nil {
 		fmt.Println("Failed to encode state: ", err)
 		return
 	}
 
-	_, err = conn.Write(data)
+	// TEST 
+	message := "state:" + string(data)
+	_, err = conn.Write([]byte(message))
+
+	//_, err = conn.Write(data)
 	if err != nil {
 		fmt.Println("Failed to send state: ", err)
 		return
 	}
-
+	fmt.Println("Sent current state to master.")
 }

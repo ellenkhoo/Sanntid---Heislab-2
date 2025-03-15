@@ -1,6 +1,7 @@
 package roles
 
 import (
+	"ElevatorProject/comm"
 	"fmt"
 	"net"
 	"sync"
@@ -28,7 +29,7 @@ func CreateActiveConnections() *ActiveConnections {
 
 // Replaces AddConnection ?
 func (ac *ActiveConnections) handleConnection(conn net.Conn) {
-	defer conn.Close()
+	//defer conn.Close()
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
 	ac.mu.Lock()
@@ -145,6 +146,11 @@ func StartMaster(rank int, port string, conn net.Conn) {
 	fmt.Println("Starting master")
 
 	go InitElevator(rank, conn)
-	
 
+	// masterReceiveOrder is going to receive data from multiple connections, so conn can't be an argument as now
+	go comm.Comm_masterReceive(conn)
+
+	fmt.Println("Master is now ready to receive orders")
+
+	select{}
 }

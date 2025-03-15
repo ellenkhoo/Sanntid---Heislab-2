@@ -45,7 +45,7 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn
 	for {
 		select {
 		case order := <-buttons_chan:
-			fmt.Printf("Button pushed. Order at floor: %d", order.Floor)
+			fmt.Printf("Button pushed. Order at floor: %d\n", order.Floor)
 			// If cab call
 			if order.Button == elevator.B_Cab {
 				fsm.El.ElevStates.CabRequests[order.Floor] = true

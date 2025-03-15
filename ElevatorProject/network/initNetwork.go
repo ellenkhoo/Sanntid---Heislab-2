@@ -87,7 +87,7 @@ func InitNetwork() {
 		go comm.AnnounceMaster(id, bcastPortString)
 		// Connects to itself so that the elevator can communicate with it. Not sure if it works
 		go roles.ListenForConnections(TCPPort)
-		time.Sleep(3 * time.Second)
+		time.Sleep(1 * time.Second)
 		rank := 1
 		localIP := "127.0.0.1"
 		conn, err := net.Dial("tcp", localIP+":"+TCPPort)
