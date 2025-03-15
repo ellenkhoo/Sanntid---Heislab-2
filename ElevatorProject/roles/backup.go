@@ -3,14 +3,16 @@ package roles
 import (
 	"fmt"
 	"net"
-	"time"
 )
 
-func StartBackup(conn net.Conn) {
+
+
+func StartBackup(rank int, conn net.Conn) {
 	fmt.Println("Starting backup")
-	for {
-		time.Sleep(5 * time.Second)
-		fmt.Println("Still backup")
-	}
-	// Placeholder
+
+	// var allElevStates = make(map[string]elevator.ElevStates)
+	// var globalHallRequests [][2]bool	
+
+	InitElevator(rank, conn)
+	
 }

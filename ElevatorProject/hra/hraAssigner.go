@@ -15,7 +15,7 @@ type HRAElevState struct {
 	Behaviour   string `json:"behaviour"`
 	Floor       int    `json:"floor"`
 	Direction   string `json:"direction"`
-	CabRequests [][2]bool `json:"cabRequests"`
+	CabRequests []bool `json:"cabRequests"`
 }
 
 type HRAInput struct {

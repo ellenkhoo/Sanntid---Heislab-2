@@ -128,22 +128,23 @@ func (ac *ActiveConnections) ListConnections() {
 // 	}
 // }
 
-func StartMaster(port string) {
 
-	fmt.Println("Starting master")
-	// for {
-	// 	time.Sleep(5 * time.Second)
-	// 	fmt.Println("Still master")
-	// }
+// NEW
+func ListenForConnections(port string) {
+	ac := CreateActiveConnections()
+	ln, _ := net.Listen("tcp", ":"+port)
 
 	for {
-		ln, _ := net.Listen("tcp", ":"+port)
-		ac := CreateActiveConnections()
-
-		for {
-			conn, _ := ln.Accept()
-			go ac.handleConnection(conn)
-		}
+		conn, _ := ln.Accept()
+		go ac.handleConnection(conn)
 	}
+}
+
+func StartMaster(rank int, port string, conn net.Conn) {
+
+	fmt.Println("Starting master")
+
+	go InitElevator(rank, conn)
+	
 
 }

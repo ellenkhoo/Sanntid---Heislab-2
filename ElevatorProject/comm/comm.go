@@ -95,12 +95,13 @@ func ConnectToMaster(masterIP string, listenPort string) (int, net.Conn, bool) {
 		return 0, nil, false
 	}
 
-	defer conn.Close() //want to use conn later in the program
+	// defer conn.Close() //want to use conn later in the program
 
 	buffer := make([]byte, 1024)
 	n, _ := conn.Read(buffer)
 	if err != nil {
 		fmt.Println("Error reading from master:", err)
+		conn.Close()
 		return 0, nil, false
 	}
 
@@ -108,6 +109,7 @@ func ConnectToMaster(masterIP string, listenPort string) (int, net.Conn, bool) {
 	_, err = fmt.Sscanf(string(buffer[:n]), "You have rank %d\n", &rank)
 	if err != nil {
 		fmt.Println("Error parsing rank:", err)
+		conn.Close()
 		return 0, nil, false
 	}
 
@@ -179,9 +181,8 @@ func Comm_receiveMessage(conn net.Conn) {
 	}
 }
 
-func Comm_sendReceivedOrder(order elevio.ButtonEvent, IP int, conn net.Conn) {
+func Comm_sendReceivedOrder(order elevio.ButtonEvent, conn net.Conn) {
 	//sender ordre til master når en ordre er motatt
-	//Sender også med heisens IP-adresse, slik at cab-calls registreres på riktig heis
 
 }
 
@@ -200,6 +201,7 @@ func Comm_slaveReceiveRequests() {
 	//Utføre requests (gjøres kontinuerlig)
 }
 
+// might be easier to understand by changing to 'state ElevStates' instead of interface{}
 func Comm_sendCurrentState(state interface{}, conn net.Conn) {
 
 	data, err := json.Marshal(state)

@@ -23,13 +23,13 @@ const (
 	EB_Moving
 )
 
-type ElevatorRole int
+// type ElevatorRole int
 
-const (
-	Slave   ElevatorRole = 0
-	Primary              = 1
-	Backup               = 2
-)
+// const (
+// 	Slave   ElevatorRole = 0
+// 	Primary              = 1
+// 	Backup               = 2
+// )
 
 var ElevatorBehaviourToString = map[ElevatorBehaviour]string{
 	EB_Idle:     "idle",
@@ -57,11 +57,11 @@ func Eb_toString(eb ElevatorBehaviour) string {
 // }
 
 type ElevStates struct {
-	Behaviour   string
-	Floor       int
-	Direction   string
-	CabRequests [][2]bool
-	IP          string
+	Behaviour   string `json:"behaviour"`
+	Floor       int		`json:"floor"`
+	Direction   string	`json:"direction"`
+	CabRequests []bool	`json:"cabRequests"`
+	IP          string	`json:"ip"`
 }
 
 //placeholder
@@ -70,15 +70,15 @@ type ElevStates struct {
 type Elevator struct {
 	ElevStates 		 ElevStates
 	//IP               string //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
-	Role             ElevatorRole
+	Rank             int
 	//Floor            int
 	PrevFloor        int
 	Dirn             elevio.MotorDirection
 	Behaviour        ElevatorBehaviour
-	HallRequests     [N_FLOORS][N_BUTTONS - 1]bool
+	GlobalHallRequests     [N_FLOORS][N_BUTTONS - 1]bool
 	//CabRequests      [N_FLOORS]bool
 	AssignedRequests [N_FLOORS][N_BUTTONS - 1]bool
-	RequestsToDo     [N_FLOORS][N_BUTTONS]bool
+	RequestsToDo     [N_FLOORS][N_BUTTONS]bool //cabRequests + AssignedRequests
 	Config           ElevatorConfig
 	//State HRAElevState
 }
@@ -136,18 +136,18 @@ func Elevator_uninitialized() Elevator {
 	return Elevator{
 		ElevStates: ElevStates{
 			IP: "0.0.0.0",
-			Floor: -1,             //ugyldig etasje,
-			CabRequests: [][2]bool{{false, false}, {false, false}, {false, false}, {false, false}},
+			Floor: -1,            
+			CabRequests: []bool{true, false, false, false},
 			
 		},
-		Role:             0,              // Defaul role: slave
-		Dirn:             elevio.MD_Stop, //heisen er stoppet
-		Behaviour:        EB_Idle,        //inaktiv tilstand
-		HallRequests:     [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
+		Rank:             0,              
+		Dirn:             elevio.MD_Stop, 
+		Behaviour:        EB_Idle,      
+		GlobalHallRequests:     [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
 		RequestsToDo:     [N_FLOORS][N_BUTTONS]bool{{false, false, false}, {false, false, false}, {false, false, false}, {false, false, false}},
 		Config: ElevatorConfig{
-			ClearRequestVariant: "CV_InDirn",       //fjerner alle forespørsler
-			DoorOpenDuration:    3.0 * time.Second, //3 sekunder døråpning
+			ClearRequestVariant: "CV_InDirn",      
+			DoorOpenDuration:    3.0 * time.Second,
 		},
 		// State: {
 		// 	HRAElevState.Behavior := &Be

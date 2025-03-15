@@ -2,14 +2,14 @@ package roles
 
 import (
 	"fmt"
-	"time"
 	"net"
 )
 
-func StartSlave(conn net.Conn) {
-	for {
-		time.Sleep(5 * time.Second)
-		fmt.Println("Still slave")
-	}
-	// Placeholder
+//kanskje unødvendig med en egen slave-funksjon, da den bare kaller initElevator
+
+func StartSlave(rank int, conn net.Conn) {
+	
+	fmt.Println("Starting slave")
+	
+	InitElevator(rank, conn)
 }

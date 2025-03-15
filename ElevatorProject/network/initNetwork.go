@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"net"
 	"ElevatorProject/comm"
 	"ElevatorProject/roles"
 )
@@ -40,7 +41,7 @@ func InitNetwork() {
 		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 	}
 
-	// We start the necessary channels for broadcasting, listening, and peer updates
+	// Start necessary channels for broadcasting, listening, and peer updates
 	peerUpdateCh := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(peersPort, id, peerTxEnable)
@@ -65,7 +66,7 @@ func InitNetwork() {
 		}
 	}()
 
-	// Listen for the master (using your provided comm.ListenForMaster)
+	// Listen for the master 
 	masterID, found := comm.ListenForMaster(bcastPortString)
 	if found {
 		// Try to connect to the master
@@ -74,17 +75,27 @@ func InitNetwork() {
 			// Based on rank, decide whether to become a backup or slave
 			if rank == 2 {
 				fmt.Println("Going to start backup")
-				go roles.StartBackup(conn)
+				go roles.StartBackup(rank, conn)
 				time.Sleep(5 * time.Second)
 			} else if rank > 2 {
-				go roles.StartSlave(conn)
+				go roles.StartSlave(rank, conn)
 				time.Sleep(5 * time.Second)
 			}
 		}
 	} else {
-		// If no master found, announce ourselves as the master
+		// No master found, announce ourselves as the master
 		go comm.AnnounceMaster(id, bcastPortString)
-		go roles.StartMaster(TCPPort)
+		// Connects to itself so that the elevator can communicate with it. Not sure if it works
+		go roles.ListenForConnections(TCPPort)
+		time.Sleep(3 * time.Second)
+		rank := 1
+		localIP := "127.0.0.1"
+		conn, err := net.Dial("tcp", localIP+":"+TCPPort)
+		if err != nil {
+			fmt.Println("Master failed to connect to itself", err)
+		}
+
+		go roles.StartMaster(rank, TCPPort, conn)
 	}
 
 	// Main loop to handle peer updates and hello message reception
@@ -123,20 +134,3 @@ func InitNetwork() {
 	}
 }
 
-// Fra chat
-// // Function to connect to the master using TCP
-// func connectToMaster(masterID string) {
-// 	fmt.Printf("Connecting to master %s...\n", masterID)
-
-// 	// TCP connection setup (assuming master is on port 8081)
-// 	conn, err := net.Dial("tcp", masterID+":8081")
-// 	if err != nil {
-// 		fmt.Println("Failed to connect to master:", err)
-// 		return
-// 	}
-// 	defer conn.Close()
-
-// 	fmt.Printf("Connected to master %s\n", masterID)
-
-// 	// Now you can perform communication over TCP (optional)
-// }

@@ -2,7 +2,7 @@ package main
 
 import (
 // 	"ElevatorProject/comm"
-	"ElevatorProject/roles"
+	//"ElevatorProject/roles"
  	"ElevatorProject/network"
 	
 // 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 func main() {
 	go networkUDP.InitNetwork()
-	go roles.InitElevator()
+	//go roles.InitElevator()
 
 	// Actual main program, ish
 /*

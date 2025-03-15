@@ -2,17 +2,17 @@ package elevator_logic
 
 import (
 	elevio "ElevatorProject/Driver"
-	//"ElevatorProject/comm"
+	"ElevatorProject/comm"
 	"ElevatorProject/elevator"
 	"ElevatorProject/fsm"
 	"ElevatorProject/request"
 	"ElevatorProject/timers"
 	"fmt"
 	"time"
-	//"net"
+	"net"
 )
 
-func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration) { //add conn
+func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn)  {
 
 	fmt.Println("Arrived at runElevator")
 
@@ -48,17 +48,14 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration) { //add conn
 			fmt.Printf("Button pushed. Order at floor: %d", order.Floor)
 			// If cab call
 			if order.Button == elevator.B_Cab {
-				//fsm.El.ElevStates.CabRequests[order.Floor] = true
+				fsm.El.ElevStates.CabRequests[order.Floor] = true
 			}
-			// Send beskjed til master: ordre + state
 
-			// if !(fsm.El.Requests[order.Floor][order.Button]) {
-			// 	fsm.Fsm_onRequestButtonPress(order.Floor, order.Button, start_timer)
-			// 	communicationpkg.Comm_sendReceivedOrder(order, fsm.El.IP, conn)
-			// }
-			//send current state
-
-			//comm.Comm_sendCurrentState(fsm.El.ElevStates, conn )
+			// Send request + current state to master
+			if !(fsm.El.GlobalHallRequests[order.Floor][order.Button]) {
+				comm.Comm_sendReceivedOrder(order, conn)
+			}
+			comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
@@ -66,7 +63,7 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration) { //add conn
 			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
 				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
-			//send current state
+			comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
 
 		case obstruction := <-obstruction_chan:
@@ -77,9 +74,12 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration) { //add conn
 			} else {
 				start_timer <- fsm.El.Config.DoorOpenDuration
 			}
+			comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
 		case <-timer.C:
 			fsm.Fsm_onDoorTimeout(start_timer)
+			comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 		}
+		
 	}
 }
