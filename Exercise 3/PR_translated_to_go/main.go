@@ -24,6 +24,8 @@ func main() {
 
 	fsm := fsmpkg.FSM{El: elevatorpkg.Elevator_uninitialized(), Od: elevator_io_devicepkg.Elevio_getOutputDevice()}
 
+	fmt.Printf("Elevator role: %d\n", fsm.El.Role)
+
 	// Initialize channels
 	buttons_chan := make(chan elevio.ButtonEvent)
 	floors_chan := make(chan int)

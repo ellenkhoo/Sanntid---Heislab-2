@@ -24,6 +24,14 @@ const (
 	EB_Moving
 )
 
+type ElevatorRole int
+
+const (
+	Slave ElevatorRole = 0
+	Primary = 1
+	Backup = 2
+)
+
 var ElevatorBehaviourToString = map[ElevatorBehaviour]string{
 	EB_Idle:     "EB_Idle",
 	EB_DoorOpen: "EB_DoorOpen",
@@ -45,6 +53,7 @@ func Eb_toString(eb ElevatorBehaviour) string {
 
 // elevator struct representerer statene til heisen
 type Elevator struct {
+	Role 	  ElevatorRole
 	Floor     int
 	PrevFloor int
 	Dirn      elevio.MotorDirection
@@ -60,6 +69,8 @@ const (
 	B_HallDown = 1
 	B_Cab      = 2
 )
+
+
 
 func Elevator_print(e Elevator) {
 	fmt.Println(" +-----------------+")
@@ -96,6 +107,7 @@ type ElevatorConfig struct {
 // funksjonen for å returnere en uinitialisert heis
 func Elevator_uninitialized() Elevator {
 	return Elevator{
+		Role: 0, // Defaul role: slave
 		Floor:     -1,             //ugyldig etasje
 		Dirn:      elevio.MD_Stop, //heisen er stoppet
 		Behaviour: EB_Idle,        //inaktiv tilstand
