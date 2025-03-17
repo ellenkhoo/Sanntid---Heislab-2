@@ -88,33 +88,34 @@ func AnnounceMaster(localIP string, port string) {
 	}
 }
 
-func ConnectToMaster(masterIP string, listenPort string) (int, net.Conn, bool) {
+func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 	conn, err := net.Dial("tcp", masterIP+":"+listenPort)
 	if err != nil {
 		fmt.Println("Error connecting to master:", err)
-		return 0, nil, false
+		return nil, false
 	}
 
 	// defer conn.Close() //want to use conn later in the program
 
-	buffer := make([]byte, 1024)
-	n, _ := conn.Read(buffer)
+	// buffer := make([]byte, 1024)
+	// n, _ := conn.Read(buffer)
 	if err != nil {
 		fmt.Println("Error reading from master:", err)
 		conn.Close()
-		return 0, nil, false
+		return nil, false
 	}
 
-	var rank int
-	_, err = fmt.Sscanf(string(buffer[:n]), "You have rank %d\n", &rank)
-	if err != nil {
-		fmt.Println("Error parsing rank:", err)
-		conn.Close()
-		return 0, nil, false
-	}
+	// Tror ikke vi trenger dette
+	// var rank int
+	// _, err = fmt.Sscanf(string(buffer[:n]), "You have rank %d\n", &rank)
+	// if err != nil {
+	// 	fmt.Println("Error parsing rank:", err)
+	// 	conn.Close()
+	// 	return 0, nil, false
+	// }
 
-	fmt.Printf("Connected to master at %s and received rank %d\n: ", masterIP, rank)
-	return rank, conn, true
+	fmt.Printf("Connected to master at %s\n: ", masterIP)
+	return conn, true
 }
 
 func ReceiveAssignedRequests(conn net.Conn) {
@@ -203,7 +204,6 @@ func Comm_masterReceive(conn net.Conn) {
 	//Kjør fordelingsalgoritme
 	//Send ordreliste -> setAllLights()
 
-
 	fmt.Println("Arrived at Comm_masterReceiveOrder")
 
 	if conn == nil {
@@ -237,7 +237,7 @@ func Comm_masterReceive(conn net.Conn) {
 			fmt.Printf("Received order: Floor %d, Button %d\n", order.Floor, order.Button)
 			continue
 
-		} 
+		}
 		if len(message) >= 5 && message[:5] == "state" {
 			fmt.Println("Received state message")
 			// var state elevator.ElevStates
@@ -248,11 +248,11 @@ func Comm_masterReceive(conn net.Conn) {
 			// }
 			// fmt.Printf("Received state: Behaviour %s, Floor %d, Direction %s\n", state.Behaviour, state.Floor, state.Direction)
 			continue
-		} 
+		}
 
 		fmt.Println("Received unrecognized message type")
 	}
-	
+
 }
 
 func Comm_slaveReceiveRequests() {
@@ -276,7 +276,7 @@ func Comm_sendCurrentState(state interface{}, conn net.Conn) {
 		return
 	}
 
-	// TEST 
+	// TEST
 	message := "state:" + string(data)
 	_, err = conn.Write([]byte(message))
 

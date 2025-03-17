@@ -11,7 +11,20 @@ import (
 )
 
 func main() {
-	go networkUDP.InitNetwork()
+
+	// Start network and store connections
+	ac := network.CreateActiveConnections()
+
+	var bcastPortInt = 16569
+	// var bcastPortString = "16569"
+	// For use on same computer?
+	var bcastPortString = "9999"
+	var peersPort = 15647
+	var TCPPort = "8081"
+
+	go network.StartNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
+	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
+	// Start elevator
 	//go roles.InitElevator()
 
 	// Actual main program, ish
