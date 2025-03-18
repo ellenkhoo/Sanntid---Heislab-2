@@ -1,7 +1,7 @@
 package elevator
 
 import (
-	elevio "ElevatorProject/Driver"
+	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"fmt"
 	"time"
 )

@@ -1,15 +1,17 @@
 package network
 
 import (
-	"ElevatorProject/comm"
-	"ElevatorProject/network/network_functions/bcast"
-	"ElevatorProject/network/network_functions/localip"
-	"ElevatorProject/network/network_functions/peers"
+	"github.com/ellenkhoo/ElevatorProject/comm"
+
+	"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
+	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
+	"github.com/ellenkhoo/ElevatorProject/network/network_functions/peers"
+
 	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
-	"os"
+	// "os"
 	"time"
 )
 
@@ -26,6 +28,7 @@ const (
 	backupAcknowledgeMessage
 	localRequestMessage
 	currentStateMessage
+	helloMessage
 )
 
 type MessageTarget int
@@ -83,9 +86,6 @@ func (ac *ActiveConnections) AddClientConnection(conn net.Conn, sendChan chan Me
 		}
 	}
 
-	// sendChan := make(chan Message)
-	// receiveChan := make(chan Message)
-
 	newConn := Connection{
 		IP:          remoteIP,
 		Rank:        len(ac.conns) + 1,
@@ -95,6 +95,15 @@ func (ac *ActiveConnections) AddClientConnection(conn net.Conn, sendChan chan Me
 	}
 
 	ac.conns = append(ac.conns, newConn)
+
+	msg := Message{
+		Type: helloMessage,
+		Target: TargetBackup,
+		Payload: "Hello from master",
+	}
+
+	sendChan <- msg
+	SendMessages(*ac, sendChan)
 
 	go HandleConnection(newConn)
 }
@@ -191,7 +200,7 @@ func ListenAndAcceptConnections(ac ActiveConnections, port string) {
 	}
 }
 
-func ReceiveandDistributeMessages(receiveChan chan Message, conn net.Conn, elevatorChan chan Message, masterChan chan Message, backupChan chan Message) {
+func ReceiveMessage(receiveChan chan Message, conn net.Conn) {
 	decoder := json.NewDecoder(conn)
 
 	for {
@@ -202,82 +211,41 @@ func ReceiveandDistributeMessages(receiveChan chan Message, conn net.Conn, eleva
 			return
 		}
 
-		switch msg.Target {
-		case TargetMaster:
-			masterChan <- msg
-		case TargetBackup:
-			backupChan <- msg
-		case TargetElevator:
-			elevatorChan <- msg
-		default:
-			fmt.Println("Unknown message target")
-		}
+		receiveChan <-msg
 	}
-	// for msg := range receiveChan {
-	// 	switch msg.Type {
-	// 	case globalHallRequestMessage:
-	// 		// do something
-	// 	case assignedHallRequestsMessage:
-	// 		// do something
-	// 	default:
-	// 		fmt.Println("Unknown message type")
-	// 	}
-	// }
 }
 
 func sendMessageOnChannel(sendChan chan Message, msg Message) {
 	sendChan <- msg
 }
 
-func SendMessages(sendChan chan Message, conn net.Conn) {
+func SendMessages(ac ActiveConnections, sendChan chan Message) {
 
-	encoder := json.NewEncoder(conn)
+	var targetConn net.Conn
+	//var targetConn net.Conn
+	for msg := range sendChan {
+		if msg.Target == TargetBackup {
+			for i := range ac.conns {
+				if ac.conns[i].Rank == 2 {
+					targetConn = ac.conns[i].HostConn
+				} else {
+					targetConn = nil
+				}
+			}
+		}
+	}
+
+	fmt.Println("Trying to send msg to backup")
+	encoder := json.NewEncoder(targetConn)
 	for msg := range sendChan {
 		err := encoder.Encode(msg)
 		if err != nil {
 			fmt.Println("Error encoding message: ", err)
 			return
 		}
-		// switch msg.Type {
-		// case localRequestMessage:
-		// 	// do something
-		// case currentStateMessage:
-		// 	// do something
-		// case backupAcknowledgeMessage:
-		// 	// do something
-		// default:
-		// 	fmt.Println("Unknown message type")
-		// }
 	}
+		
 }
-
-// func hostReceiveMessages(receiveChan chan Message) {
-// 	for msg := range receiveChan {
-// 		switch msg.Type {
-// 		case localRequestMessage:
-// 			// do something
-// 		case currentStateMessage:
-// 			// do something
-// 		case backupAcknowledgeMessage:
-// 			// do something
-// 		default:
-// 			fmt.Println("Unknown message type")
-// 		}
-// 	}
-// }
-
-// func hostSendMessages(sendChan chan Message) {
-// 	for msg := range sendChan {
-// 		switch msg.Type {
-// 		case globalHallRequestMessage:
-// 			// do something
-// 		case assignedHallRequestsMessage:
-// 			// do something
-// 		default:
-// 			fmt.Println("Unknown message type")
-// 		}
-// 	}
-// }
 
 func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
 	for msg := range receiveChan {
@@ -318,7 +286,9 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 			fmt.Println(err)
 			localIP = "DISCONNECTED"
 		}
-		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+		id = localIP
+		//id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+		fmt.Printf("id: %s", id)
 	}
 
 	// Start necessary channels for broadcasting, listening, and peer updates
@@ -360,7 +330,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		}
 	} else {
 		// No master found, announce ourselves as the master
-		id = masterID
+		masterID = id
+		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go comm.AnnounceMaster(id, bcastPortString)
 		go ListenAndAcceptConnections(*ac, TCPPort)
 		// A small delay to allow the master to start listening before trying to connect to itself

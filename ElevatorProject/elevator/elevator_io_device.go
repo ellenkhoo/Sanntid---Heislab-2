@@ -1,13 +1,14 @@
-package elevator_io_device
+package elevator
 
 import (
-	"ElevatorProject/Driver"
+	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"fmt"
 )
 
 type Button elevio.ButtonType
 type Dirn int
 
+/*
 const (
 	B_HallUp   Button = 0
 	B_HallDown Button = 1
@@ -16,7 +17,20 @@ const (
 	D_Up   Dirn = 1
 	D_Down Dirn = -1
 	D_Stop Dirn = 0
-)
+)*/
+
+var DirnToString = map[Dirn]string{
+	Dirn(elevio.MD_Up):   "D_Up",
+	Dirn(elevio.MD_Down): "D_Down",
+	Dirn(elevio.MD_Stop): "D_Stop",
+}
+
+var StringToDirn = map[string]Dirn{
+	"D_Up":   Dirn(elevio.MD_Up),
+	"D_Down": Dirn(elevio.MD_Down),
+	"D_Stop": Dirn(elevio.MD_Stop),
+}
+
 
 //Overflødig?
 func Init() {
@@ -113,17 +127,7 @@ var ButtonToString = map[Button]string{
 	Button(elevio.BT_Cab):      "B_Cab",
 }
 
-var DirnToString = map[Dirn]string{
-	D_Up:   "D_Up",
-	D_Down: "D_Down",
-	D_Stop: "D_Stop",
-}
 
-var StringToDirn = map[string]Dirn{
-	"D_Up":   D_Up,
-	"D_Down": D_Down,
-	"D_Stop": D_Stop,
-}
 
 func Elevio_button_toString(b Button) string {
 	if str, exists := ButtonToString[b]; exists {

@@ -1,20 +1,17 @@
 package roles
 
 import (
-	"ElevatorProject/Driver"
-	"ElevatorProject/fsm"
-	"ElevatorProject/elevator"
-	"ElevatorProject/elevator_logic"
-	"ElevatorProject/elevator_io_device"
-	"ElevatorProject/timers"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	"github.com/ellenkhoo/ElevatorProject/timers"
 	"net"
 )
 
 func InitElevator(rank int, conn net.Conn) {
 	elevio.Init("localhost:15657", elevator.N_FLOORS)
 
-	fsm := fsm.FSM{El: elevator.Elevator_uninitialized(), Od: elevator_io_device.Elevio_getOutputDevice()}
+	fsm := elevator.FSM{El: elevator.Elevator_uninitialized(), Od: elevator.Elevio_getOutputDevice()}
 	fsm.El.Rank = rank
 
-	elevator_logic.ElevLogic_runElevator(fsm, timers.MaxDuration, conn)
+	elevator.ElevLogic_runElevator(fsm, timers.MaxDuration, conn)
 }

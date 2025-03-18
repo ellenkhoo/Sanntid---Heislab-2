@@ -1,7 +1,7 @@
 package comm
 
 import (
-	elevio "ElevatorProject/Driver"
+	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"bufio"
 	"fmt"
 	"io"

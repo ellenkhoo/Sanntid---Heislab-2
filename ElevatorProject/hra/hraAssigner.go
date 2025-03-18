@@ -1,7 +1,7 @@
 package hra
 
 import (
-	"ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"encoding/json"
 	"fmt"
 	"os/exec"

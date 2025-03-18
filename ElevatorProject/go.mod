@@ -1,4 +1,4 @@
-module ElevatorProject
+module github.com/ellenkhoo/ElevatorProject
 
 replace Driver => ./Driver
 

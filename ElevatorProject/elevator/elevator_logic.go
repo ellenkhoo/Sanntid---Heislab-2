@@ -1,18 +1,15 @@
-package elevator_logic
+package elevator
 
 import (
-	elevio "ElevatorProject/Driver"
-	"ElevatorProject/comm"
-	"ElevatorProject/elevator"
-	"ElevatorProject/fsm"
-	"ElevatorProject/request"
-	"ElevatorProject/timers"
+	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	"github.com/ellenkhoo/ElevatorProject/comm"
+	"github.com/ellenkhoo/ElevatorProject/timers"
 	"fmt"
 	"time"
 	"net"
 )
 
-func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn)  {
+func ElevLogic_runElevator(fsm FSM, maxDuration time.Duration, conn net.Conn)  {
 
 	fmt.Println("Arrived at runElevator")
 
@@ -34,7 +31,7 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn
 	go elevio.PollStopButton(stop_chan)
 	go timers.Timer_start(timer, start_timer)
 
-	request.Clear_all_requests(fsm.El)
+	Clear_all_requests(fsm.El)
 	fsm.SetAllLights()
 
 	if elevio.GetFloor() == -1 {
@@ -47,7 +44,7 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn
 		case order := <-buttons_chan:
 			fmt.Printf("Button pushed. Order at floor: %d\n", order.Floor)
 			// If cab call
-			if order.Button == elevator.B_Cab {
+			if order.Button == B_Cab {
 				fsm.El.ElevStates.CabRequests[order.Floor] = true
 			}
 
@@ -68,7 +65,7 @@ func ElevLogic_runElevator(fsm fsm.FSM, maxDuration time.Duration, conn net.Conn
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
-				if fsm.El.Behaviour == elevator.EB_DoorOpen {
+				if fsm.El.Behaviour == EB_DoorOpen {
 					start_timer <- maxDuration
 				}
 			} else {

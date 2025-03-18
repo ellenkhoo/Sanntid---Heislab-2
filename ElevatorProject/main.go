@@ -3,7 +3,7 @@ package main
 import (
 // 	"ElevatorProject/comm"
 	//"ElevatorProject/roles"
- 	"ElevatorProject/network"
+ 	"github.com/ellenkhoo/ElevatorProject/network"
 	
 // 	"fmt"
 // 	"time"
@@ -13,6 +13,7 @@ import (
 func main() {
 
 	// Start network and store connections
+	// dumt at ac lages her? da vil alle pc-ene ha det
 	ac := network.CreateActiveConnections()
 
 	var bcastPortInt = 16569
@@ -23,6 +24,7 @@ func main() {
 	var TCPPort = "8081"
 
 	go network.StartNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
+
 	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
 	// Start elevator
 	//go roles.InitElevator()
