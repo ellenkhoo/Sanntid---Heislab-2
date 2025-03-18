@@ -16,6 +16,17 @@ const (
 	local_IP = "10.22.216.146:8080"
 )
 
+func Comm_findOwnIP() net.IP{
+	var own_ipv4 net.IP
+	host, _ := os.Hostname()
+	addrs, _ := net.LookupIP(host)
+	for _, addr := range addrs {
+    	if ipv4 = addr.To4(); ipv4 != nil {
+        	fmt.Println("IPv4: ", ipv4)
+    	}   
+	}
+}
+
 func Comm_masterConnectToSlave () (conn net.Conn){
 	ln, err := net.Listen("tcp", lab_IP)
 	if err != nil {
@@ -30,6 +41,18 @@ func Comm_masterConnectToSlave () (conn net.Conn){
 			fmt.Println("Error accepting connection:", err)
 			continue
 		} else {
+			//Denne blokken setter keepalive, en slags "heartbeat" som automatisk gjør jobben
+			//Tror denne bør settes inn hver gang en kobling gjøres så følger de med på hverandre
+			aliveErr = ln.SetKeepAlive(true) 
+			if aliveErr != nil {
+				fmt.Printf("Unable to set keepalive: %s \n", aliveErr)
+			} else {
+				//Sjekker om andre siden av koblingen fortsatt er i live etter 5 sekunder
+				aliveErr2 = ln.SetKeepAlivePeriod(5 * time.Second) 
+				if aliveErr2 != nil {
+					fmt.Printf("Unable to set keepalive interval: %s", aliveErr2)
+				}
+			}
 			return conn
 		}
 
@@ -42,6 +65,18 @@ func Comm_slaveConnectToMaster () (conn net.Conn) {
 		if err != nil {
 			fmt.Println("Error Starting backup:", err)
 		} else {
+			//Denne blokken setter keepalive, en slags "heartbeat" som automatisk gjør jobben
+			//Tror denne bør settes inn hver gang en kobling gjøres så følger de med på hverandre
+			aliveErr = ln.SetKeepAlive(true) 
+			if aliveErr != nil {
+				fmt.Printf("Unable to set keepalive: %s \n", aliveErr)
+			} else {
+				//Sjekker om andre siden av koblingen fortsatt er i live etter 5 sekunder
+				aliveErr2 = ln.SetKeepAlivePeriod(5 * time.Second) 
+				if aliveErr2 != nil {
+					fmt.Printf("Unable to set keepalive interval: %s", aliveErr2)
+				}
+			}
 			return conn
 		}
 		defer conn.Close()
