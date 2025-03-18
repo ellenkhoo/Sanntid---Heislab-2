@@ -391,6 +391,10 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 			fmt.Println("Got a message from master")
 			fmt.Printf("Received: %#v\n", r)
 
+		case m := <-networkChannels.MasterChan:
+			fmt.Println("Got a message to master")
+			fmt.Printf("Received: %#v\n", m)
+
 		case b := <-networkChannels.BackupChan:
 			fmt.Println("Got a message from master to backup")
 			fmt.Printf("Received: %#v\n", b)
