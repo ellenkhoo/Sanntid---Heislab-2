@@ -56,7 +56,7 @@ func ListenForMaster(port string) (string, bool) {
 	defer conn.Close()
 
 	buffer := make([]byte, 1024)
-	t := time.Duration(RandRange(500, 1000))
+	t := time.Duration(RandRange(800, 1500))
 	fmt.Printf("Waiting for %d ms\n", t)
 	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond)) //ensures that only one remains master
 	_, remoteAddr, err := conn.ReadFromUDP(buffer)

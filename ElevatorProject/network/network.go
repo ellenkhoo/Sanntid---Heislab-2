@@ -1,8 +1,6 @@
 package network
 
 import (
-	"sync"
-
 	"github.com/ellenkhoo/ElevatorProject/comm"
 
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
@@ -367,7 +365,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 			time.Sleep(1 * time.Second)
 		}
 	}()
-	
+
 	sendChan := make(chan Message)
 	receiveChan := make(chan Message)
 	go RouteMessages(receiveChan, networkChannels)

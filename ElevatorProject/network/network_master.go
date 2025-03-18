@@ -68,15 +68,15 @@ func (ac *ActiveConnections)ListenAndAcceptConnections(port string, sendChan cha
 
 func (ac *ActiveConnections)MasterSendMessages(sendChan chan Message) {
 
-	ac.mutex.Lock()
-	defer ac.mutex.Unlock()
-
+	fmt.Println("Arrived at masterSend")
+	
 	var targetConn net.Conn
 	for msg := range sendChan {
 		fmt.Println("target: ", msg.Target)
 		switch msg.Target {
 		case TargetBackup: 
 			// need to find the conn object connected to backup
+			ac.mutex.Lock()
 			fmt.Println("Backup is target")
 			for i := range ac.conns {
 				if ac.conns[i].Rank == 2 {
@@ -85,6 +85,7 @@ func (ac *ActiveConnections)MasterSendMessages(sendChan chan Message) {
 					break
 				}
 			}
+			ac.mutex.Unlock()
 		case TargetElevator:
 			// do something
 		case TargetClient: 
