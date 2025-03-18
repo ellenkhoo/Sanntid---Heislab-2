@@ -103,6 +103,7 @@ func (ac *ActiveConnections) AddClientConnection(conn net.Conn, sendChan chan Me
 
 	// ac.conns = append(ac.conns, newConn)
 
+	fmt.Println("Going to handle connection")
 	go HandleConnection(newConn)
 }
 
@@ -388,8 +389,12 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 					go comm.ConnectToMaster(masterID, TCPPort)
 				}
 			}
-		case b := <-networkChannels.BackupChan:
+		case r := <-receiveChan:
 			fmt.Println("Got a message from master")
+			fmt.Printf("Received: %#v\n", r)
+
+		case b := <-networkChannels.BackupChan:
+			fmt.Println("Got a message from master to backup")
 			fmt.Printf("Received: %#v\n", b)
 
 			// case a := <-helloRx:
