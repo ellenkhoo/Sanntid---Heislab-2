@@ -53,6 +53,10 @@ func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
 			networkChannels.BackupChan <- msg
 		case TargetElevator:
 			networkChannels.ElevatorChan <- msg
+		case TargetClient:
+			// messages that all types of clients should receive
+			networkChannels.ElevatorChan <- msg
+			networkChannels.BackupChan <- msg
 		default:
 			fmt.Println("Unknown message target")
 		}
@@ -171,7 +175,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Got a message to master")
-			fmt.Printf("Received: %#v\n", m)
+			go HandleReceivedMessagesToMaster(m)
 
 		case b := <-networkChannels.BackupChan:
 			fmt.Println("Got a message from master to backup")
@@ -181,7 +185,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 			var elevst = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: "1.1.1.1"}
 
 			msg:= Message{
-				Type: rankMessage,
+				Type: currentStateMessage,
 				Target: TargetMaster,
 				Payload: elevst,
 			}

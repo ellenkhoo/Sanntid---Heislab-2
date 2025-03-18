@@ -101,3 +101,14 @@ func (ac *ActiveConnections)MasterSendMessages(sendChan chan Message) {
 		}
 	}
 }
+
+func HandleReceivedMessagesToMaster(msg Message) {
+
+	switch msg.Type {
+	case localRequestMessage:
+		// do something
+	case currentStateMessage:
+		// do something
+		fmt.Printf("Received current state from elevator: %#v\n", msg.Payload)
+	}
+}
