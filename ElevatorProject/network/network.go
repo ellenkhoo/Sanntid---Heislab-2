@@ -127,7 +127,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		// Try to connect to the master
 		clientConn, success := comm.ConnectToMaster(masterID, TCPPort)
 		if success {
-			ac.AddClientConnection(clientConn, sendChan, receiveChan)
+			ac.AddClientConnection(id, clientConn, sendChan, receiveChan)
 		}
 		go ReceiveMessage(receiveChan, clientConn)
 		go ClientSendMessages(sendChan, clientConn)

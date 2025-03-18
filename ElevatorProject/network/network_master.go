@@ -11,15 +11,6 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
-	// Check if a connection already exists with this IP
-	// for i, connection := range ac.conns {
-	// 	if connection.ClientIP == remoteIP {
-	// 		ac.conns[i].HostConn = conn
-	// 		return
-	// 	}
-	// }
-
-	// sett hostIp + clientIP
 	newConn := MasterConnectionInfo{
 		ClientIP: remoteIP,
 		Rank: rank,
