@@ -356,13 +356,13 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		go comm.AnnounceMaster(id, bcastPortString)
 		go ListenAndAcceptConnections(*ac, TCPPort, sendChan)
 		// A small delay to allow the master to start listening before trying to connect to itself
-		time.Sleep(1 * time.Second)
-		localIP := "127.0.0.1"
-		clientConn, err := net.Dial("tcp", localIP+":"+TCPPort)
-		if err != nil {
-			fmt.Println("Master failed to connect to itself", err)
-		}
-		ac.AddClientConnection(clientConn, sendChan, receiveChan)
+		// time.Sleep(1 * time.Second)
+		// localIP := "127.0.0.1"
+		// clientConn, err := net.Dial("tcp", localIP+":"+TCPPort)
+		// if err != nil {
+		// 	fmt.Println("Master failed to connect to itself", err)
+		// }
+		// ac.AddClientConnection(clientConn, sendChan, receiveChan)
 	}
 
 	// Main loop to handle peer updates and hello message reception
