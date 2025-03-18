@@ -60,16 +60,23 @@ func MasterSendMessages(sendChan chan Message, ac ActiveConnections) {
 
 	var targetConn net.Conn
 	for msg := range sendChan {
+		fmt.Println("target: ", msg.Target)
 		switch msg.Target {
 		case TargetBackup: 
 			// need to find the conn object connected to backup
 			for i := range ac.conns {
 				if ac.conns[i].Rank == 2 {
 					targetConn = ac.conns[i].HostConn
-				} else {
-					targetConn = nil
+					break
 				}
 			}
+		case TargetElevator:
+			// do something
+		case TargetClient: 
+			// do something
+		}
+		
+		if targetConn != nil {
 			encoder := json.NewEncoder(targetConn)
 			for msg := range sendChan {
 				fmt.Println("Sending message:", msg)
@@ -79,10 +86,6 @@ func MasterSendMessages(sendChan chan Message, ac ActiveConnections) {
 					return
 				}
 			}
-		case TargetElevator:
-			// do something
-		case TargetClient: 
-			// do something
 		}
 		
 	}
