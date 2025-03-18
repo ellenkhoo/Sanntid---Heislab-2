@@ -264,37 +264,6 @@ func ClientSendMessages(sendChan chan Message, conn net.Conn) {
 	}
 }
 
-// func MasterSendMessages(sendChan chan Message, ac ActiveConnections) {
-
-// 	var targetConn net.Conn
-// 	for msg := range sendChan {
-// 		switch msg.Target {
-// 		case TargetBackup: 
-// 			// need to find the conn object connected to backup
-// 			for i := range ac.conns {
-// 				if ac.conns[i].Rank == 2 {
-// 					targetConn = ac.conns[i].HostConn
-// 				} else {
-// 					targetConn = nil
-// 				}
-// 			}
-// 			encoder := json.NewEncoder(targetConn)
-// 			for msg := range sendChan {
-// 				fmt.Println("Sending message:", msg)
-// 				err := encoder.Encode(msg)
-// 				if err != nil {
-// 					fmt.Println("Error encoding message: ", err)
-// 					return
-// 				}
-// 			}
-// 		case TargetElevator:
-// 			// do something
-// 		case TargetClient: 
-// 			// do something
-// 		}
-		
-// 	}
-// }
 
 func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
 	for msg := range receiveChan {
@@ -385,16 +354,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		masterID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go comm.AnnounceMaster(id, bcastPortString)
-		go ac.ListenAndAcceptConnections(TCPPort, sendChan)
+		go ac.ListenAndAcceptConnections(TCPPort, sendChan, receiveChan)
 		go ac.MasterSendMessages(sendChan)
-		// A small delay to allow the master to start listening before trying to connect to itself
-		// time.Sleep(1 * time.Second)
-		// localIP := "127.0.0.1"
-		// clientConn, err := net.Dial("tcp", localIP+":"+TCPPort)
-		// if err != nil {
-		// 	fmt.Println("Master failed to connect to itself", err)
-		// }
-		// ac.AddClientConnection(clientConn, sendChan, receiveChan)
 	}
 
 	// Main loop to handle peer updates and hello message reception
@@ -433,6 +394,16 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		case b := <-networkChannels.BackupChan:
 			fmt.Println("Got a message from master to backup")
 			fmt.Printf("Received: %#v\n", b)
+
+			data := "I received rank from master"
+
+			msg:= Message{
+				Type: rankMessage,
+				Target: TargetMaster,
+				Payload: data,
+			}
+
+			sendMessageOnChannel(sendChan, msg)
 
 			// case a := <-helloRx:
 			// 	fmt.Printf("Received: %#v\n", a)

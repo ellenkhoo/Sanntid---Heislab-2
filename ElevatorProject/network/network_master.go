@@ -38,26 +38,25 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 		Payload: rank,
 	}
 
-	// msg := Message{
-	// 	Type: helloMessage,
-	// 	Target: TargetBackup,
-	// 	Payload: "Hello from master",
-	// }
-
 	fmt.Println("Sending rank message on channel")
 	sendMessageOnChannel(sendChan, msg)
 }
 
 
 // Master listenes and accepts connections
-func (ac *ActiveConnections)ListenAndAcceptConnections(port string, sendChan chan Message) {
+func (ac *ActiveConnections)ListenAndAcceptConnections(port string, sendChan chan Message, receiveChan chan Message) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
 	for {
-		hostConn, _ := ln.Accept()
+		hostConn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("Error acepting connection:", err)
+			continue
+		}
 		rank := len(ac.conns) + 2
 
+		go ReceiveMessage(receiveChan, hostConn)
 		go ac.AddHostConnection(rank, hostConn, sendChan)
 	}
 }
