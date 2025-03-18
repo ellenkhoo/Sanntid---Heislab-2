@@ -66,3 +66,18 @@ func HandleConnection(conn ClientConnectionInfo) {
 		}
 	}()
 }
+
+func ClientSendMessages(sendChan chan Message, conn net.Conn) {
+
+	fmt.Println("Ready to send msg to master")
+
+	encoder := json.NewEncoder(conn)
+	for msg := range sendChan {
+		fmt.Println("Sending message:", msg)
+		err := encoder.Encode(msg)
+		if err != nil {
+			fmt.Println("Error encoding message: ", err)
+			return
+		}
+	}
+}

@@ -39,7 +39,7 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 	}
 
 	fmt.Println("Sending rank message on channel")
-	sendMessageOnChannel(sendChan, msg)
+	SendMessageOnChannel(sendChan, msg)
 }
 
 
