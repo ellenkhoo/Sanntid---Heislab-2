@@ -46,10 +46,15 @@ type Message struct {
 }
 
 // Keeping track of connections
-type Connection struct {
-	IP          string
-	Rank        int
+type MasterConnectionInfo struct {
+	ClientIP    string
+	// Rank        int
 	HostConn    net.Conn
+}
+
+type ClientConnectionInfo struct {
+	HostIP 		string
+	Rank 		int
 	ClientConn  net.Conn
 	SendChan    chan Message
 	ReceiveChan chan Message
@@ -64,7 +69,7 @@ type NetworkChannels struct {
 type ActiveConnections struct {
 	// unødvendig med mutex?
 	//mu    sync.Mutex
-	conns []Connection
+	conns []MasterConnectionInfo
 }
 
 func CreateActiveConnections() *ActiveConnections {
@@ -76,40 +81,33 @@ func (ac *ActiveConnections) AddClientConnection(conn net.Conn, sendChan chan Me
 	//defer conn.Close()
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
+	fmt.Println("Adding client connection")
+
 	// ac.mu.Lock()
 	// defer ac.mu.Unlock()
 
 	//Check if IP is already added
-	for _, connections := range ac.conns {
-		if connections.IP == remoteIP {
-			return
-		}
-	}
+	// for _, connections := range ac.conns {
+	// 	if connections.IP == remoteIP {
+	// 		return
+	// 	}
+	// }
 
-	newConn := Connection{
-		IP:          remoteIP,
+	newConn := ClientConnectionInfo{
+		HostIP:          remoteIP,
 		Rank:        len(ac.conns) + 1,
 		ClientConn:  conn,
 		SendChan:    sendChan,
 		ReceiveChan: receiveChan,
 	}
 
-	ac.conns = append(ac.conns, newConn)
-
-	msg := Message{
-		Type: helloMessage,
-		Target: TargetBackup,
-		Payload: "Hello from master",
-	}
-
-	sendChan <- msg
-	SendMessages(*ac, sendChan)
+	// ac.conns = append(ac.conns, newConn)
 
 	go HandleConnection(newConn)
 }
 
 // Maybe not the most describing name
-func HandleConnection(conn Connection) {
+func HandleConnection(conn ClientConnectionInfo) {
 	// Read from TCP connection and send to the receive channel
 	go func() {
 		decoder := json.NewDecoder(conn.ClientConn)
@@ -138,65 +136,82 @@ func HandleConnection(conn Connection) {
 }
 
 // Adds the host's connection with the relevant client in the list of active connections
-func (ac *ActiveConnections) AddHostConnection(conn net.Conn) {
+func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan Message) {
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
 	// Check if a connection already exists with this IP
-	for i, connection := range ac.conns {
-		if connection.IP == remoteIP {
-			ac.conns[i].HostConn = conn
-			return
-		}
+	// for i, connection := range ac.conns {
+	// 	if connection.ClientIP == remoteIP {
+	// 		ac.conns[i].HostConn = conn
+	// 		return
+	// 	}
+	// }
+
+	// sett hostIp + clientIP
+	newConn := MasterConnectionInfo{
+		ClientIP: remoteIP,
+		HostConn: conn,
 	}
+
+	ac.conns = append(ac.conns, newConn)
+
+	msg := Message{
+		Type: helloMessage,
+		Target: TargetBackup,
+		Payload: "Hello from master",
+	}
+
+	sendChan <- msg
+	SendMessages(*ac, sendChan, conn)
 }
 
 // Removes a connection from the list of active connections when connection is lost
-func (ac *ActiveConnections) RemoveConnection(ip string) {
-	// ac.mu.Lock()
-	// defer ac.mu.Unlock()
+// func (ac *ActiveConnections) RemoveConnection(ip string) {
+// 	// ac.mu.Lock()
+// 	// defer ac.mu.Unlock()
 
-	// Find index of IP to be removed
-	index := -1
-	for i, conn := range ac.conns {
-		if conn.IP == ip {
-			index = i
-			// Close the connection before removal
-			conn.HostConn.Close()
-			conn.ClientConn.Close()
-			break
-		}
-	}
+// 	// Find index of IP to be removed
+// 	index := -1
+// 	for i, conn := range ac.conns {
+// 		if conn.IP == ip {
+// 			index = i
+// 			// Close the connection before removal
+// 			conn.HostConn.Close()
+// 			conn.ClientConn.Close()
+// 			break
+// 		}
+// 	}
 
-	// IP not found
-	if index == -1 {
-		return
-	}
+// 	// IP not found
+// 	if index == -1 {
+// 		return
+// 	}
 
-	// IP found, remove from list and adjust the ranks
-	ac.conns = append(ac.conns[:index], ac.conns[index+1:]...)
-	for i := range ac.conns {
-		ac.conns[i].Rank = i + 1
-	}
+// 	// IP found, remove from list and adjust the ranks
+// 	ac.conns = append(ac.conns[:index], ac.conns[index+1:]...)
+// 	for i := range ac.conns {
+// 		ac.conns[i].Rank = i + 1
+// 	}
 
-	fmt.Println("Successfully removed connection to", ip)
-}
+// 	fmt.Println("Successfully removed connection to", ip)
+// }
 
-func (ac *ActiveConnections) ListConnections() {
-	// ac.mu.Lock()
-	// defer ac.mu.Unlock()
+// func (ac *ActiveConnections) ListConnections() {
+// 	// ac.mu.Lock()
+// 	// defer ac.mu.Unlock()
 
-	for _, conn := range ac.conns {
-		fmt.Printf("IP: %s, Rank: %d\n", conn.IP, conn.Rank)
-	}
-}
+// 	for _, conn := range ac.conns {
+// 		fmt.Printf("IP: %s, Rank: %d\n", conn.IP, conn.Rank)
+// 	}
+// }
 
 // Master listenes and accepts connections
-func ListenAndAcceptConnections(ac ActiveConnections, port string) {
+func ListenAndAcceptConnections(ac ActiveConnections, port string, sendChan chan Message) {
 	ln, _ := net.Listen("tcp", ":"+port)
 
 	for {
 		hostConn, _ := ln.Accept()
-		go ac.AddHostConnection(hostConn)
+		go ac.AddHostConnection(hostConn, sendChan)
 	}
 }
 
@@ -219,24 +234,24 @@ func sendMessageOnChannel(sendChan chan Message, msg Message) {
 	sendChan <- msg
 }
 
-func SendMessages(ac ActiveConnections, sendChan chan Message) {
+func SendMessages(ac ActiveConnections, sendChan chan Message, conn net.Conn) {
 
-	var targetConn net.Conn
-	//var targetConn net.Conn
-	for msg := range sendChan {
-		if msg.Target == TargetBackup {
-			for i := range ac.conns {
-				if ac.conns[i].Rank == 2 {
-					targetConn = ac.conns[i].HostConn
-				} else {
-					targetConn = nil
-				}
-			}
-		}
-	}
+	// var targetConn net.Conn
+	// //var targetConn net.Conn
+	// for msg := range sendChan {
+	// 	if msg.Target == TargetBackup {
+	// 		for i := range ac.conns {
+	// 			if ac.conns[i].Rank == 2 {
+	// 				targetConn = ac.conns[i].HostConn
+	// 			} else {
+	// 				targetConn = nil
+	// 			}
+	// 		}
+	// 	}
+	// }
 
-	fmt.Println("Trying to send msg to backup")
-	encoder := json.NewEncoder(targetConn)
+	fmt.Println("Trying to send msg to client")
+	encoder := json.NewEncoder(conn)
 	for msg := range sendChan {
 		err := encoder.Encode(msg)
 		if err != nil {
@@ -333,7 +348,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		masterID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go comm.AnnounceMaster(id, bcastPortString)
-		go ListenAndAcceptConnections(*ac, TCPPort)
+		go ListenAndAcceptConnections(*ac, TCPPort, sendChan)
 		// A small delay to allow the master to start listening before trying to connect to itself
 		time.Sleep(1 * time.Second)
 		localIP := "127.0.0.1"
@@ -373,6 +388,9 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 					go comm.ConnectToMaster(masterID, TCPPort)
 				}
 			}
+		case b := <-networkChannels.BackupChan:
+			fmt.Println("Got a message from master")
+			fmt.Printf("Received: %#v\n", b)
 
 			// case a := <-helloRx:
 			// 	fmt.Printf("Received: %#v\n", a)
