@@ -48,7 +48,7 @@ type Message struct {
 // Keeping track of connections
 type MasterConnectionInfo struct {
 	ClientIP    string
-	// Rank        int
+	Rank        int
 	HostConn    net.Conn
 }
 
@@ -163,7 +163,7 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan Mess
 	}
 
 	sendChan <- msg
-	SendMessages(*ac, sendChan, conn)
+	SendMessages(*ac, sendChan)
 }
 
 // Removes a connection from the list of active connections when connection is lost
@@ -235,7 +235,7 @@ func sendMessageOnChannel(sendChan chan Message, msg Message) {
 	sendChan <- msg
 }
 
-func SendMessages(ac ActiveConnections, sendChan chan Message, conn net.Conn) {
+func SendMessages(ac ActiveConnections, sendChan chan Message) {
 
 	// var targetConn net.Conn
 	// //var targetConn net.Conn
@@ -252,14 +252,18 @@ func SendMessages(ac ActiveConnections, sendChan chan Message, conn net.Conn) {
 	// }
 
 	fmt.Println("Trying to send msg to client")
-	encoder := json.NewEncoder(conn)
-	for msg := range sendChan {
-		err := encoder.Encode(msg)
-		if err != nil {
-			fmt.Println("Error encoding message: ", err)
-			return
+
+	for _, connInfo := range ac.conns {
+		encoder := json.NewEncoder(connInfo.HostConn)
+		for msg := range sendChan {
+			err := encoder.Encode(msg)
+			if err != nil {
+				fmt.Println("Error encoding message: ", err)
+				return
+			}
 		}
 	}
+	
 		
 }
 
@@ -269,6 +273,7 @@ func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
 		case TargetMaster:
 			networkChannels.MasterChan <- msg
 		case TargetBackup:
+			fmt.Print("Sending msg on backup chan")
 			networkChannels.BackupChan <- msg
 		case TargetElevator:
 			networkChannels.ElevatorChan <- msg
