@@ -1,13 +1,17 @@
 package network
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
-	"encoding/json"
 )
 
 // Adds the host's connection with the relevant client in the list of active connections
 func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan chan Message) {
+
+	ac.mutex.Lock()
+	defer ac.mutex.Unlock()
+
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
 	// Check if a connection already exists with this IP
@@ -25,6 +29,8 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 		HostConn: conn,
 	}
 
+	fmt.Printf("NewConn. ClientIP: %s, Rank: %d", newConn.ClientIP, newConn.Rank)
+
 	ac.conns = append(ac.conns, newConn)
 
 	msg := Message{
@@ -39,13 +45,17 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 
 
 // Master listenes and accepts connections
-func ListenAndAcceptConnections(ac ActiveConnections, port string, sendChan chan Message) {
+func (ac *ActiveConnections)ListenAndAcceptConnections(port string, sendChan chan Message) {
+
+	ac.mutex.Lock()
+	defer ac.mutex.Unlock()
+
 	ln, _ := net.Listen("tcp", ":"+port)
 
 	for {
 		hostConn, _ := ln.Accept()
 		// send rank
-		rank := len(ac.conns) + 1
+		rank := len(ac.conns) + 2
 		msg := Message{
 			Type: rankMessage,
 			Target: TargetClient,
@@ -56,7 +66,10 @@ func ListenAndAcceptConnections(ac ActiveConnections, port string, sendChan chan
 	}
 }
 
-func MasterSendMessages(sendChan chan Message, ac ActiveConnections) {
+func (ac *ActiveConnections)MasterSendMessages(sendChan chan Message) {
+
+	ac.mutex.Lock()
+	defer ac.mutex.Unlock()
 
 	var targetConn net.Conn
 	for msg := range sendChan {
@@ -64,9 +77,11 @@ func MasterSendMessages(sendChan chan Message, ac ActiveConnections) {
 		switch msg.Target {
 		case TargetBackup: 
 			// need to find the conn object connected to backup
+			fmt.Println("Backup is target")
 			for i := range ac.conns {
 				if ac.conns[i].Rank == 2 {
 					targetConn = ac.conns[i].HostConn
+					fmt.Println("Found backup conn")
 					break
 				}
 			}
@@ -86,7 +101,9 @@ func MasterSendMessages(sendChan chan Message, ac ActiveConnections) {
 					return
 				}
 			}
+		} else {
+			// If targetConn is nil, log a message or handle the case
+			fmt.Println("No valid connection found for the message")
 		}
-		
 	}
 }

@@ -1,6 +1,8 @@
 package network
 
 import (
+	"sync"
+
 	"github.com/ellenkhoo/ElevatorProject/comm"
 
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
@@ -11,6 +13,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+
 	// "os"
 	"time"
 )
@@ -364,7 +367,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 			time.Sleep(1 * time.Second)
 		}
 	}()
-
+	
 	sendChan := make(chan Message)
 	receiveChan := make(chan Message)
 	go RouteMessages(receiveChan, networkChannels)
@@ -384,8 +387,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		masterID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go comm.AnnounceMaster(id, bcastPortString)
-		go ListenAndAcceptConnections(*ac, TCPPort, sendChan)
-		go MasterSendMessages(sendChan, *ac)
+		go ac.ListenAndAcceptConnections(TCPPort, sendChan)
+		go ac.MasterSendMessages(sendChan)
 		// A small delay to allow the master to start listening before trying to connect to itself
 		// time.Sleep(1 * time.Second)
 		// localIP := "127.0.0.1"

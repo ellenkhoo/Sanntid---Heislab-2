@@ -2,6 +2,7 @@ package network
 
 import (
 	"net"
+	"sync"
 )
 
 type HelloMsg struct {
@@ -58,7 +59,6 @@ type NetworkChannels struct {
 }
 
 type ActiveConnections struct {
-	// unødvendig med mutex?
-	//mu    sync.Mutex
+	mutex    sync.Mutex
 	conns []MasterConnectionInfo
 }
