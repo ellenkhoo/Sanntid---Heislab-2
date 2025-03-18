@@ -110,6 +110,7 @@ func (ac *ActiveConnections) AddClientConnection(conn net.Conn, sendChan chan Me
 // Maybe not the most describing name
 func HandleConnection(conn ClientConnectionInfo) {
 	// Read from TCP connection and send to the receive channel
+	fmt.Println("Reacing from TCP")
 	go func() {
 		decoder := json.NewDecoder(conn.ClientConn)
 		for {
@@ -124,6 +125,7 @@ func HandleConnection(conn ClientConnectionInfo) {
 	}()
 
 	// Read from the send channel and write to the TCP connection
+	fmt.Println("Sending to TCP")
 	go func() {
 		encoder := json.NewEncoder(conn.ClientConn)
 		for msg := range conn.SendChan {
@@ -162,8 +164,11 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan Mess
 		Payload: "Hello from master",
 	}
 
+	fmt.Println("Sending hello message on channel")
 	sendChan <- msg
+	fmt.Println("Sending hello message on tcp")
 	SendMessages(*ac, sendChan)
+	fmt.Println("Sent message")
 }
 
 // Removes a connection from the list of active connections when connection is lost
@@ -339,6 +344,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 
 	sendChan := make(chan Message)
 	receiveChan := make(chan Message)
+	go SendMessages(*ac, sendChan)
+	//receiveMessages
 	go RouteMessages(receiveChan, networkChannels)
 
 	// Listen for the master
