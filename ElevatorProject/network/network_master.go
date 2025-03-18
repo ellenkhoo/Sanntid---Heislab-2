@@ -34,7 +34,7 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 	}
 
 	fmt.Println("Sending hello message on channel")
-	sendChan <- msg
+	sendMessageOnChannel(sendChan, msg)
 }
 
 

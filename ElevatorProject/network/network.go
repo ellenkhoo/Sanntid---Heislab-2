@@ -228,6 +228,7 @@ func CreateActiveConnections() *ActiveConnections {
 // }
 
 func ReceiveMessage(receiveChan chan Message, conn net.Conn) {
+	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
 
 	for {
@@ -249,7 +250,7 @@ func sendMessageOnChannel(sendChan chan Message, msg Message) {
 
 func ClientSendMessages(sendChan chan Message, conn net.Conn) {
 
-	fmt.Println("Trying to send msg to master")
+	fmt.Println("Ready to send msg to master")
 
 	encoder := json.NewEncoder(conn)
 	for msg := range sendChan {
