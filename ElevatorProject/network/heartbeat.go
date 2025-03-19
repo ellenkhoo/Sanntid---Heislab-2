@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// sjekker om master lever
 func SendHeartbeatToMaster(ac *ActiveConnections, sendChan chan Message, receiveChan chan Message) bool {
 	sendChan <- Message{
 		Type:   HelloMessage,
@@ -58,7 +59,7 @@ func findBackupConnection(ac *ActiveConnections) net.Conn {
 func SendHeartbeatToClient(ac *ActiveConnections, sendChan chan Message, receiveChan chan Message) bool {
 	sendChan <- Message{
 		Type:   HelloMessage,
-		Target: TargetBackup,
+		Target: TargetClient,
 		Payload: HelloMsg{
 			Message: "heartbeat",
 			Iter:    0,

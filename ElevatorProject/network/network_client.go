@@ -1,10 +1,10 @@
 package network
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
-
 	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
 	//"github.com/ellenkhoo/ElevatorProject/roles"
 )
@@ -17,8 +17,8 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	fmt.Println("Adding client connection")
 
 	*client = ClientConnectionInfo{
-		ID: 	id,
-		HostIP:          remoteIP,
+		ID:          id,
+		HostIP:      remoteIP,
 		ClientConn:  clientConn,
 		SendChan:    sendChan,
 		ReceiveChan: receiveChan,
@@ -59,23 +59,29 @@ func HandleConnection(client ClientConnectionInfo) {
 	}()
 }
 
-func ClientSendMessages(sendChan chan Message, conn net.Conn) {
+func ClientSendMessages(ctx context.Context, sendChan chan Message, conn net.Conn) {
 
 	fmt.Println("Ready to send msg to master")
 
 	encoder := json.NewEncoder(conn)
-	for msg := range sendChan {
-		fmt.Println("Sending message:", msg)
-		err := encoder.Encode(msg)
-		if err != nil {
-			fmt.Println("Error encoding message: ", err)
+
+	for {
+		select {
+		case msg := <-sendChan:
+			fmt.Println("Sending message:", msg)
+			err := encoder.Encode(msg)
+			if err != nil {
+				fmt.Println("Error encoding message: ", err)
+				return
+			}
+		case <-ctx.Done():
 			return
 		}
 	}
 }
 
 // Messages sent to a client means that the data is meant both for an elevator thread and the potential backup
-func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message) {
+func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg Message) {
 
 	clientID := clientConn.ID
 
@@ -93,19 +99,18 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 	case masterOrdersMessage:
 		data := msg.Payload
 		if masterData, ok := data.(MasterData); ok {
-			backupData:= CreateBackupData(masterData)
+			backupData := CreateBackupData(masterData)
 			elevatorData := CreateElevatorData(masterData, clientID)
 
 			backupMsg := Message{
-				Type: masterOrdersMessage,
-				Target: TargetBackup,
+				Type:    masterOrdersMessage,
+				Target:  TargetBackup,
 				Payload: backupData,
 			}
 
-
 			elevatorMsg := Message{
-				Type: masterOrdersMessage,
-				Target: TargetElevator,
+				Type:    masterOrdersMessage,
+				Target:  TargetElevator,
 				Payload: elevatorData,
 			}
 
@@ -113,39 +118,36 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 			clientConn.ReceiveChan <- backupMsg
 			clientConn.ReceiveChan <- elevatorMsg
 		}
-	// case heartbeat: //
-	// 	// start timer
-	// case timeout:
-	// 	// start master
+		// case heartbeat: //
+		// 	// start timer
+		// case timeout:
+		// 	// start master
 	}
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func CreateElevatorData(masterData MasterData, elevatorID string) ElevatorRequest{
- 
+func CreateElevatorData(masterData MasterData, elevatorID string) ElevatorRequest {
 
-    localAssignedRequests := masterData.AllAssignedRequests[elevatorID]
+	localAssignedRequests := masterData.AllAssignedRequests[elevatorID]
 	globalHallRequests := masterData.GlobalHallRequests
 
 	elevatorData := ElevatorRequest{
 		GlobalHallRequests: globalHallRequests,
-		AssignedRequests: localAssignedRequests,
+		AssignedRequests:   localAssignedRequests,
 	}
 
 	return elevatorData
 }
 
 func CreateBackupData(masterData MasterData) BackupData {
- 
 
-    AllAssignedRequests := masterData.AllAssignedRequests
+	AllAssignedRequests := masterData.AllAssignedRequests
 	globalHallRequests := masterData.GlobalHallRequests
 
 	backupData := BackupData{
-		GlobalHallRequests: globalHallRequests,
+		GlobalHallRequests:  globalHallRequests,
 		AllAssignedRequests: AllAssignedRequests,
 	}
 
 	return backupData
 }
-

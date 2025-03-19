@@ -1,26 +1,50 @@
 package network
 
 import (
+	"context"
 	"fmt"
+
+	"github.com/ellenkhoo/ElevatorProject/comm"
 )
 
 func handleMasterDisconnection(ac *ActiveConnections, sendChan chan Message, receiveChan chan Message,
-	bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels) {
+	bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels,
+	ctx context.Context, cancel context.CancelFunc) {
 	fmt.Println("handling master disconnection...")
 	backupConn := findBackupConnection(ac)
 
 	if backupConn != nil {
 		fmt.Println("Backup is taking over as master")
 		ac.CloseAllConnections()
-		backupConn.Close()
+
+		cancel()
+
 		go InitMasterSlaveNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
-		notifyClientMasterChanged(ac,bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
+		go ListenForMasterAndReconnect(ac, bcastPortString, TCPPort, ctx)
+
 	} else {
 		fmt.Println("no backup available to taker over as master!")
 	}
 }
 
+func ListenForMasterAndReconnect(ac *ActiveConnections, bcastPortString string, TCPPort string, ctx context.Context) {
+	masterID, found := comm.ListenForMaster(bcastPortString)
+	if found {
+		clientConn, success := comm.ConnectToMaster(masterID, TCPPort)
+		if success {
+			sendChan := make(chan Message)
+			receiveChan := make(chan Message)
+			ac.AddClientConnection(masterID, clientConn, sendChan, receiveChan)
 
+			go ReceiveMessage(ctx, receiveChan, clientConn) //go rutine
+			go ClientSendMessages(ctx, sendChan, clientConn)
+		} else {
+			fmt.Println("error connectiong to master. try again...")
+		}
+	} else {
+		fmt.Println("error connection to new master")
+	}
+}
 
 func (ac *ActiveConnections) CloseAllConnections() {
 	fmt.Println("closing all active connections...")

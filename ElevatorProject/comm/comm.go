@@ -1,18 +1,14 @@
 package comm
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
-	"bufio"
+	"context"
 	"fmt"
-	"io"
 	"math/rand/v2"
 	"net"
 	"time"
-
 	// "bufio"
 	// "time"
 	// "strconv"
-	"encoding/json"
 )
 
 // const (
@@ -69,7 +65,7 @@ func ListenForMaster(port string) (string, bool) {
 	return remoteAddr.IP.String(), true
 }
 
-func AnnounceMaster(localIP string, port string) {
+func AnnounceMaster(ctx context.Context, localIP string, port string) {
 	fmt.Println("Announcing master")
 	broadcastAddr := "255.255.255.255" + ":" + port
 	// addr, _ := net.ResolveUDPAddr("udp", "255.255.255.255:9999")
@@ -82,9 +78,15 @@ func AnnounceMaster(localIP string, port string) {
 	defer conn.Close()
 
 	for {
-		msg := "I am Master"
-		conn.Write([]byte(msg))
-		time.Sleep(1 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			msg := "I am Master"
+			conn.Write([]byte(msg))
+			time.Sleep(1 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
+		}
+
 	}
 }
 
