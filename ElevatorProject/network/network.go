@@ -3,10 +3,10 @@ package network
 import (
 	"github.com/ellenkhoo/ElevatorProject/comm"
 
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/peers"
-	"github.com/ellenkhoo/ElevatorProject/elevator"
 
 	"encoding/json"
 	"flag"
@@ -21,7 +21,6 @@ func CreateActiveConnections() *ActiveConnections {
 	return &ActiveConnections{}
 }
 
-
 func ReceiveMessage(receiveChan chan Message, conn net.Conn) {
 	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
@@ -34,7 +33,7 @@ func ReceiveMessage(receiveChan chan Message, conn net.Conn) {
 			return
 		}
 
-		receiveChan <-msg
+		receiveChan <- msg
 	}
 }
 
@@ -71,6 +70,7 @@ func StartNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString strin
 	}
 
 	go InitMasterSlaveNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
+	go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
 	return networkChannels
 }
@@ -184,9 +184,9 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 			//data := "I received rank from master"
 			var elevst = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: "1.1.1.1"}
 
-			msg:= Message{
-				Type: currentStateMessage,
-				Target: TargetMaster,
+			msg := Message{
+				Type:    currentStateMessage,
+				Target:  TargetMaster,
 				Payload: elevst,
 			}
 
