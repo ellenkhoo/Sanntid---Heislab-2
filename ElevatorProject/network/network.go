@@ -43,7 +43,7 @@ func SendMessageOnChannel(sendChan chan Message, msg Message) {
 	sendChan <- msg
 }
 
-func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
+func RouteMessages(client *ClientConnectionInfo, receiveChan chan Message, networkChannels NetworkChannels) {
 	for msg := range receiveChan {
 		switch msg.Target {
 		case TargetMaster:
@@ -54,16 +54,16 @@ func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
 		case TargetElevator:
 			networkChannels.ElevatorChan <- msg
 		case TargetClient:
-			// messages that all types of clients should receive
-			networkChannels.ElevatorChan <- msg
-			networkChannels.BackupChan <- msg
+			// Messages that all clients should receive
+			client.HandleReceivedMessageToClient(msg)
+			
 		default:
 			fmt.Println("Unknown message target")
 		}
 	}
 }
 
-func StartNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, fsm elevator.FSM) NetworkChannels {
+func StartNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, fsm elevator.FSM) NetworkChannels {
 	networkChannels := NetworkChannels{
 		sendChan : make(chan Message),
 		receiveChan : make(chan Message),
@@ -72,12 +72,14 @@ func StartNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString strin
 		ElevatorChan: make(chan Message),
 	}
 
-	go InitMasterSlaveNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
+	go InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
+	go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
 	return networkChannels
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels, fsm elevator.FSM) {
+
+func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels, fsm elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -119,25 +121,26 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		}
 	}()
 
-	go RouteMessages(networkChannels.receiveChan, networkChannels)
-
+	go RouteMessages(&client, networkChannels.receiveChan, networkChannels)
 	// Listen for the master
 	masterID, found := comm.ListenForMaster(bcastPortString)
 	if found {
 		// Try to connect to the master
 		clientConn, success := comm.ConnectToMaster(masterID, TCPPort)
 		if success {
-			ac.AddClientConnection(id, clientConn, networkChannels.sendChan, networkChannels.receiveChan)
+			client.AddClientConnection(id, clientConn, networkChannels.sendChan, networkChannels.receiveChan)
 		}
 		go ReceiveMessage(networkChannels.receiveChan, clientConn)
 		go ClientSendMessages(networkChannels.sendChan, clientConn)
 	} else {
+		// This whole part should be startMaster() ?
 		// No master found, announce ourselves as the master
 		masterID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go comm.AnnounceMaster(id, bcastPortString)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels.sendChan, networkChannels.receiveChan)
 		go ac.MasterSendMessages(networkChannels.sendChan)
+		//go startMaster()
 	}
 
 	// Main loop to handle peer updates and hello message reception
@@ -169,15 +172,14 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 					go comm.ConnectToMaster(masterID, TCPPort)
 				}
 			}
-		case r := <-networkChannels.receiveChan:
-			fmt.Println("Got a message from master")
-			
+		case r := <-networkChannels.receiveChan: // don't really need this case, just for temporary logging
+			fmt.Println("Received a message")
 			fmt.Printf("Received: %#v\n", r)
 
 		case m := <-networkChannels.MasterChan:
-			fmt.Println("Got a message to master")
+			fmt.Println("Master received a message")
 			fmt.Printf("Received: %#v\n", m)
-			//go HandleReceivedMessagesToMaster(m)
+			go masterData.HandleReceivedMessagesToMaster(m)
 
 		case b := <-networkChannels.BackupChan:
 			fmt.Println("Got a message from master to backup")

@@ -3,6 +3,7 @@ package network
 import (
 	"net"
 	"sync"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 )
 
 type HelloMsg struct {
@@ -66,12 +67,20 @@ type ActiveConnections struct {
 	Conns []MasterConnectionInfo
 }
 
-type MasterToClientData struct {
+type MasterData struct {
 	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
-	AssignedRequests   map[string][][2]bool
+	AllAssignedRequests   map[string][][2]bool	`json:"allAssignedRequests"`
+	AllElevStates map[string]elevator.ElevStates	`json:"allElevStates"`
+	mutex sync.Mutex
+}
+
+type BackupData struct {
+	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
+	AllAssignedRequests   map[string][][2]bool	`json:"allAssignedRequests"`
 }
 
 type ElevatorRequest struct {
 	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
 	AssignedRequests   [][2]bool `json:"assignedRequests"`
 }
+

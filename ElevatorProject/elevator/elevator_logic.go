@@ -22,7 +22,7 @@ func ElevLogic_runElevator(fsm FSM, maxDuration time.Duration)  {
 	start_timer := make(chan time.Duration)
 
 	// Initialize timer, stop it until needed
-	timer := time.NewTimer(time.Duration(fsm.El.Config.DoorOpenDuration))
+	timer := time.NewTimer(time.Duration(timers.DoorOpenDuration))
 	timer.Stop()
 
 	// Start goroutines
@@ -81,7 +81,7 @@ func ElevLogic_runElevator(fsm FSM, maxDuration time.Duration)  {
 					start_timer <- maxDuration
 				}
 			} else {
-				start_timer <- fsm.El.Config.DoorOpenDuration
+				start_timer <- timers.DoorOpenDuration
 			}
 			msg := network.Message{
 				Type: currentStateMessage,
