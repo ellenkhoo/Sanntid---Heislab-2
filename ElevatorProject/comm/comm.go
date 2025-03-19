@@ -118,172 +118,172 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 	return conn, true
 }
 
-func ReceiveAssignedRequests(conn net.Conn) {
-	defer conn.Close() //why do we need to do that? Might have to remove in order to keep the conn for the entirety of the program
+// func ReceiveAssignedRequests(conn net.Conn) {
+// 	defer conn.Close() //why do we need to do that? Might have to remove in order to keep the conn for the entirety of the program
 
-	for {
-		buffer := make([]byte, 4096) //might have to adjust size
-		n, err := conn.Read(buffer)
-		if err != nil {
-			if err == io.EOF {
-				fmt.Println("Connection closed by master")
-			} else {
-				fmt.Println("Error reading data:", err)
-			}
-			return
-		}
+// 	for {
+// 		buffer := make([]byte, 4096) //might have to adjust size
+// 		n, err := conn.Read(buffer)
+// 		if err != nil {
+// 			if err == io.EOF {
+// 				fmt.Println("Connection closed by master")
+// 			} else {
+// 				fmt.Println("Error reading data:", err)
+// 			}
+// 			return
+// 		}
 
-		var receivedRequests [][2]bool
-		err = json.Unmarshal(buffer[:n], &receivedRequests)
-		if err != nil {
-			fmt.Println("Failed to decode assigned requests:", err)
-			continue
-		}
+// 		var receivedRequests [][2]bool
+// 		err = json.Unmarshal(buffer[:n], &receivedRequests)
+// 		if err != nil {
+// 			fmt.Println("Failed to decode assigned requests:", err)
+// 			continue
+// 		}
 
-		// do somthing with receivedRequests
-	}
-}
+// 		// do somthing with receivedRequests
+// 	}
+// }
 
-func Comm_sendMessage(message interface{}, conn net.Conn) {
-	data, err1 := json.Marshal(message)
-	if err1 != nil {
-		fmt.Println("Error encoding message: ", err1)
-		return
-	}
+// func Comm_sendMessage(message interface{}, conn net.Conn) {
+// 	data, err1 := json.Marshal(message)
+// 	if err1 != nil {
+// 		fmt.Println("Error encoding message: ", err1)
+// 		return
+// 	}
 
-	_, err2 := conn.Write(data)
-	if err2 != nil {
-		fmt.Println("Error writing message: ", err2)
-	}
-}
+// 	_, err2 := conn.Write(data)
+// 	if err2 != nil {
+// 		fmt.Println("Error writing message: ", err2)
+// 	}
+// }
 
-func Comm_receiveMessage(conn net.Conn) {
-	reader := bufio.NewReader(conn)
+// func Comm_receiveMessage(conn net.Conn) {
+// 	reader := bufio.NewReader(conn)
 
-	for {
-		message, err := reader.ReadString('\x00')
-		if err != nil {
-			fmt.Println("Error reading from connection: ", err)
-			return
-		}
-		fmt.Println("Received message: ", message)
-	}
-}
+// 	for {
+// 		message, err := reader.ReadString('\x00')
+// 		if err != nil {
+// 			fmt.Println("Error reading from connection: ", err)
+// 			return
+// 		}
+// 		fmt.Println("Received message: ", message)
+// 	}
+// }
 
-func Comm_sendReceivedOrder(order elevio.ButtonEvent, conn net.Conn) {
-	//sender ordre til master når en ordre er motatt
-	if conn == nil {
-		fmt.Println("Connection is nil")
-		return
-	}
+// func Comm_sendReceivedOrder(order elevio.ButtonEvent, conn net.Conn) {
+// 	//sender ordre til master når en ordre er motatt
+// 	if conn == nil {
+// 		fmt.Println("Connection is nil")
+// 		return
+// 	}
 
-	data, err := json.Marshal(order)
-	if err != nil {
-		fmt.Println("Failed to encode order: ", err)
-		return
-	}
+// 	data, err := json.Marshal(order)
+// 	if err != nil {
+// 		fmt.Println("Failed to encode order: ", err)
+// 		return
+// 	}
 
-	// TEST
-	message := "order:" + string(data)
-	_, err = conn.Write([]byte(message))
+// 	// TEST
+// 	message := "order:" + string(data)
+// 	_, err = conn.Write([]byte(message))
 
-	fmt.Println("Sending data:", message) // Log the raw JSON data
+// 	fmt.Println("Sending data:", message) // Log the raw JSON data
 
-	//_, err = conn.Write(data)
-	if err != nil {
-		fmt.Println("Failed to send order: ", err)
-		return
-	}
-	fmt.Println("Sent current order to master.\n")
-}
+// 	//_, err = conn.Write(data)
+// 	if err != nil {
+// 		fmt.Println("Failed to send order: ", err)
+// 		return
+// 	}
+// 	fmt.Println("Sent current order to master.\n")
+// }
 
-func Comm_masterReceive(conn net.Conn) {
-	//Finn ut hvilken type melding som har kommet
-	//send ordreliste/matrise til backup
-	//avvent bekreftelse fra backup
-	//Kjør fordelingsalgoritme
-	//Send ordreliste -> setAllLights()
+// func Comm_masterReceive(conn net.Conn) {
+// 	//Finn ut hvilken type melding som har kommet
+// 	//send ordreliste/matrise til backup
+// 	//avvent bekreftelse fra backup
+// 	//Kjør fordelingsalgoritme
+// 	//Send ordreliste -> setAllLights()
 
-	fmt.Println("Arrived at Comm_masterReceiveOrder")
+// 	fmt.Println("Arrived at Comm_masterReceiveOrder")
 
-	if conn == nil {
-		fmt.Println("Connection is nil")
-		return
-	}
+// 	if conn == nil {
+// 		fmt.Println("Connection is nil")
+// 		return
+// 	}
 
-	// Buffer to hold incoming data
-	buffer := make([]byte, 1024)
+// 	// Buffer to hold incoming data
+// 	buffer := make([]byte, 1024)
 
-	for {
-		fmt.Println("Reading loop")
-		// Read data from the connection
-		n, err := conn.Read(buffer)
-		if err != nil {
-			fmt.Println("Error receiving data:", err)
-			return
-		}
+// 	for {
+// 		fmt.Println("Reading loop")
+// 		// Read data from the connection
+// 		n, err := conn.Read(buffer)
+// 		if err != nil {
+// 			fmt.Println("Error receiving data:", err)
+// 			return
+// 		}
 
-		// Read the message and check its prefix
-		message := string(buffer[:n])
+// 		// Read the message and check its prefix
+// 		message := string(buffer[:n])
 
-		// Check if the message starts with "order" or "state"
-		if len(message) >= 5 && message[:5] == "order" {
-			var order elevio.ButtonEvent
-			err := json.Unmarshal([]byte(message[6:]), &order) // Skip "order:"
-			if err != nil {
-				fmt.Println("Failed to unmarshal order:", err)
-				return
-			}
-			fmt.Printf("Received order: Floor %d, Button %d\n", order.Floor, order.Button)
-			continue
+// 		// Check if the message starts with "order" or "state"
+// 		if len(message) >= 5 && message[:5] == "order" {
+// 			var order elevio.ButtonEvent
+// 			err := json.Unmarshal([]byte(message[6:]), &order) // Skip "order:"
+// 			if err != nil {
+// 				fmt.Println("Failed to unmarshal order:", err)
+// 				return
+// 			}
+// 			fmt.Printf("Received order: Floor %d, Button %d\n", order.Floor, order.Button)
+// 			continue
 
-		}
-		if len(message) >= 5 && message[:5] == "state" {
-			fmt.Println("Received state message")
-			// var state elevator.ElevStates
-			// err := json.Unmarshal([]byte(message[6:]), &state) // Skip "state:"
-			// if err != nil {
-			// 	fmt.Println("Failed to unmarshal state:", err)
-			// 	return
-			// }
-			// fmt.Printf("Received state: Behaviour %s, Floor %d, Direction %s\n", state.Behaviour, state.Floor, state.Direction)
-			continue
-		}
+// 		}
+// 		if len(message) >= 5 && message[:5] == "state" {
+// 			fmt.Println("Received state message")
+// 			// var state elevator.ElevStates
+// 			// err := json.Unmarshal([]byte(message[6:]), &state) // Skip "state:"
+// 			// if err != nil {
+// 			// 	fmt.Println("Failed to unmarshal state:", err)
+// 			// 	return
+// 			// }
+// 			// fmt.Printf("Received state: Behaviour %s, Floor %d, Direction %s\n", state.Behaviour, state.Floor, state.Direction)
+// 			continue
+// 		}
 
-		fmt.Println("Received unrecognized message type")
-	}
+// 		fmt.Println("Received unrecognized message type")
+// 	}
 
-}
+// }
 
-func Comm_slaveReceiveRequests() {
-	//Bekrefte lister
-	//Oppdater RequestsToDo
-	//setAllLights()
-	//Utføre requests (gjøres kontinuerlig)
-}
+// func Comm_slaveReceiveRequests() {
+// 	//Bekrefte lister
+// 	//Oppdater RequestsToDo
+// 	//setAllLights()
+// 	//Utføre requests (gjøres kontinuerlig)
+// }
 
-// might be easier to understand by changing to 'state ElevStates' instead of interface{}
-func Comm_sendCurrentState(state interface{}, conn net.Conn) {
+// // might be easier to understand by changing to 'state ElevStates' instead of interface{}
+// func Comm_sendCurrentState(state interface{}, conn net.Conn) {
 
-	if conn == nil {
-		fmt.Println("Connection is nil")
-		return
-	}
+// 	if conn == nil {
+// 		fmt.Println("Connection is nil")
+// 		return
+// 	}
 
-	data, err := json.Marshal(state)
-	if err != nil {
-		fmt.Println("Failed to encode state: ", err)
-		return
-	}
+// 	data, err := json.Marshal(state)
+// 	if err != nil {
+// 		fmt.Println("Failed to encode state: ", err)
+// 		return
+// 	}
 
-	// TEST
-	message := "state:" + string(data)
-	_, err = conn.Write([]byte(message))
+// 	// TEST
+// 	message := "state:" + string(data)
+// 	_, err = conn.Write([]byte(message))
 
-	//_, err = conn.Write(data)
-	if err != nil {
-		fmt.Println("Failed to send state: ", err)
-		return
-	}
-	fmt.Println("Sent current state to master.")
-}
+// 	//_, err = conn.Write(data)
+// 	if err != nil {
+// 		fmt.Println("Failed to send state: ", err)
+// 		return
+// 	}
+// 	fmt.Println("Sent current state to master.")
+// }

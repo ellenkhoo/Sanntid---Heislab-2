@@ -63,7 +63,7 @@ func RouteMessages(client *ClientConnectionInfo, receiveChan chan Message, netwo
 	}
 }
 
-func StartNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string) NetworkChannels {
+func StartNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, fsm elevator.FSM) NetworkChannels {
 	networkChannels := NetworkChannels{
 		sendChan : make(chan Message),
 		receiveChan : make(chan Message),
@@ -72,13 +72,14 @@ func StartNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData
 		ElevatorChan: make(chan Message),
 	}
 
-	go InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
+	go InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
 	go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
 	return networkChannels
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels) {
+
+func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels, fsm elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -194,6 +195,13 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 			}
 
 			SendMessageOnChannel(networkChannels.sendChan, msg)
+		
+		//Overskriver requests lokalt om man får ny melding fra master
+		case e := <-networkChannels.ElevatorChan:
+			fsm.El.AssignedRequests = msg.Payload.AssignedRequests
+			fsm.El.RequestsToDo = fsm.El.AssignedRequests.append(fsm.El.ElevStates.cabRequests)
+			
+
 
 			// case a := <-helloRx:
 			// 	fmt.Printf("Received: %#v\n", a)

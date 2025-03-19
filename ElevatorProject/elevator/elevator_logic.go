@@ -4,12 +4,13 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/comm"
 	"github.com/ellenkhoo/ElevatorProject/timers"
+	"github.com/ellenkhoo/ElevatorProject/network"
 	"fmt"
 	"time"
 	"net"
 )
 
-func ElevLogic_runElevator(fsm FSM, maxDuration time.Duration, conn net.Conn)  {
+func ElevLogic_runElevator(fsm FSM, maxDuration time.Duration)  {
 
 	fmt.Println("Arrived at runElevator")
 
@@ -41,26 +42,37 @@ func ElevLogic_runElevator(fsm FSM, maxDuration time.Duration, conn net.Conn)  {
 
 	for {
 		select {
+
+		//Lag melding, send den på sendChan
 		case order := <-buttons_chan:
 			fmt.Printf("Button pushed. Order at floor: %d\n", order.Floor)
 			// If cab call
 			if order.Button == B_Cab {
 				fsm.El.ElevStates.CabRequests[order.Floor] = true
+			} else { //Send hall calls til master
+				reqMsg := network.Message{
+					Type: localRequestMessage,
+					Target: TargetMaster,
+					Payload: order
+				}
+				network.networkChannels.sendChan <- reqmsg
 			}
+			//Alltid send state etter et knappetrykk
+			stateMsg := network.Message{
+				Type: currentStateMessage,
+				Target: TargetMaster,
+				Payload: fsm.El.ElevStates
+			}
+			network.NetworkChannels.sendChan <- stateMsg
 
-			// Send request + current state to master
-			if !(fsm.El.GlobalHallRequests[order.Floor][order.Button]) {
-				comm.Comm_sendReceivedOrder(order, conn)
-			}
-			comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
 
 			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
+				//Master informeres i funksjonskallet nedenfor
 				fsm.Fsm_onFloorArrival(floor_input, start_timer)
 			}
-			comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
 
 		case obstruction := <-obstruction_chan:
@@ -71,7 +83,13 @@ func ElevLogic_runElevator(fsm FSM, maxDuration time.Duration, conn net.Conn)  {
 			} else {
 				start_timer <- timers.DoorOpenDuration
 			}
-			comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
+			msg := network.Message{
+				Type: currentStateMessage,
+				Target: TargetMaster,
+				Payload: fsm.El.ElevStates
+			}
+
+			network.networkChannels.sendChan <- msg
 
 		case <-timer.C:
 			fsm.Fsm_onDoorTimeout(start_timer)
