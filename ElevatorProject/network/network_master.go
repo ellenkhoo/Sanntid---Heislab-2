@@ -13,19 +13,19 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 
 	newConn := MasterConnectionInfo{
 		ClientIP: remoteIP,
-		Rank: rank,
+		Rank:     rank,
 		HostConn: conn,
 	}
 
 	fmt.Printf("NewConn. ClientIP: %s, Rank: %d", newConn.ClientIP, newConn.Rank)
 
 	ac.mutex.Lock()
-	ac.conns = append(ac.conns, newConn)
+	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
 
 	msg := Message{
-		Type: rankMessage,
-		Target: TargetBackup,
+		Type:    rankMessage,
+		Target:  TargetBackup,
 		Payload: rank,
 	}
 
@@ -33,9 +33,8 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 	SendMessageOnChannel(sendChan, msg)
 }
 
-
 // Master listenes and accepts connections
-func (ac *ActiveConnections)ListenAndAcceptConnections(port string, sendChan chan Message, receiveChan chan Message) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan chan Message, receiveChan chan Message) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
@@ -45,27 +44,27 @@ func (ac *ActiveConnections)ListenAndAcceptConnections(port string, sendChan cha
 			fmt.Println("Error acepting connection:", err)
 			continue
 		}
-		rank := len(ac.conns) + 2
+		rank := len(ac.Conns) + 2
 
 		go ReceiveMessage(receiveChan, hostConn)
 		go ac.AddHostConnection(rank, hostConn, sendChan)
 	}
 }
 
-func (ac *ActiveConnections)MasterSendMessages(sendChan chan Message) {
+func (ac *ActiveConnections) MasterSendMessages(sendChan chan Message) {
 
 	fmt.Println("Arrived at masterSend")
-	
+
 	var targetConn net.Conn
 	for msg := range sendChan {
 		fmt.Println("target: ", msg.Target)
 		switch msg.Target {
-		case TargetBackup: 
+		case TargetBackup:
 			// Need to find the conn object connected to backup
 			fmt.Println("Backup is target")
-			for i := range ac.conns {
-				if ac.conns[i].Rank == 2 {
-					targetConn = ac.conns[i].HostConn
+			for i := range ac.Conns {
+				if ac.Conns[i].Rank == 2 {
+					targetConn = ac.Conns[i].HostConn
 					fmt.Println("Found backup conn")
 					break
 				}
@@ -73,11 +72,11 @@ func (ac *ActiveConnections)MasterSendMessages(sendChan chan Message) {
 
 		case TargetElevator:
 			// do something
-		case TargetClient: 
+		case TargetClient:
 
 			// do something
 		}
-		
+
 		if targetConn != nil {
 			encoder := json.NewEncoder(targetConn)
 			fmt.Println("Sending message:", msg)
