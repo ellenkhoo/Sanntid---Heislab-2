@@ -19,6 +19,7 @@ const (
 	currentStateMessage
 	HelloMessage
 	rankMessage
+	elevClearedOrderMessage
 )
 
 type MessageTarget int

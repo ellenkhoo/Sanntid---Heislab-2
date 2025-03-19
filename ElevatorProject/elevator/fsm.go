@@ -16,9 +16,10 @@ type FSM struct {
 func (fsm *FSM) SetAllLights() {
 	print("Setting all lights\n")
 	for floor := 0; floor < N_FLOORS; floor++ {
-		for btn := elevio.ButtonType(0); btn < N_BUTTONS; btn++ {
-			fsm.Od.RequestButtonLight(floor, btn, fsm.El.RequestsToDo[floor][btn])
+		for btn := elevio.ButtonType(0); btn < N_BUTTONS-1; btn++ {
+			fsm.Od.RequestButtonLight(floor, btn, fsm.El.GlobalHallRequests[floor][btn])
 		}
+		fsm.Od.RequestButtonLight(floor, elevio.BT_Cab, fsm.El.ElevStates.CabRequests[floor])
 	}
 }
 
@@ -87,13 +88,19 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 		if Requests_shouldStop(fsm.El) {
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.ElevStates.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
-			//fsm.El = request.Requests_clearAtCurrentFloor(fsm.El)
+			fsm.El.ElevStates.CabRequests[fsm.El.ElevStates.Floor] = false
 			elevio.SetDoorOpenLamp(true)
 			//fsm.SetAllLights()
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
 			// Send beskjed til master 
+			msg := network.Message{
+				Type: elevClearedOrderMessage,
+				Target: TargetMaster,
+				Payload: fsm.El.ElevStates
+			}
+			network.networkChannels.sendChan <- msg
 		}
 	}
 
@@ -116,7 +123,7 @@ func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
 		switch fsm.El.Behaviour {
 		case EB_DoorOpen:
 			start_timer <- fsm.El.Config.DoorOpenDuration
-			fsm.El = Requests_clearAtCurrentFloor(fsm.El)
+			// fsm.El = Requests_clearAtCurrentFloor(fsm.El)
 			fsm.SetAllLights()
 		case EB_Moving, EB_Idle:
 			elevio.SetDoorOpenLamp(false)

@@ -23,7 +23,8 @@ func main() {
 	var peersPort = 15647
 	var TCPPort = "8081"
 
-	go network.StartNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
+	fsm := roles.InitElevator()
+	go network.StartNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort, fsm)
 
 	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
 	// Start elevator

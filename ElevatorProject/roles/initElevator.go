@@ -7,11 +7,12 @@ import (
 	"net"
 )
 
-func InitElevator(rank int, conn net.Conn) {
+func InitElevator() elevator.FSM {
 	elevio.Init("localhost:15657", elevator.N_FLOORS)
 
 	fsm := elevator.FSM{El: elevator.Elevator_uninitialized(), Od: elevator.Elevio_getOutputDevice()}
-	fsm.El.Rank = rank
 
-	elevator.ElevLogic_runElevator(fsm, timers.MaxDuration, conn)
+	go elevator.ElevLogic_runElevator(fsm, timers.MaxDuration)
+
+	return fsm
 }

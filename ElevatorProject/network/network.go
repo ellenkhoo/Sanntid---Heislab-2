@@ -63,7 +63,7 @@ func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
 	}
 }
 
-func StartNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string) NetworkChannels {
+func StartNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, fsm elevator.FSM) NetworkChannels {
 	networkChannels := NetworkChannels{
 		sendChan : make(chan Message),
 		receiveChan : make(chan Message),
@@ -72,12 +72,12 @@ func StartNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString strin
 		ElevatorChan: make(chan Message),
 	}
 
-	go InitMasterSlaveNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
+	go InitMasterSlaveNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
 
 	return networkChannels
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels, fsm elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -193,6 +193,13 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 			}
 
 			SendMessageOnChannel(networkChannels.sendChan, msg)
+		
+		//Overskriver requests lokalt om man får ny melding fra master
+		case e := <-networkChannels.ElevatorChan:
+			fsm.El.AssignedRequests = msg.Payload.AssignedRequests
+			fsm.El.RequestsToDo = fsm.El.AssignedRequests.append(fsm.El.ElevStates.cabRequests)
+			
+
 
 			// case a := <-helloRx:
 			// 	fmt.Printf("Received: %#v\n", a)
