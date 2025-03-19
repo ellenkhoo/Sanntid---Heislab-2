@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 	"encoding/json"
-	"github.com/ellenkhoo/ElevatorProject/roles"
+	//"github.com/ellenkhoo/ElevatorProject/roles"
 )
 // When a new connection is established on the client side, this function adds it to the list of active connections
 func (ac *ActiveConnections) AddClientConnection(id string, conn net.Conn, sendChan chan Message, receiveChan chan Message) {
@@ -97,26 +97,40 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 		if rank, ok := data.(int); ok {
 			clientConn.Rank = rank
 		}
-	case masterRequestMessage:
+	case masterOrdersMessage:
 		var localAssignedRequest [][2]bool
 		data := msg.Payload
 		if masterData, ok := data.(MasterToClientData); ok {
 			// Extract the assigned requests for this specific elevator
 			masterData.AssignedRequests[clientID] = localAssignedRequest
 
-			backupMsg := masterData
-			elevatorMsg := createElevatorMessage(masterData, clientID)
+			backupData:= masterData
+			elevatorData := CreateElevatorData(masterData, clientID)
 
 			// må lage en mld av type Message!
 			//SendMessageOnChannel(, backupMsg)
 
+			backupMsg := Message{
+				Type: masterOrdersMessage,
+				Target: TargetBackup,
+				Payload: backupData,
+			}
+
+
+			elevatorMsg := Message{
+				Type: masterOrdersMessage,
+				Target: TargetElevator,
+				Payload: elevatorData,
+			}
+
+			clientConn.ReceiveChan <- backupMsg
+			clientConn.ReceiveChan <- elevatorMsg
 		}
-		
 	}
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func createElevatorMessage(masterData MasterToClientData, elevatorID string) ElevatorRequest{
+func CreateElevatorData(masterData MasterToClientData, elevatorID string) ElevatorRequest{
  
 
     localAssignedRequests := masterData.AssignedRequests[elevatorID]

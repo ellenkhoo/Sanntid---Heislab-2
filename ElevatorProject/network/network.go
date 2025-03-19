@@ -65,6 +65,8 @@ func RouteMessages(receiveChan chan Message, networkChannels NetworkChannels) {
 
 func StartNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string) NetworkChannels {
 	networkChannels := NetworkChannels{
+		sendChan : make(chan Message),
+		receiveChan : make(chan Message),
 		MasterChan:   make(chan Message),
 		BackupChan:   make(chan Message),
 		ElevatorChan: make(chan Message),
@@ -117,9 +119,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		}
 	}()
 
-	sendChan := make(chan Message)
-	receiveChan := make(chan Message)
-	go RouteMessages(receiveChan, networkChannels)
+	go RouteMessages(networkChannels.receiveChan, networkChannels)
 
 	// Listen for the master
 	masterID, found := comm.ListenForMaster(bcastPortString)
@@ -127,17 +127,17 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 		// Try to connect to the master
 		clientConn, success := comm.ConnectToMaster(masterID, TCPPort)
 		if success {
-			ac.AddClientConnection(id, clientConn, sendChan, receiveChan)
+			ac.AddClientConnection(id, clientConn, networkChannels.sendChan, networkChannels.receiveChan)
 		}
-		go ReceiveMessage(receiveChan, clientConn)
-		go ClientSendMessages(sendChan, clientConn)
+		go ReceiveMessage(networkChannels.receiveChan, clientConn)
+		go ClientSendMessages(networkChannels.sendChan, clientConn)
 	} else {
 		// No master found, announce ourselves as the master
 		masterID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go comm.AnnounceMaster(id, bcastPortString)
-		go ac.ListenAndAcceptConnections(TCPPort, sendChan, receiveChan)
-		go ac.MasterSendMessages(sendChan)
+		go ac.ListenAndAcceptConnections(TCPPort, networkChannels.sendChan, networkChannels.receiveChan)
+		go ac.MasterSendMessages(networkChannels.sendChan)
 	}
 
 	// Main loop to handle peer updates and hello message reception
@@ -169,13 +169,15 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 					go comm.ConnectToMaster(masterID, TCPPort)
 				}
 			}
-		case r := <-receiveChan:
+		case r := <-networkChannels.receiveChan:
 			fmt.Println("Got a message from master")
+			
 			fmt.Printf("Received: %#v\n", r)
 
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Got a message to master")
-			go HandleReceivedMessagesToMaster(m)
+			fmt.Printf("Received: %#v\n", m)
+			//go HandleReceivedMessagesToMaster(m)
 
 		case b := <-networkChannels.BackupChan:
 			fmt.Println("Got a message from master to backup")
@@ -190,7 +192,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, bcastPortInt int, bcastPortSt
 				Payload: elevst,
 			}
 
-			SendMessageOnChannel(sendChan, msg)
+			SendMessageOnChannel(networkChannels.sendChan, msg)
 
 			// case a := <-helloRx:
 			// 	fmt.Printf("Received: %#v\n", a)

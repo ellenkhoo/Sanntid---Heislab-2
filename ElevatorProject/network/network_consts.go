@@ -13,7 +13,7 @@ type HelloMsg struct {
 type MessageType int
 
 const (
-	masterRequestMessage MessageType = iota
+	masterOrdersMessage MessageType = iota
 	backupAcknowledgeMessage
 	localRequestMessage
 	currentStateMessage
@@ -53,6 +53,8 @@ type ClientConnectionInfo struct {
 }
 
 type NetworkChannels struct {
+	sendChan 	chan Message
+	receiveChan chan Message
 	MasterChan   chan Message
 	BackupChan   chan Message
 	ElevatorChan chan Message
