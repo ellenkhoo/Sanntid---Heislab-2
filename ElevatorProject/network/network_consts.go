@@ -3,40 +3,43 @@ package network
 import (
 	"net"
 	"sync"
+
 	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
-type HelloMsg struct {
-	Message string
-	Iter    int
-}
+// // NETWORK CONSTS
+// type HelloMsg struct {
+// 	Message string
+// 	Iter    int
+// }
 
-type MessageType int
+// type MessageType int
 
-const (
-	masterOrdersMessage MessageType = iota
-	backupAcknowledgeMessage
-	localRequestMessage
-	currentStateMessage
-	HelloMessage
-	rankMessage
-	elevClearedOrderMessage
-)
+// const (
+// 	MasterOrdersMessage MessageType = iota
+// 	BackupAcknowledgeMessage
+// 	LocalRequestMessage
+// 	CurrentStateMessage
+// 	HelloMessage
+// 	RankMessage
+// 	ElevClearedOrderMessage
+// )
 
-type MessageTarget int
+// type MessageTarget int
 
-const (
-	TargetMaster MessageTarget = iota
-	TargetClient
-	TargetBackup
-	TargetElevator
-)
+// const (
+// 	TargetMaster MessageTarget = iota
+// 	TargetClient
+// 	TargetBackup
+// 	TargetElevator
+// )
 
-type Message struct {
-	Type    MessageType
-	Target  MessageTarget
-	Payload interface{}
-}
+// type Message struct {
+// 	Type    MessageType
+// 	Target  MessageTarget
+// 	Payload interface{}
+// }
 
 // Keeping track of connections
 type MasterConnectionInfo struct {
@@ -50,22 +53,29 @@ type ClientConnectionInfo struct {
 	HostIP      string
 	Rank        int
 	ClientConn  net.Conn
-	SendChan    chan Message
-	ReceiveChan chan Message
+	SendChan    chan sharedConsts.Message
+	ReceiveChan chan sharedConsts.Message
 }
 
-type NetworkChannels struct {
-	sendChan 	chan Message
-	receiveChan chan Message
-	MasterChan   chan Message
-	BackupChan   chan Message
-	ElevatorChan chan Message
-}
+// type NetworkChannels struct {
+// 	SendChan 	chan Message
+// 	ReceiveChan chan Message
+// 	MasterChan   chan Message
+// 	BackupChan   chan Message
+// 	ElevatorChan chan Message
+// }
 
 type ActiveConnections struct {
 	mutex sync.Mutex
 	Conns []MasterConnectionInfo
 }
+
+// type MasterData struct {
+// 	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
+// 	AllAssignedRequests   map[string][][2]bool	`json:"allAssignedRequests"`
+// 	AllElevStates map[string]elevator.ElevStates	`json:"allElevStates"`
+// 	mutex sync.Mutex
+// }
 
 type MasterData struct {
 	GlobalHallRequests [][2]bool `json:"globalHallRequests"`

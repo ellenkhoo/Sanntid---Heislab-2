@@ -4,7 +4,8 @@ import (
 // 	"ElevatorProject/comm"
 	//"ElevatorProject/roles"
  	"github.com/ellenkhoo/ElevatorProject/network"
-	
+	"github.com/ellenkhoo/ElevatorProject/roles"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 // 	"fmt"
 // 	"time"
 // 
@@ -25,10 +26,23 @@ func main() {
 	var bcastPortString = "9999"
 	var peersPort = 15647
 	var TCPPort = "8081"
-  
-  fsm := roles.InitElevator()
-	go network.StartNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort, fsm)
 
+	// Initialize network channels
+	networkChannels := sharedConsts.NetworkChannels{
+		SendChan : make(chan sharedConsts.Message),
+		ReceiveChan : make(chan sharedConsts.Message),
+		MasterChan:   make(chan sharedConsts.Message),
+		BackupChan:   make(chan sharedConsts.Message),
+		ElevatorChan: make(chan sharedConsts.Message),
+	}
+
+
+	fsm := roles.InitElevator(networkChannels)
+	go network.InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
+	//go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
+
+	
+  	
 	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
 	// Start elevator
 	//go roles.InitElevator()

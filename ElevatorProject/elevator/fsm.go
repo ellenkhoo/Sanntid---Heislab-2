@@ -1,9 +1,11 @@
 package elevator
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"fmt"
 	"time"
+
+	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 // Elevator FSM struct
@@ -72,7 +74,7 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 }
 
 // Handle floor arrival event
-func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration) {
+func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor int, start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d)\n", newFloor)
 	Elevator_print(fsm.El)
 
@@ -94,13 +96,14 @@ func (fsm *FSM) Fsm_onFloorArrival(newFloor int, start_timer chan time.Duration)
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
-			// Send beskjed til master 
-			msg := network.Message{
-				Type: elevClearedOrderMessage,
-				Target: TargetMaster,
-				Payload: fsm.El.ElevStates
+
+			// Send message to master that order has been cleared
+			msg := sharedConsts.Message{
+				Type: sharedConsts.ElevClearedOrderMessage,
+				Target: sharedConsts.TargetMaster,
+				Payload: fsm.El.ElevStates,
 			}
-			network.networkChannels.sendChan <- msg
+			sendChan <- msg
 		}
 	}
 

@@ -4,15 +4,36 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-
-	//"github.com/ellenkhoo/ElevatorProject/elevator"
-	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"time"
+	
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/hra"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 )
 
+
+func AnnounceMaster(localIP string, port string) {
+	fmt.Println("Announcing master")
+	broadcastAddr := "255.255.255.255" + ":" + port
+	// addr, _ := net.ResolveUDPAddr("udp", "255.255.255.255:9999")
+	conn, err := net.Dial("udp", broadcastAddr)
+	//conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		fmt.Println("Error starting UDP listener:", err)
+		return
+	}
+	defer conn.Close()
+
+	for {
+		msg := "I am Master"
+		conn.Write([]byte(msg))
+		time.Sleep(1 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
+	}
+}
+
 // Adds the host's connection with the relevant client in the list of active connections
-func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan chan Message) {
+func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan chan sharedConsts.Message) {
 
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
@@ -28,9 +49,9 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
 
-	msg := Message{
-		Type:    rankMessage,
-		Target:  TargetBackup,
+	msg := sharedConsts.Message{
+		Type:    sharedConsts.RankMessage,
+		Target:  sharedConsts.TargetBackup,
 		Payload: rank,
 	}
 
@@ -39,7 +60,7 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 }
 
 // Master listenes and accepts connections
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan chan Message, receiveChan chan Message) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan chan sharedConsts.Message, receiveChan chan sharedConsts.Message) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
@@ -56,7 +77,7 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan ch
 	}
 }
 
-func (ac *ActiveConnections) MasterSendMessages(sendChan chan Message) {
+func (ac *ActiveConnections) MasterSendMessages(sendChan chan sharedConsts.Message) {
 
 	fmt.Println("Arrived at masterSend")
 
@@ -64,7 +85,7 @@ func (ac *ActiveConnections) MasterSendMessages(sendChan chan Message) {
 	for msg := range sendChan {
 		fmt.Println("target: ", msg.Target)
 		switch msg.Target {
-		case TargetBackup:
+		case sharedConsts.TargetBackup:
 			// Need to find the conn object connected to backup
 			fmt.Println("Backup is target")
 			for i := range ac.Conns {
@@ -75,9 +96,9 @@ func (ac *ActiveConnections) MasterSendMessages(sendChan chan Message) {
 				}
 			}
 
-		case TargetElevator:
+		case sharedConsts.TargetElevator:
 			// do something
-		case TargetClient:
+		case sharedConsts.TargetClient:
 
 			// do something
 		}
@@ -97,10 +118,10 @@ func (ac *ActiveConnections) MasterSendMessages(sendChan chan Message) {
 	}
 }
 
-func (masterData *MasterData)HandleReceivedMessagesToMaster(msg Message) {
+func (masterData *MasterData)HandleReceivedMessagesToMaster(msg sharedConsts.Message) {
 
 	switch msg.Type {
-	case localRequestMessage:
+	case sharedConsts.LocalRequestMessage:
 		// Update GlobalHallRequests
 		request := msg.Payload
 		if request, ok := request.(elevio.ButtonEvent); ok {
@@ -112,7 +133,7 @@ func (masterData *MasterData)HandleReceivedMessagesToMaster(msg Message) {
 			masterData.mutex.Unlock()
 		}
 		
-	case currentStateMessage:
+	case sharedConsts.CurrentStateMessage:
 		// Update allElevStates
 		elevState := msg.Payload
 		if elevState, ok := elevState.(elevator.ElevStates); ok {

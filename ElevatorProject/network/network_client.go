@@ -4,13 +4,63 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"math/rand/v2"
+	"time"
 
 	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
 	//"github.com/ellenkhoo/ElevatorProject/roles"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 )
 
+func RandRange(min, max int) int {
+	return rand.IntN(max-min) + min
+}
+
+func ListenForMaster(port string) (string, bool) {
+	addr, _ := net.ResolveUDPAddr("udp", "0.0.0.0"+":"+port)
+	conn, err := net.ListenUDP("udp", addr)
+	if err != nil {
+		fmt.Println("Error starting UDP listener:", err)
+		return "", false //No existing master
+	}
+
+	defer conn.Close()
+
+	buffer := make([]byte, 1024)
+	t := time.Duration(RandRange(800, 1500))
+	fmt.Printf("Waiting for %d ms\n", t)
+	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond)) //ensures that only one remains master
+	_, remoteAddr, err := conn.ReadFromUDP(buffer)
+	if err != nil {
+		fmt.Println("No master found, becoming master.")
+		return "", false
+	}
+
+	fmt.Println("Master found at: ", remoteAddr.IP.String())
+	return remoteAddr.IP.String(), true
+}
+
+func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
+	conn, err := net.Dial("tcp", masterIP+":"+listenPort)
+	if err != nil {
+		fmt.Println("Error connecting to master:", err)
+		return nil, false
+	}
+
+
+	if err != nil {
+		fmt.Println("Error reading from master:", err)
+		conn.Close()
+		return nil, false
+	}
+
+	fmt.Printf("Connected to master at %s\n: ", masterIP)
+	return conn, true
+}
+
 // When a new connection is established on the client side, this function adds it to the list of active connections
-func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, sendChan chan Message, receiveChan chan Message) {
+func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, sendChan chan sharedConsts.Message, receiveChan chan sharedConsts.Message) {
 	//defer conn.Close()
 	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
 
@@ -35,7 +85,7 @@ func HandleConnection(client ClientConnectionInfo) {
 	go func() {
 		decoder := json.NewDecoder(client.ClientConn)
 		for {
-			var msg Message
+			var msg sharedConsts.Message
 			err := decoder.Decode(&msg)
 			if err != nil {
 				fmt.Println("Error decoding message: ", err)
@@ -59,7 +109,7 @@ func HandleConnection(client ClientConnectionInfo) {
 	}()
 }
 
-func ClientSendMessages(sendChan chan Message, conn net.Conn) {
+func ClientSendMessages(sendChan chan sharedConsts.Message, conn net.Conn) {
 
 	fmt.Println("Ready to send msg to master")
 
@@ -75,12 +125,12 @@ func ClientSendMessages(sendChan chan Message, conn net.Conn) {
 }
 
 // Messages sent to a client means that the data is meant both for an elevator thread and the potential backup
-func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message) {
+func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg sharedConsts.Message) {
 
 	clientID := clientConn.ID
 
 	switch msg.Type {
-	case rankMessage:
+	case sharedConsts.RankMessage:
 		data := msg.Payload
 		if rank, ok := data.(int); ok {
 			fmt.Println("Setting my rank to", rank)
@@ -90,22 +140,22 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 				// start backup
 			}
 		}
-	case masterOrdersMessage:
+	case sharedConsts.MasterOrdersMessage:
 		data := msg.Payload
 		if masterData, ok := data.(MasterData); ok {
 			backupData:= CreateBackupData(masterData)
 			elevatorData := CreateElevatorData(masterData, clientID)
 
-			backupMsg := Message{
-				Type: masterOrdersMessage,
-				Target: TargetBackup,
+			backupMsg := sharedConsts.Message{
+				Type: sharedConsts.MasterOrdersMessage,
+				Target: sharedConsts.TargetBackup,
 				Payload: backupData,
 			}
 
 
-			elevatorMsg := Message{
-				Type: masterOrdersMessage,
-				Target: TargetElevator,
+			elevatorMsg := sharedConsts.Message{
+				Type: sharedConsts.MasterOrdersMessage,
+				Target: sharedConsts.TargetElevator,
 				Payload: elevatorData,
 			}
 
@@ -147,5 +197,16 @@ func CreateBackupData(masterData MasterData) BackupData {
 	}
 
 	return backupData
+}
+
+func HandleReceivedMessageToElevator(fsm elevator.FSM, msg sharedConsts.Message) {
+
+	// assignedRequests := msg.Payload 
+	// if assignedRequests, ok := assignedRequests.(fsm.El.AssignedRequests); ok {
+
+	// }
+	// fsm.El.AssignedRequests = assignedRequests
+// 	fsm.El.AssignedRequests = e.Payload.AssignedRequests
+// 	fsm.El.RequestsToDo = fsm.El.AssignedRequests.append(fsm.El.ElevStates.cabRequests)
 }
 

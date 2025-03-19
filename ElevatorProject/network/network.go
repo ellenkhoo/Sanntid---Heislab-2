@@ -1,19 +1,15 @@
 package network
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/comm"
-
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/peers"
 	"github.com/ellenkhoo/ElevatorProject/elevator"
-
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
-
-	// "os"
 	"time"
 )
 
@@ -22,38 +18,37 @@ func CreateActiveConnections() *ActiveConnections {
 }
 
 
-func ReceiveMessage(receiveChan chan Message, conn net.Conn) {
+func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
 
 	for {
-		var msg Message
+		var msg sharedConsts.Message
 		err := decoder.Decode(&msg)
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 			return
 		}
-
 		receiveChan <-msg
 	}
 }
 
-func SendMessageOnChannel(sendChan chan Message, msg Message) {
+func SendMessageOnChannel(sendChan chan sharedConsts.Message, msg sharedConsts.Message) {
 	fmt.Println("Sending msg on chan")
 	sendChan <- msg
 }
 
-func RouteMessages(client *ClientConnectionInfo, receiveChan chan Message, networkChannels NetworkChannels) {
+func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts.Message, networkChannels sharedConsts.NetworkChannels) {
 	for msg := range receiveChan {
 		switch msg.Target {
-		case TargetMaster:
+		case sharedConsts.TargetMaster:
 			networkChannels.MasterChan <- msg
-		case TargetBackup:
+		case sharedConsts.TargetBackup:
 			fmt.Print("Sending msg on backup chan")
 			networkChannels.BackupChan <- msg
-		case TargetElevator:
+		case sharedConsts.TargetElevator:
 			networkChannels.ElevatorChan <- msg
-		case TargetClient:
+		case sharedConsts.TargetClient:
 			// Messages that all clients should receive
 			client.HandleReceivedMessageToClient(msg)
 			
@@ -63,23 +58,8 @@ func RouteMessages(client *ClientConnectionInfo, receiveChan chan Message, netwo
 	}
 }
 
-func StartNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, fsm elevator.FSM) NetworkChannels {
-	networkChannels := NetworkChannels{
-		sendChan : make(chan Message),
-		receiveChan : make(chan Message),
-		MasterChan:   make(chan Message),
-		BackupChan:   make(chan Message),
-		ElevatorChan: make(chan Message),
-	}
 
-	go InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
-	go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
-
-	return networkChannels
-}
-
-
-func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels, fsm elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -102,8 +82,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 	go peers.Transmitter(peersPort, id, peerTxEnable)
 	go peers.Receiver(peersPort, peerUpdateCh)
 
-	helloTx := make(chan HelloMsg)
-	helloRx := make(chan HelloMsg)
+	helloTx := make(chan sharedConsts.HelloMsg)
+	helloRx := make(chan sharedConsts.HelloMsg)
 	go bcast.Transmitter(bcastPortInt, helloTx)
 	go bcast.Receiver(bcastPortInt, helloRx)
 
@@ -113,7 +93,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 
 	// Send hello message every second
 	go func() {
-		helloMsg := HelloMsg{"Hello from " + id, 0}
+		helloMsg := sharedConsts.HelloMsg{"Hello from " + id, 0}
 		for {
 			helloMsg.Iter++
 			helloTx <- helloMsg
@@ -121,25 +101,25 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		}
 	}()
 
-	go RouteMessages(&client, networkChannels.receiveChan, networkChannels)
+	go RouteMessages(&client, networkChannels.ReceiveChan, networkChannels)
 	// Listen for the master
-	masterID, found := comm.ListenForMaster(bcastPortString)
+	masterID, found := ListenForMaster(bcastPortString)
 	if found {
 		// Try to connect to the master
-		clientConn, success := comm.ConnectToMaster(masterID, TCPPort)
+		clientConn, success := ConnectToMaster(masterID, TCPPort)
 		if success {
-			client.AddClientConnection(id, clientConn, networkChannels.sendChan, networkChannels.receiveChan)
+			client.AddClientConnection(id, clientConn, networkChannels.SendChan, networkChannels.ReceiveChan)
 		}
-		go ReceiveMessage(networkChannels.receiveChan, clientConn)
-		go ClientSendMessages(networkChannels.sendChan, clientConn)
+		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
+		go ClientSendMessages(networkChannels.SendChan, clientConn)
 	} else {
 		// This whole part should be startMaster() ?
 		// No master found, announce ourselves as the master
 		masterID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
-		go comm.AnnounceMaster(id, bcastPortString)
-		go ac.ListenAndAcceptConnections(TCPPort, networkChannels.sendChan, networkChannels.receiveChan)
-		go ac.MasterSendMessages(networkChannels.sendChan)
+		go AnnounceMaster(id, bcastPortString)
+		go ac.ListenAndAcceptConnections(TCPPort, networkChannels.SendChan, networkChannels.ReceiveChan)
+		go ac.MasterSendMessages(networkChannels.SendChan)
 		//go startMaster()
 	}
 
@@ -169,38 +149,32 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 
 				// If we're not the master, connect to the master using TCP
 				if id != masterID {
-					go comm.ConnectToMaster(masterID, TCPPort)
+					go ConnectToMaster(masterID, TCPPort)
 				}
 			}
-		case r := <-networkChannels.receiveChan: // don't really need this case, just for temporary logging
+		case r := <-networkChannels.ReceiveChan: // don't really need this case, just for temporary logging
 			fmt.Println("Received a message")
 			fmt.Printf("Received: %#v\n", r)
 
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Master received a message")
 			fmt.Printf("Received: %#v\n", m)
-			go masterData.HandleReceivedMessagesToMaster(m)
+			masterData.HandleReceivedMessagesToMaster(m)
 
 		case b := <-networkChannels.BackupChan:
 			fmt.Println("Got a message from master to backup")
 			fmt.Printf("Received: %#v\n", b)
+			// msg:= Message{
+			// 	Type: currentStateMessage,
+			// 	Target: TargetMaster,
+			// 	Payload: elevst,
+			// }
 
-			//data := "I received rank from master"
-			var elevst = elevator.ElevStates{Behaviour: "idle", Floor: 0, Direction: "down", CabRequests: []bool{true, false, false, false}, IP: "1.1.1.1"}
-
-			msg:= Message{
-				Type: currentStateMessage,
-				Target: TargetMaster,
-				Payload: elevst,
-			}
-
-			SendMessageOnChannel(networkChannels.sendChan, msg)
+			// SendMessageOnChannel(networkChannels.sendChan, msg)
 		
 		//Overskriver requests lokalt om man får ny melding fra master
 		case e := <-networkChannels.ElevatorChan:
-			fsm.El.AssignedRequests = msg.Payload.AssignedRequests
-			fsm.El.RequestsToDo = fsm.El.AssignedRequests.append(fsm.El.ElevStates.cabRequests)
-			
+			HandleReceivedMessageToElevator(e)
 
 
 			// case a := <-helloRx:
