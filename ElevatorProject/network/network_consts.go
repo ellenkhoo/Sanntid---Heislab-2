@@ -65,7 +65,7 @@ type ActiveConnections struct {
 	Conns []MasterConnectionInfo
 }
 
-type MasterToClientData struct {
+type MasterData struct {
 	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
 	AssignedRequests   map[string][][2]bool
 }

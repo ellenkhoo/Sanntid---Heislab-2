@@ -1,49 +1,39 @@
 package network
 
-import ( 
+import (
+	"encoding/json"
 	"fmt"
 	"net"
-	"encoding/json"
+
+	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
 	//"github.com/ellenkhoo/ElevatorProject/roles"
 )
+
 // When a new connection is established on the client side, this function adds it to the list of active connections
-func (ac *ActiveConnections) AddClientConnection(id string, conn net.Conn, sendChan chan Message, receiveChan chan Message) {
+func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, sendChan chan Message, receiveChan chan Message) {
 	//defer conn.Close()
-	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
+	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
 
 	fmt.Println("Adding client connection")
 
-	// ac.mu.Lock()
-	// defer ac.mu.Unlock()
-
-	//Check if IP is already added
-	// for _, connections := range ac.conns {
-	// 	if connections.IP == remoteIP {
-	// 		return
-	// 	}
-	// }
-
-	newConn := ClientConnectionInfo{
+	*client = ClientConnectionInfo{
 		ID: 	id,
 		HostIP:          remoteIP,
-		// need to do something about ranking
-		ClientConn:  conn,
+		ClientConn:  clientConn,
 		SendChan:    sendChan,
 		ReceiveChan: receiveChan,
 	}
 
-	// ac.conns = append(ac.conns, newConn)
-
 	fmt.Println("Going to handle connection")
-	go HandleConnection(newConn)
+	go HandleConnection(*client)
 }
 
 // Maybe not the most describing name
-func HandleConnection(conn ClientConnectionInfo) {
+func HandleConnection(client ClientConnectionInfo) {
 	// Read from TCP connection and send to the receive channel
 	fmt.Println("Reacing from TCP")
 	go func() {
-		decoder := json.NewDecoder(conn.ClientConn)
+		decoder := json.NewDecoder(client.ClientConn)
 		for {
 			var msg Message
 			err := decoder.Decode(&msg)
@@ -51,15 +41,15 @@ func HandleConnection(conn ClientConnectionInfo) {
 				fmt.Println("Error decoding message: ", err)
 				return
 			}
-			conn.ReceiveChan <- msg
+			client.ReceiveChan <- msg
 		}
 	}()
 
 	// Read from the send channel and write to the TCP connection
 	fmt.Println("Sending to TCP")
 	go func() {
-		encoder := json.NewEncoder(conn.ClientConn)
-		for msg := range conn.SendChan {
+		encoder := json.NewEncoder(client.ClientConn)
+		for msg := range client.SendChan {
 			err := encoder.Encode(msg)
 			if err != nil {
 				fmt.Println("Error encoding message: ", err)
@@ -86,8 +76,6 @@ func ClientSendMessages(sendChan chan Message, conn net.Conn) {
 
 // Messages sent to a client means that the data is meant both for an elevator thread and the potential backup
 func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message) {
-	// hele meldingen skal sendes til backup
-	// heis skal også motta globalhallrequests, men bare sin del av assigned requests
 
 	clientID := clientConn.ID
 
@@ -95,20 +83,18 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 	case rankMessage:
 		data := msg.Payload
 		if rank, ok := data.(int); ok {
+			fmt.Println("Setting my rank to", rank)
 			clientConn.Rank = rank
+			if rank == 2 {
+				fmt.Println("My rank is 2 and I will become backup")
+				// start backup
+			}
 		}
 	case masterOrdersMessage:
-		var localAssignedRequest [][2]bool
 		data := msg.Payload
-		if masterData, ok := data.(MasterToClientData); ok {
-			// Extract the assigned requests for this specific elevator
-			masterData.AssignedRequests[clientID] = localAssignedRequest
-
+		if masterData, ok := data.(MasterData); ok {
 			backupData:= masterData
 			elevatorData := CreateElevatorData(masterData, clientID)
-
-			// må lage en mld av type Message!
-			//SendMessageOnChannel(, backupMsg)
 
 			backupMsg := Message{
 				Type: masterOrdersMessage,
@@ -123,14 +109,19 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 				Payload: elevatorData,
 			}
 
+			fmt.Println("Sending messages to backup and elevator")
 			clientConn.ReceiveChan <- backupMsg
 			clientConn.ReceiveChan <- elevatorMsg
 		}
+	// case heartbeat: //
+	// 	// start timer
+	// case timeout:
+	// 	// start master
 	}
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func CreateElevatorData(masterData MasterToClientData, elevatorID string) ElevatorRequest{
+func CreateElevatorData(masterData MasterData, elevatorID string) ElevatorRequest{
  
 
     localAssignedRequests := masterData.AssignedRequests[elevatorID]

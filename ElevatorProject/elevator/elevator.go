@@ -146,8 +146,9 @@ func Elevator_uninitialized() Elevator {
 		GlobalHallRequests:     [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
 		RequestsToDo:     [N_FLOORS][N_BUTTONS]bool{{false, false, false}, {false, false, false}, {false, false, false}, {false, false, false}},
 		Config: ElevatorConfig{
-			ClearRequestVariant: "CV_InDirn",      
-			DoorOpenDuration:    3.0 * time.Second,
+			ClearRequestVariant: "CV_InDirn",    
+			//gir det mer mening å ha dette i timers?  
+			// DoorOpenDuration:    3.0 * time.Second,
 		},
 		// State: {
 		// 	HRAElevState.Behavior := &Be

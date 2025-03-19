@@ -15,6 +15,9 @@ func main() {
 	// Start network and store connections
 	// dumt at ac lages her? da vil alle pc-ene ha det
 	ac := network.CreateActiveConnections()
+	//var client network.ClientConnectionInfo
+	client := network.ClientConnectionInfo{}
+	masterData := network.MasterData{}
 
 	var bcastPortInt = 16569
 	// var bcastPortString = "16569"
@@ -23,7 +26,7 @@ func main() {
 	var peersPort = 15647
 	var TCPPort = "8081"
 
-	go network.StartNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
+	go network.StartNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort)
 
 	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
 	// Start elevator
