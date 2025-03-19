@@ -1,14 +1,14 @@
 package main
 
 import (
-// 	"ElevatorProject/comm"
+	// 	"ElevatorProject/comm"
 	//"ElevatorProject/roles"
- 	"github.com/ellenkhoo/ElevatorProject/network"
-	"github.com/ellenkhoo/ElevatorProject/roles"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/network"
+	//"github.com/ellenkhoo/ElevatorProject/roles"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
-// 	"fmt"
-// 	"time"
-// 
+	// "fmt"
+	// "time"
 )
 
 func main() {
@@ -24,7 +24,7 @@ func main() {
 	// var bcastPortString = "16569"
 	// For use on same computer?
 	var bcastPortString = "9999"
-	var peersPort = 15647
+	var peersPort = 15648
 	var TCPPort = "8081"
 
 	// Initialize network channels
@@ -37,7 +37,7 @@ func main() {
 	}
 
 
-	fsm := roles.InitElevator(networkChannels)
+	fsm := elevator.InitElevator(networkChannels)
 	go network.InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
 	//go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 

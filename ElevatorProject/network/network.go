@@ -174,7 +174,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		
 		//Overskriver requests lokalt om man får ny melding fra master
 		case e := <-networkChannels.ElevatorChan:
-			HandleReceivedMessageToElevator(e)
+			fmt.Printf("Received: %#v\n", e)
+			//HandleReceivedMessageToElevator(e)
 
 
 			// case a := <-helloRx:
