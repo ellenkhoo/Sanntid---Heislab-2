@@ -1,16 +1,17 @@
 package network
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"net"
 	"math/rand/v2"
+	"net"
 	"time"
 
 	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
 	//"github.com/ellenkhoo/ElevatorProject/roles"
-	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 func RandRange(min, max int) int {
@@ -109,16 +110,21 @@ func HandleConnection(client ClientConnectionInfo) {
 	}()
 }
 
-func ClientSendMessages(sendChan chan sharedConsts.Message, conn net.Conn) {
+func ClientSendMessages(sendChan chan sharedConsts.Message, conn net.Conn, ctx context.Context) {
 
 	fmt.Println("Ready to send msg to master")
 
 	encoder := json.NewEncoder(conn)
-	for msg := range sendChan {
-		fmt.Println("Sending message:", msg)
-		err := encoder.Encode(msg)
-		if err != nil {
-			fmt.Println("Error encoding message: ", err)
+	for {
+		select{
+		case msg := <- sendChan:
+			fmt.Println("Sending message:", msg)
+			err := encoder.Encode(msg)
+			if err != nil {
+				fmt.Println("Error encoding message: ", err)
+				return
+			}
+		case <- ctx.Done():
 			return
 		}
 	}

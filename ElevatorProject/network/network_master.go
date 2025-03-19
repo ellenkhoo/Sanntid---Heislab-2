@@ -1,19 +1,20 @@
 package network
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net"
 	"time"
-	
+
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/hra"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
-	"github.com/ellenkhoo/ElevatorProject/elevator"
 )
 
 
-func AnnounceMaster(localIP string, port string) {
+func AnnounceMaster(localIP string, port string, ctx context.Context) {
 	fmt.Println("Announcing master")
 	broadcastAddr := "255.255.255.255" + ":" + port
 	// addr, _ := net.ResolveUDPAddr("udp", "255.255.255.255:9999")
@@ -25,12 +26,19 @@ func AnnounceMaster(localIP string, port string) {
 	}
 	defer conn.Close()
 
-	for {
-		msg := "I am Master"
-		conn.Write([]byte(msg))
-		time.Sleep(1 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
-	}
+		for{
+			select{
+			case <- ctx.Done():
+				return
+			default:
+				msg := "I am Master"
+			conn.Write([]byte(msg))
+			time.Sleep(1 * time.Second) //announces every 2nd second, maybe it should happen more frequently?
+			}
+		}
 }
+
+		
 
 // Adds the host's connection with the relevant client in the list of active connections
 func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan chan sharedConsts.Message) {
@@ -60,63 +68,75 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 }
 
 // Master listenes and accepts connections
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan chan sharedConsts.Message, receiveChan chan sharedConsts.Message) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan chan sharedConsts.Message, receiveChan chan sharedConsts.Message, ctx context.Context) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
 	for {
-		hostConn, err := ln.Accept()
+		select{
+		case <- ctx.Done():
+			return
+		default:
+			hostConn, err := ln.Accept()
 		if err != nil {
 			fmt.Println("Error acepting connection:", err)
 			continue
 		}
 		rank := len(ac.Conns) + 2
 
-		go ReceiveMessage(receiveChan, hostConn)
+		go ReceiveMessage(receiveChan, hostConn, ctx)
 		go ac.AddHostConnection(rank, hostConn, sendChan)
+		}
 	}
 }
 
-func (ac *ActiveConnections) MasterSendMessages(sendChan chan sharedConsts.Message) {
+func (ac *ActiveConnections) MasterSendMessages(sendChan chan sharedConsts.Message, ctx context.Context) {
 
 	fmt.Println("Arrived at masterSend")
 
 	var targetConn net.Conn
-	for msg := range sendChan {
-		fmt.Println("target: ", msg.Target)
-		switch msg.Target {
-		case sharedConsts.TargetBackup:
-			// Need to find the conn object connected to backup
-			fmt.Println("Backup is target")
-			for i := range ac.Conns {
-				if ac.Conns[i].Rank == 2 {
-					targetConn = ac.Conns[i].HostConn
-					fmt.Println("Found backup conn")
-					break
+
+	for{
+		select{
+		case msg := <- sendChan:
+			fmt.Println("target: ", msg.Target)
+			switch msg.Target {
+			case sharedConsts.TargetBackup:
+				// Need to find the conn object connected to backup
+				fmt.Println("Backup is target")
+				for i := range ac.Conns {
+					if ac.Conns[i].Rank == 2 {
+						targetConn = ac.Conns[i].HostConn
+						fmt.Println("Found backup conn")
+						break
+					}
 				}
+	
+			case sharedConsts.TargetElevator:
+				// do something
+			case sharedConsts.TargetClient:
+	
+				// do something
 			}
-
-		case sharedConsts.TargetElevator:
-			// do something
-		case sharedConsts.TargetClient:
-
-			// do something
-		}
-
-		if targetConn != nil {
-			encoder := json.NewEncoder(targetConn)
-			fmt.Println("Sending message:", msg)
-			err := encoder.Encode(msg)
-			if err != nil {
-				fmt.Println("Error encoding message: ", err)
-				return
+	
+			if targetConn != nil {
+				encoder := json.NewEncoder(targetConn)
+				fmt.Println("Sending message:", msg)
+				err := encoder.Encode(msg)
+				if err != nil {
+					fmt.Println("Error encoding message: ", err)
+					return
+				}
+			} else {
+				// If targetConn is nil, log a message or handle the case
+				fmt.Println("No valid connection found for the message")
 			}
-		} else {
-			// If targetConn is nil, log a message or handle the case
-			fmt.Println("No valid connection found for the message")
+		case <- ctx.Done():
+			return
 		}
 	}
 }
+
 
 func (masterData *MasterData)HandleReceivedMessagesToMaster(msg sharedConsts.Message) {
 
