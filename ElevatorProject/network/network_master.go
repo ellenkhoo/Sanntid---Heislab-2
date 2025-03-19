@@ -6,7 +6,9 @@ import (
 	"net"
 
 	//"github.com/ellenkhoo/ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	"github.com/ellenkhoo/ElevatorProject/hra"
 )
 
 // Adds the host's connection with the relevant client in the list of active connections
@@ -105,15 +107,24 @@ func (masterData *MasterData)HandleReceivedMessagesToMaster(msg Message) {
 			fmt.Println("Received request: ", request)
 			floor := request.Floor
 			button := request.Button
+			masterData.mutex.Lock()
 			masterData.GlobalHallRequests[floor][button] = true
+			masterData.mutex.Unlock()
 		}
 		
 	case currentStateMessage:
-		// do something
-		fmt.Printf("Received current state from elevator: %#v\n", msg.Payload)
+		// Update allElevStates
+		elevState := msg.Payload
+		if elevState, ok := elevState.(elevator.ElevStates); ok {
+			fmt.Printf("Received current state from elevator: %#v\n", elevState)
+			ID := elevState.IP
+			masterData.mutex.Lock()
+			masterData.AllElevStates[ID] = elevState
+			masterData.mutex.Unlock()
+			hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
+		}
 	}
 }
-
 
 // func StartMaster() {
 

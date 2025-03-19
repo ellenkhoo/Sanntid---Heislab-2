@@ -93,7 +93,7 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 	case masterOrdersMessage:
 		data := msg.Payload
 		if masterData, ok := data.(MasterData); ok {
-			backupData:= masterData
+			backupData:= CreateBackupData(masterData)
 			elevatorData := CreateElevatorData(masterData, clientID)
 
 			backupMsg := Message{
@@ -124,14 +124,28 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg Message
 func CreateElevatorData(masterData MasterData, elevatorID string) ElevatorRequest{
  
 
-    localAssignedRequests := masterData.AssignedRequests[elevatorID]
+    localAssignedRequests := masterData.AllAssignedRequests[elevatorID]
 	globalHallRequests := masterData.GlobalHallRequests
 
-	elevatorMsg := ElevatorRequest{
+	elevatorData := ElevatorRequest{
 		GlobalHallRequests: globalHallRequests,
 		AssignedRequests: localAssignedRequests,
 	}
 
-	return elevatorMsg
+	return elevatorData
+}
+
+func CreateBackupData(masterData MasterData) BackupData {
+ 
+
+    AllAssignedRequests := masterData.AllAssignedRequests
+	globalHallRequests := masterData.GlobalHallRequests
+
+	backupData := BackupData{
+		GlobalHallRequests: globalHallRequests,
+		AllAssignedRequests: AllAssignedRequests,
+	}
+
+	return backupData
 }
 

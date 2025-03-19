@@ -73,6 +73,7 @@ func StartNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData
 	}
 
 	go InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
+	go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
 	return networkChannels
 }
