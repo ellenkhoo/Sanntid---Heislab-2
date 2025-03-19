@@ -17,7 +17,7 @@ const (
 	backupAcknowledgeMessage
 	localRequestMessage
 	currentStateMessage
-	helloMessage
+	HelloMessage
 	rankMessage
 )
 
@@ -38,15 +38,15 @@ type Message struct {
 
 // Keeping track of connections
 type MasterConnectionInfo struct {
-	ClientIP    string
-	Rank        int
-	HostConn    net.Conn
+	ClientIP string
+	Rank     int
+	HostConn net.Conn
 }
 
 type ClientConnectionInfo struct {
-	ID 			string
-	HostIP 		string
-	Rank 		int
+	ID          string
+	HostIP      string
+	Rank        int
 	ClientConn  net.Conn
 	SendChan    chan Message
 	ReceiveChan chan Message
@@ -59,16 +59,16 @@ type NetworkChannels struct {
 }
 
 type ActiveConnections struct {
-	mutex    sync.Mutex
-	conns []MasterConnectionInfo
+	mutex sync.Mutex
+	Conns []MasterConnectionInfo
 }
 
 type MasterToClientData struct {
-	GlobalHallRequests [][2]bool	`json:"globalHallRequests"`
-	AssignedRequests map[string][][2]bool
+	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
+	AssignedRequests   map[string][][2]bool
 }
 
 type ElevatorRequest struct {
-    GlobalHallRequests [][2]bool     `json:"globalHallRequests"`
-    AssignedRequests   [][2]bool     `json:"assignedRequests"`
+	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
+	AssignedRequests   [][2]bool `json:"assignedRequests"`
 }
