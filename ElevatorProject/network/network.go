@@ -91,7 +91,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		masterID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPortString)
-		go ac.ListenAndAcceptConnections(TCPPort, networkChannels.SendChan, networkChannels.ReceiveChan)
+		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
 		go ac.MasterSendMessages(networkChannels)
 		//go startMaster()
 	}
@@ -100,9 +100,9 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 	fmt.Println("Started")
 	for {
 		select {
-		case r := <-networkChannels.ReceiveChan: // don't really need this case, just for temporary logging
-			fmt.Println("Received a message")
-			fmt.Printf("Received: %#v\n", r)
+		// case r := <-networkChannels.ReceiveChan: // don't really need this case, just for temporary logging
+		// 	fmt.Println("Received a message")
+		// 	fmt.Printf("Received: %#v\n", r)
 
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Master received a message")
@@ -119,7 +119,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		
 		//Overskriver requests lokalt om man får ny melding fra master
 		case e := <-networkChannels.ElevatorChan:
-			fmt.Printf("Received: %#v\n", e)
+			fmt.Printf("Elevator received: %#v\n", e)
 			client.HandleReceivedMessageToElevator(fsm, e)
 
 

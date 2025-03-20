@@ -60,7 +60,7 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 }
 
 // Master listenes and accepts connections
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan chan sharedConsts.Message, receiveChan chan sharedConsts.Message) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels sharedConsts.NetworkChannels) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
@@ -72,8 +72,8 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, sendChan ch
 		}
 		rank := len(ac.Conns) + 2
 
-		go ReceiveMessage(receiveChan, hostConn)
-		go ac.AddHostConnection(rank, hostConn, sendChan)
+		go ReceiveMessage(networkChannels.ReceiveChan, hostConn)
+		go ac.AddHostConnection(rank, hostConn, networkChannels.SendChan)
 	}
 }
 
@@ -136,6 +136,7 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 
 func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Message,  networkChannels sharedConsts.NetworkChannels) {
 
+	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
 	case sharedConsts.LocalRequestMessage:
 		// Update GlobalHallRequests
@@ -148,6 +149,8 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 			fmt.Println("Updating globalHallRequests")
 			masterData.GlobalHallRequests[floor][button] = true
 			masterData.mutex.Unlock()
+		} else {
+			fmt.Println("Error casting payload to ButtonEvent")
 		}
 		
 	case sharedConsts.CurrentStateMessage:
@@ -182,6 +185,8 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 			}
 			// Send message
 			networkChannels.SendChan <- orderMsg
+		} else {
+			fmt.Println("Error casting payload to ElevStates")
 		}
 	}
 }
