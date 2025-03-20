@@ -24,7 +24,7 @@ func main() {
 	// var bcastPortString = "16569"
 	// For use on same computer?
 	var bcastPortString = "9999"
-	var peersPort = 15648
+	var peersPort = 15647
 	var TCPPort = "8081"
 
 	// Initialize network channels
