@@ -60,7 +60,7 @@ type ElevStates struct {
 	Behaviour   string `json:"behaviour"`
 	Floor       int		`json:"floor"`
 	Direction   string	`json:"direction"`
-	CabRequests []bool	`json:"cabRequests"`
+	CabRequests [N_FLOORS]bool	`json:"cabRequests"`
 	IP          string	`json:"ip"`
 }
 
@@ -135,16 +135,27 @@ type ElevatorConfig struct {
 func Elevator_uninitialized() Elevator {
 	return Elevator{
 		ElevStates: ElevStates{
-			IP: "0.0.0.0",
-			Floor: -1,            
-			CabRequests: []bool{true, false, false, false},
+			Behaviour: "idle",
+			Floor: -1,
+			Direction: "stop",       
+			CabRequests: [N_FLOORS]bool{false, false, false, false},
+			IP: "0.0.0.0",  
 			
 		},
 		Rank:             0,              
 		Dirn:             elevio.MD_Stop, 
 		Behaviour:        EB_Idle,      
-		GlobalHallRequests:     [N_FLOORS][N_BUTTONS - 1]bool{{false, false}, {false, false}, {false, false}, {false, false}},
-		RequestsToDo:     [N_FLOORS][N_BUTTONS]bool{{false, false, false}, {false, false, false}, {false, false, false}, {false, false, false}},
+		GlobalHallRequests:     [N_FLOORS][N_BUTTONS - 1]bool{
+			{false, false}, 
+			{false, false}, 
+			{false, false}, 
+			{false, false}},
+		RequestsToDo:     [N_FLOORS][N_BUTTONS]bool{
+			{false, false, false},  
+			{false, false, false},
+			{false, false, false},
+			{false, false, false},
+		},
 		Config: ElevatorConfig{
 			ClearRequestVariant: "CV_InDirn",    
 			//gir det mer mening å ha dette i timers?  

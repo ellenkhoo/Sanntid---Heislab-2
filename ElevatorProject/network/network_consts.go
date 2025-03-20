@@ -78,19 +78,19 @@ type ActiveConnections struct {
 // }
 
 type MasterData struct {
-	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
-	AllAssignedRequests   map[string][][2]bool	`json:"allAssignedRequests"`
+	GlobalHallRequests [elevator.N_FLOORS][2]bool `json:"globalHallRequests"`
+	AllAssignedRequests   map[string][elevator.N_FLOORS][2]bool	`json:"allAssignedRequests"`
 	AllElevStates map[string]elevator.ElevStates	`json:"allElevStates"`
 	mutex sync.Mutex
 }
 
 type BackupData struct {
-	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
-	AllAssignedRequests   map[string][][2]bool	`json:"allAssignedRequests"`
+	GlobalHallRequests [elevator.N_FLOORS][2]bool `json:"globalHallRequests"`
+	AllAssignedRequests   map[string][elevator.N_FLOORS][2]bool	`json:"allAssignedRequests"`
 }
 
 type ElevatorRequest struct {
-	GlobalHallRequests [][2]bool `json:"globalHallRequests"`
-	AssignedRequests   [][2]bool `json:"assignedRequests"`
+	GlobalHallRequests [elevator.N_FLOORS][2]bool `json:"globalHallRequests"`
+	AssignedRequests   [elevator.N_FLOORS][2]bool `json:"assignedRequests"`
 }
 

@@ -15,16 +15,16 @@ type HRAElevState struct {
 	Behaviour   string `json:"behaviour"`
 	Floor       int    `json:"floor"`
 	Direction   string `json:"direction"`
-	CabRequests []bool `json:"cabRequests"`
+	CabRequests [elevator.N_FLOORS]bool `json:"cabRequests"`
 }
 
 type HRAInput struct {
-	HallRequests [][2]bool               `json:"hallRequests"`
+	HallRequests [elevator.N_FLOORS][2]bool               `json:"hallRequests"`
 	States       map[string]HRAElevState `json:"states"`
 }
 
 // gjør om elevstate og hallrequest til riktig format til HRA exec-fil
-func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequest [][2]bool) *map[string][][2]bool {
+func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequest [elevator.N_FLOORS][2]bool) *map[string][elevator.N_FLOORS][2]bool {
 	inputFormatHRA := make(map[string]HRAElevState)
 	for id, state := range allElevStates {
 		inputFormatHRA[fmt.Sprintf("%s", id)] = HRAElevState{
@@ -63,7 +63,7 @@ func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequ
 	}
 
 	//output
-	output := new(map[string][][2]bool)
+	output := new(map[string][elevator.N_FLOORS][2]bool)
 	err = json.Unmarshal(ret, &output)
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)

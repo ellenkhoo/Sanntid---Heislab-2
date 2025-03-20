@@ -33,10 +33,6 @@ func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 	}
 }
 
-func SendMessageOnChannel(sendChan chan sharedConsts.Message, msg sharedConsts.Message) {
-	fmt.Println("Sending msg on chan")
-	sendChan <- msg
-}
 
 func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts.Message, networkChannels sharedConsts.NetworkChannels) {
 	for msg := range receiveChan {
@@ -59,7 +55,7 @@ func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts
 }
 
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -96,7 +92,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPortString)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels.SendChan, networkChannels.ReceiveChan)
-		go ac.MasterSendMessages(networkChannels.SendChan)
+		go ac.MasterSendMessages(networkChannels)
 		//go startMaster()
 	}
 
@@ -110,8 +106,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Master received a message")
-			fmt.Printf("Received: %#v\n", m)
-			masterData.HandleReceivedMessagesToMaster(m)
+			masterData.HandleReceivedMessagesToMaster(m, networkChannels)
 
 		case b := <-networkChannels.BackupChan:
 			fmt.Println("Got a message from master to backup")
@@ -121,13 +116,11 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 			// 	Target: TargetMaster,
 			// 	Payload: elevst,
 			// }
-
-			// SendMessageOnChannel(networkChannels.sendChan, msg)
 		
 		//Overskriver requests lokalt om man får ny melding fra master
 		case e := <-networkChannels.ElevatorChan:
 			fmt.Printf("Received: %#v\n", e)
-			//HandleReceivedMessageToElevator(e)
+			client.HandleReceivedMessageToElevator(fsm, e)
 
 
 		// case a := <-helloRx:

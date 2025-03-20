@@ -3,14 +3,15 @@ package network
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"math/rand/v2"
+	"net"
 	"time"
 
 	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
 	//"github.com/ellenkhoo/ElevatorProject/roles"
-	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/elevator"
+	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 func RandRange(min, max int) int {
@@ -81,7 +82,7 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 // Maybe not the most describing name
 func HandleConnection(client ClientConnectionInfo) {
 	// Read from TCP connection and send to the receive channel
-	fmt.Println("Reacing from TCP")
+	fmt.Println("Ready to read from TCP")
 	go func() {
 		decoder := json.NewDecoder(client.ClientConn)
 		for {
@@ -96,7 +97,7 @@ func HandleConnection(client ClientConnectionInfo) {
 	}()
 
 	// Read from the send channel and write to the TCP connection
-	fmt.Println("Sending to TCP")
+	fmt.Println("Ready to send on TCP")
 	go func() {
 		encoder := json.NewEncoder(client.ClientConn)
 		for msg := range client.SendChan {
@@ -125,7 +126,7 @@ func ClientSendMessages(sendChan chan sharedConsts.Message, conn net.Conn) {
 }
 
 // Messages sent to a client means that the data is meant both for an elevator thread and the potential backup
-func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg sharedConsts.Message) {
+func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
 
 	clientID := clientConn.ID
 
@@ -142,7 +143,7 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg sharedC
 		}
 	case sharedConsts.MasterOrdersMessage:
 		data := msg.Payload
-		if masterData, ok := data.(MasterData); ok {
+		if masterData, ok := data.(BackupData); ok {
 			backupData:= CreateBackupData(masterData)
 			elevatorData := CreateElevatorData(masterData, clientID)
 
@@ -170,8 +171,39 @@ func (clientConn *ClientConnectionInfo)HandleReceivedMessageToClient(msg sharedC
 	}
 }
 
+func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *elevator.FSM, msg sharedConsts.Message) {
+
+	fmt.Println("At handleMessageToElevator\n")
+	fmt.Println("Before update:", fsm.El.RequestsToDo)
+	clientID := clientConn.ID
+	masterData := msg.Payload 
+	if masterData, ok := masterData.(BackupData); ok {
+		elevatorData := CreateElevatorData(masterData, clientID)
+			fsm.El.AssignedRequests = elevatorData.AssignedRequests
+			fsm.El.GlobalHallRequests = elevatorData.GlobalHallRequests
+			//fsm.El.RequestsToDo = //assigned + cab
+			for floor := 0; floor < elevator.N_FLOORS; floor++ {
+				for button := 0; button < elevator.N_BUTTONS-1; button++{
+					if fsm.El.AssignedRequests[floor][button] {
+						fmt.Println("Assigned request at floor: ", floor, " button: ", button)
+						fsm.El.RequestsToDo[floor][button] = true
+					} 
+				}
+
+				if fsm.El.ElevStates.CabRequests[floor] { 
+					fmt.Println("Assigned cab request at floor: ", floor)
+					fsm.El.RequestsToDo[floor][elevio.BT_Cab] = true
+				}
+			}
+			fmt.Println("After update:", fsm.El.RequestsToDo)
+	} else {
+		fmt.Println("Error decoding message to elevator")
+	}
+}
+
+
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func CreateElevatorData(masterData MasterData, elevatorID string) ElevatorRequest{
+func CreateElevatorData(masterData BackupData, elevatorID string) ElevatorRequest{
  
 
     localAssignedRequests := masterData.AllAssignedRequests[elevatorID]
@@ -185,7 +217,7 @@ func CreateElevatorData(masterData MasterData, elevatorID string) ElevatorReques
 	return elevatorData
 }
 
-func CreateBackupData(masterData MasterData) BackupData {
+func CreateBackupData(masterData BackupData) BackupData {
  
 
     AllAssignedRequests := masterData.AllAssignedRequests
@@ -199,14 +231,4 @@ func CreateBackupData(masterData MasterData) BackupData {
 	return backupData
 }
 
-func HandleReceivedMessageToElevator(fsm elevator.FSM, msg sharedConsts.Message) {
-
-	// assignedRequests := msg.Payload 
-	// if assignedRequests, ok := assignedRequests.(fsm.El.AssignedRequests); ok {
-
-	// }
-	// fsm.El.AssignedRequests = assignedRequests
-// 	fsm.El.AssignedRequests = e.Payload.AssignedRequests
-// 	fsm.El.RequestsToDo = fsm.El.AssignedRequests.append(fsm.El.ElevStates.cabRequests)
-}
 

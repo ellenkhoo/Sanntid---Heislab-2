@@ -1,4 +1,4 @@
 * Få kommunikasjon opp og gå
 * TCP-instillinger, timeout
 * KeepAlive
-* 
+* Send mld til backup først, så sende til heisene

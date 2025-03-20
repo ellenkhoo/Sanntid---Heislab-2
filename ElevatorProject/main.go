@@ -7,6 +7,7 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/network"
 	//"github.com/ellenkhoo/ElevatorProject/roles"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
 	// "fmt"
 	// "time"
 )
@@ -16,10 +17,14 @@ func main() {
 	// Start network and store connections
 	// dumt at ac lages her? da vil alle pc-ene ha det
 	ac := network.CreateActiveConnections()
-	//var client network.ClientConnectionInfo
 	client := network.ClientConnectionInfo{}
-	masterData := network.MasterData{}
+	masterData := network.MasterData{
+		GlobalHallRequests: [elevator.N_FLOORS][2]bool{},
+		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
+		AllElevStates: make(map[string]elevator.ElevStates),
+	}
 
+	localIP, _ := localip.LocalIP()
 	var bcastPortInt = 16569
 	// var bcastPortString = "16569"
 	// For use on same computer?
@@ -37,8 +42,8 @@ func main() {
 	}
 
 
-	fsm := elevator.InitElevator(networkChannels)
-	go network.InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, fsm)
+	fsm := elevator.InitElevator(localIP, networkChannels)
+	go network.InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, &fsm)
 	//go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
 	
