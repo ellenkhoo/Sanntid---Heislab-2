@@ -1,10 +1,11 @@
 package elevator
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
-	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
@@ -83,8 +84,6 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 
 	elevio.SetFloorIndicator(newFloor)
 
-	
-
 	switch fsm.El.Behaviour {
 	case EB_Moving:
 		if Requests_shouldStop(fsm.El) {
@@ -97,11 +96,17 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
 
+			// Marshal elevStates
+			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+			if err != nil {
+				fmt.Println("Error marshalling elevStates: ", err)
+				return
+			}
 			// Send message to master that order has been cleared
 			msg := sharedConsts.Message{
-				Type: sharedConsts.ElevClearedOrderMessage,
-				Target: sharedConsts.TargetMaster,
-				Payload: fsm.El.ElevStates,
+				Type:    sharedConsts.ElevClearedOrderMessage,
+				Target:  sharedConsts.TargetMaster,
+				Payload: elevStatesJSON,
 			}
 			sendChan <- msg
 		}
@@ -114,7 +119,7 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 // Handle door timeout event
 func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
 	Elevator_print(fsm.El)
-	
+
 	// fsm.SetAllLights()
 
 	switch fsm.El.Behaviour {

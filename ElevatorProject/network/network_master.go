@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"net"
 	"time"
-	
+
+	"github.com/ellenkhoo/ElevatorProject/elevator"
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/hra"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
-	"github.com/ellenkhoo/ElevatorProject/elevator"
 )
-
 
 func AnnounceMaster(localIP string, port string) {
 	fmt.Println("Announcing master")
@@ -49,10 +48,17 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
 
+	// Marshal rank
+	rankJSON, err := json.Marshal(rank)
+	if err != nil {
+		fmt.Println("Error marshalling rank: ", err)
+		return
+	}
+
 	msg := sharedConsts.Message{
 		Type:    sharedConsts.RankMessage,
 		Target:  sharedConsts.TargetBackup,
-		Payload: rank,
+		Payload: rankJSON,
 	}
 
 	fmt.Println("Sending rank message on channel")
@@ -109,7 +115,6 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 				fmt.Println("No valid connection found for the message")
 			}
 
-
 		case sharedConsts.TargetMaster:
 			networkChannels.MasterChan <- msg
 
@@ -117,7 +122,7 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 			// do something
 		case sharedConsts.TargetClient:
 			// Send to the local elevator
-			networkChannels.ElevatorChan <- msg		
+			networkChannels.ElevatorChan <- msg
 			// Send to all other remote clients
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
@@ -133,61 +138,71 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 	}
 }
 
-
-func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Message,  networkChannels sharedConsts.NetworkChannels) {
+func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Message, networkChannels sharedConsts.NetworkChannels) {
 
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
 	case sharedConsts.LocalRequestMessage:
 		// Update GlobalHallRequests
-		request := msg.Payload
-		if request, ok := request.(elevio.ButtonEvent); ok {
-			fmt.Println("Received request: ", request)
-			floor := request.Floor
-			button := request.Button
-			masterData.mutex.Lock()
-			fmt.Println("Updating globalHallRequests")
-			masterData.GlobalHallRequests[floor][button] = true
-			masterData.mutex.Unlock()
-		} else {
-			fmt.Println("Error casting payload to ButtonEvent")
+		var request elevio.ButtonEvent
+		err := json.Unmarshal(msg.Payload, &request)
+		if err != nil {
+			fmt.Println("Error unmarshalling payload: ", err)
+			return
 		}
-		
+
+		fmt.Println("Received request: ", request)
+		floor := request.Floor
+		button := request.Button
+		masterData.mutex.Lock()
+		fmt.Println("Updating globalHallRequests")
+		masterData.GlobalHallRequests[floor][button] = true
+		masterData.mutex.Unlock()
+
 	case sharedConsts.CurrentStateMessage:
 		// Update allElevStates
-		elevState := msg.Payload
-		if elevState, ok := elevState.(elevator.ElevStates); ok {
-			fmt.Printf("Received current state from elevator: %#v\n", elevState)
-			ID := elevState.IP
-			masterData.mutex.Lock()
-			fmt.Println("Updating allElevStates")
-			masterData.AllElevStates[ID] = elevState
-			masterData.mutex.Unlock()
-			assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
-			masterData.mutex.Lock()
-			for ID, orders := range *assignedOrders {
-				masterData.AllAssignedRequests[ID] = orders
-				fmt.Println("Assigned orders for ID: ", ID, " are: ", orders)
-			}
-			masterData.mutex.Unlock()
-
-			clientData := BackupData{
-				GlobalHallRequests: masterData.GlobalHallRequests,
-				AllAssignedRequests: masterData.AllAssignedRequests,
-			}
-
-			// Create message
-			orderMsg := sharedConsts.Message{
-				Type : sharedConsts.MasterOrdersMessage,
-				Target: sharedConsts.TargetClient,
-				Payload: clientData,
-
-			}
-			// Send message
-			networkChannels.SendChan <- orderMsg
-		} else {
-			fmt.Println("Error casting payload to ElevStates")
+		var elevStates elevator.ElevStates
+		err := json.Unmarshal(msg.Payload, &elevStates)
+		if err != nil {
+			fmt.Println("Error unmarshalling payload: ", err)
+			return
 		}
+
+		fmt.Printf("Received current state from elevator: %#v\n", elevStates)
+		ID := elevStates.IP
+		masterData.mutex.Lock()
+		fmt.Println("Updating allElevStates")
+		masterData.AllElevStates[ID] = elevStates
+		masterData.mutex.Unlock()
+		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
+		masterData.mutex.Lock()
+		for ID, orders := range *assignedOrders {
+			masterData.AllAssignedRequests[ID] = orders
+			fmt.Println("Assigned orders for ID: ", ID, " are: ", orders)
+		}
+		masterData.mutex.Unlock()
+
+		clientData := BackupData{
+			GlobalHallRequests:  masterData.GlobalHallRequests,
+			AllAssignedRequests: masterData.AllAssignedRequests,
+		}
+
+		// Marshal clientData
+		clientDataJSON, err := json.Marshal(clientData)
+		if err != nil {
+			fmt.Println("Error marshalling clientData: ", err)
+			return
+		}
+
+		// Create message
+		orderMsg := sharedConsts.Message{
+			Type:    sharedConsts.MasterOrdersMessage,
+			Target:  sharedConsts.TargetClient,
+			Payload: clientDataJSON,
+		}
+		// Send message
+		networkChannels.SendChan <- orderMsg
+
 	}
 }
 

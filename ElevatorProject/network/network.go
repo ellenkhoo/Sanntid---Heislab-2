@@ -4,19 +4,19 @@ import (
 	//"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
 	//"github.com/ellenkhoo/ElevatorProject/network/network_functions/peers"
-	"github.com/ellenkhoo/ElevatorProject/elevator"
-	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"net"
+
+	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	//"time"
 )
 
 func CreateActiveConnections() *ActiveConnections {
 	return &ActiveConnections{}
 }
-
 
 func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At func ReceiveMessage!")
@@ -29,10 +29,9 @@ func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 			fmt.Println("Error decoding message: ", err)
 			return
 		}
-		receiveChan <-msg
+		receiveChan <- msg
 	}
 }
-
 
 func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts.Message, networkChannels sharedConsts.NetworkChannels) {
 	for msg := range receiveChan {
@@ -40,20 +39,18 @@ func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts
 		case sharedConsts.TargetMaster:
 			networkChannels.MasterChan <- msg
 		case sharedConsts.TargetBackup:
-			fmt.Print("Sending msg on backup chan")
 			networkChannels.BackupChan <- msg
 		case sharedConsts.TargetElevator:
 			networkChannels.ElevatorChan <- msg
 		case sharedConsts.TargetClient:
 			// Messages that all clients should receive
 			client.HandleReceivedMessageToClient(msg)
-			
+
 		default:
 			fmt.Println("Unknown message target")
 		}
 	}
 }
-
 
 func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
@@ -71,7 +68,6 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		//id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
 		fmt.Printf("id: %s", id)
 	}
-
 
 	go RouteMessages(&client, networkChannels.ReceiveChan, networkChannels)
 	// Listen for the master
@@ -108,23 +104,22 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 			fmt.Println("Master received a message")
 			masterData.HandleReceivedMessagesToMaster(m, networkChannels)
 
-		case b := <-networkChannels.BackupChan:
-			fmt.Println("Got a message from master to backup")
-			fmt.Printf("Received: %#v\n", b)
-			// msg:= Message{
-			// 	Type: currentStateMessage,
-			// 	Target: TargetMaster,
-			// 	Payload: elevst,
-			// }
-		
+		//case b := <-networkChannels.BackupChan:
+		// fmt.Println("Got a message from master to backup")
+		//fmt.Printf("Received: %#v\n", b)
+		// msg:= Message{
+		// 	Type: currentStateMessage,
+		// 	Target: TargetMaster,
+		// 	Payload: elevst,
+		// }
+
 		//Overskriver requests lokalt om man får ny melding fra master
 		case e := <-networkChannels.ElevatorChan:
-			fmt.Printf("Elevator received: %#v\n", e)
+			// fmt.Printf("Elevator received: %#v\n", e)
 			client.HandleReceivedMessageToElevator(fsm, e)
 
-
-		// case a := <-helloRx:
-		// 	fmt.Printf("Received: %#v\n", a)
+			// case a := <-helloRx:
+			// 	fmt.Printf("Received: %#v\n", a)
 		}
 	}
 }

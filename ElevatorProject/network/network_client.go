@@ -49,7 +49,6 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 		return nil, false
 	}
 
-
 	if err != nil {
 		fmt.Println("Error reading from master:", err)
 		conn.Close()
@@ -68,8 +67,8 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	fmt.Println("Adding client connection")
 
 	*client = ClientConnectionInfo{
-		ID: 	id,
-		HostIP:          remoteIP,
+		ID:          id,
+		HostIP:      remoteIP,
 		ClientConn:  clientConn,
 		SendChan:    sendChan,
 		ReceiveChan: receiveChan,
@@ -132,42 +131,66 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 
 	switch msg.Type {
 	case sharedConsts.RankMessage:
-		data := msg.Payload
-		if rank, ok := data.(int); ok {
-			fmt.Println("Setting my rank to", rank)
-			clientConn.Rank = rank
-			if rank == 2 {
-				fmt.Println("My rank is 2 and I will become backup")
-				// start backup
-			}
+		var rank int
+		err := json.Unmarshal(msg.Payload, &rank)
+		if err != nil {
+			fmt.Println("Error decoding rank message: ", err)
+			return
 		}
+
+		fmt.Println("Setting my rank to", rank)
+		clientConn.Rank = rank
+		if rank == 2 {
+			fmt.Println("My rank is 2 and I will become backup")
+			// start backup
+		}
+
 	case sharedConsts.MasterOrdersMessage:
 		data := msg.Payload
-		if masterData, ok := data.(BackupData); ok {
-			backupData:= CreateBackupData(masterData)
-			elevatorData := CreateElevatorData(masterData, clientID)
-
-			backupMsg := sharedConsts.Message{
-				Type: sharedConsts.MasterOrdersMessage,
-				Target: sharedConsts.TargetBackup,
-				Payload: backupData,
-			}
-
-
-			elevatorMsg := sharedConsts.Message{
-				Type: sharedConsts.MasterOrdersMessage,
-				Target: sharedConsts.TargetElevator,
-				Payload: elevatorData,
-			}
-
-			fmt.Println("Sending messages to backup and elevator")
-			clientConn.ReceiveChan <- backupMsg
-			clientConn.ReceiveChan <- elevatorMsg
+		var masterData BackupData
+		err := json.Unmarshal(data, &masterData)
+		if err != nil {
+			fmt.Println("Error decoding master orders message: ", err)
+			return
 		}
-	// case heartbeat: //
-	// 	// start timer
-	// case timeout:
-	// 	// start master
+
+		backupData := CreateBackupData(masterData)
+		elevatorData := CreateElevatorData(masterData, clientID)
+
+		// Marshal backupData and elevatorData
+
+		backupDataJSON, err := json.Marshal(backupData)
+		if err != nil {
+			fmt.Println("Error marshalling backup data: ", err)
+			return
+		}
+
+		elevatorDataJSON, err := json.Marshal(elevatorData)
+		if err != nil {
+			fmt.Println("Error marshalling elevator data: ", err)
+			return
+		}
+
+		backupMsg := sharedConsts.Message{
+			Type:    sharedConsts.MasterOrdersMessage,
+			Target:  sharedConsts.TargetBackup,
+			Payload: backupDataJSON,
+		}
+
+		elevatorMsg := sharedConsts.Message{
+			Type:    sharedConsts.MasterOrdersMessage,
+			Target:  sharedConsts.TargetElevator,
+			Payload: elevatorDataJSON,
+		}
+
+		fmt.Println("Sending messages to backup and elevator")
+		clientConn.ReceiveChan <- backupMsg
+		clientConn.ReceiveChan <- elevatorMsg
+
+		// case heartbeat: //
+		// 	// start timer
+		// case timeout:
+		// 	// start master
 	}
 }
 
@@ -176,59 +199,59 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 	fmt.Println("At handleMessageToElevator\n")
 	fmt.Println("Before update:", fsm.El.RequestsToDo)
 	clientID := clientConn.ID
-	masterData := msg.Payload 
-	if masterData, ok := masterData.(BackupData); ok {
-		elevatorData := CreateElevatorData(masterData, clientID)
-			fsm.El.AssignedRequests = elevatorData.AssignedRequests
-			fsm.El.GlobalHallRequests = elevatorData.GlobalHallRequests
-			//fsm.El.RequestsToDo = //assigned + cab
-			for floor := 0; floor < elevator.N_FLOORS; floor++ {
-				for button := 0; button < elevator.N_BUTTONS-1; button++{
-					if fsm.El.AssignedRequests[floor][button] {
-						fmt.Println("Assigned request at floor: ", floor, " button: ", button)
-						fsm.El.RequestsToDo[floor][button] = true
-					} 
-				}
-
-				if fsm.El.ElevStates.CabRequests[floor] { 
-					fmt.Println("Assigned cab request at floor: ", floor)
-					fsm.El.RequestsToDo[floor][elevio.BT_Cab] = true
-				}
-			}
-			fmt.Println("After update:", fsm.El.RequestsToDo)
-	} else {
-		fmt.Println("Error decoding message to elevator")
+	fmt.Println("Client ID: ", clientID) // returnerer ingenting akkurat nå
+	var masterData BackupData
+	err := json.Unmarshal(msg.Payload, &masterData)
+	if err != nil {
+		fmt.Println("Error decoding message to elevator: ", err)
+		return
 	}
+
+	elevatorData := CreateElevatorData(masterData, clientID)
+	fsm.El.AssignedRequests = elevatorData.AssignedRequests
+	fsm.El.GlobalHallRequests = elevatorData.GlobalHallRequests
+
+	// requestsToDo = assigend requests + cab requests
+	for floor := 0; floor < elevator.N_FLOORS; floor++ {
+		for button := 0; button < elevator.N_BUTTONS-1; button++ {
+			if fsm.El.AssignedRequests[floor][button] {
+				fmt.Println("Assigned request at floor: ", floor, " button: ", button)
+				fsm.El.RequestsToDo[floor][button] = true
+			}
+		}
+
+		if fsm.El.ElevStates.CabRequests[floor] {
+			fmt.Println("Assigned cab request at floor: ", floor)
+			fsm.El.RequestsToDo[floor][elevio.BT_Cab] = true
+		}
+	}
+
+	fmt.Println("After update:", fsm.El.RequestsToDo)
 }
 
-
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func CreateElevatorData(masterData BackupData, elevatorID string) ElevatorRequest{
- 
+func CreateElevatorData(masterData BackupData, elevatorID string) ElevatorRequest {
 
-    localAssignedRequests := masterData.AllAssignedRequests[elevatorID]
+	localAssignedRequests := masterData.AllAssignedRequests[elevatorID]
 	globalHallRequests := masterData.GlobalHallRequests
 
 	elevatorData := ElevatorRequest{
 		GlobalHallRequests: globalHallRequests,
-		AssignedRequests: localAssignedRequests,
+		AssignedRequests:   localAssignedRequests,
 	}
 
 	return elevatorData
 }
 
 func CreateBackupData(masterData BackupData) BackupData {
- 
 
-    AllAssignedRequests := masterData.AllAssignedRequests
+	AllAssignedRequests := masterData.AllAssignedRequests
 	globalHallRequests := masterData.GlobalHallRequests
 
 	backupData := BackupData{
-		GlobalHallRequests: globalHallRequests,
+		GlobalHallRequests:  globalHallRequests,
 		AllAssignedRequests: AllAssignedRequests,
 	}
 
 	return backupData
 }
-
-

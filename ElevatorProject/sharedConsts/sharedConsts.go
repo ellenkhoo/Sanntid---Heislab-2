@@ -1,8 +1,7 @@
 package sharedConsts
 
-import (
-	
-)
+import "encoding/json"
+
 // NETWORK CONSTS
 type HelloMsg struct {
 	Message string
@@ -33,7 +32,7 @@ const (
 type Message struct {
 	Type    MessageType
 	Target  MessageTarget
-	Payload interface{}
+	Payload json.RawMessage
 }
 
 type NetworkChannels struct {
