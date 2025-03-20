@@ -88,8 +88,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 	go bcast.Receiver(bcastPortInt, helloRx)
 
 	// Track discovered peers
-	peersMap := make(map[string]bool)
-	var masterID string
+	// peersMap := make(map[string]bool)
+	// var masterID string = ""
 
 	// Send hello message every second
 	go func() {
@@ -103,55 +103,71 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 
 	go RouteMessages(&client, networkChannels.ReceiveChan, networkChannels)
 	// Listen for the master
-	masterID, found := ListenForMaster(bcastPortString)
-	if found {
-		// Try to connect to the master
-		clientConn, success := ConnectToMaster(masterID, TCPPort)
-		if success {
-			client.AddClientConnection(id, clientConn, networkChannels.SendChan, networkChannels.ReceiveChan)
-		}
-		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
-		go ClientSendMessages(networkChannels.SendChan, clientConn)
-	} else {
-		// This whole part should be startMaster() ?
-		// No master found, announce ourselves as the master
-		masterID = id
-		fmt.Printf("Going to announce master. MasterID: %s\n", id)
-		go AnnounceMaster(id, bcastPortString)
-		go ac.ListenAndAcceptConnections(TCPPort, networkChannels.SendChan, networkChannels.ReceiveChan)
-		go ac.MasterSendMessages(networkChannels.SendChan)
-		//go startMaster()
-	}
+	// masterID, found := ListenForMaster(bcastPortString)
+	// if found {
+	// 	// Try to connect to the master
+	// 	// clientConn, success := ConnectToMaster(masterID, TCPPort)
+	// 	// if success {
+	// 	// 	client.AddClientConnection(id, clientConn, networkChannels.SendChan, networkChannels.ReceiveChan)
+	// 	// }
+	// 	// go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
+	// 	// go ClientSendMessages(networkChannels.SendChan, clientConn)
+	// } else {
+	// 	// This whole part should be startMaster() ?
+	// 	// No master found, announce ourselves as the master
+	// 	//masterID = id
+	// 	// fmt.Printf("Going to announce master. MasterID: %s\n", id)
+	// 	// go AnnounceMaster(id, bcastPortString)
+	// 	// go ac.ListenAndAcceptConnections(TCPPort, networkChannels.SendChan, networkChannels.ReceiveChan)
+	// 	// go ac.MasterSendMessages(networkChannels.SendChan)
+	// 	//go startMaster()
+	// }
 
 	// Main loop to handle peer updates and hello message reception
 	fmt.Println("Started")
 	for {
 		select {
 		case p := <-peerUpdateCh:
-			// Update the list of discovered peers
-			for _, newPeer := range p.New {
-				peerID := string(newPeer)
-				peersMap[peerID] = true
-			}
-			for _, lostPeer := range p.Lost {
-				delete(peersMap, lostPeer)
-			}
 
-			// Once peers are discovered, select the master
-			if len(peersMap) > 1 && masterID == "" {
-				// Select the master (smallest lexicographically)
-				for peerID := range peersMap {
-					if masterID == "" || peerID < masterID {
-						masterID = peerID
-					}
-				}
-				fmt.Printf("Master selected: %s\n", masterID)
+			fmt.Printf("Peer update:\n")
+			fmt.Printf("  Peers:    %q\n", p.Peers)
+			fmt.Printf("  New:      %q\n", p.New)
+			fmt.Printf("  Lost:     %q\n", p.Lost)
+			// // Update the list of discovered peers
+			// for _, newPeer := range p.New {
+			// 	peerID := string(newPeer)
+			// 	peersMap[peerID] = true
+			// }
+			// for _, lostPeer := range p.Lost {
+			// 	delete(peersMap, lostPeer)
+			// }
 
-				// If we're not the master, connect to the master using TCP
-				if id != masterID {
-					go ConnectToMaster(masterID, TCPPort)
-				}
-			}
+			// // Once peers are discovered, select the master
+			// if len(peersMap) > 1 && masterID == "" {
+			// 	// Select the master (smallest lexicographically)
+			// 	for peerID := range peersMap {
+			// 		if masterID == "" || peerID < masterID {
+			// 			masterID = peerID
+			// 		}
+			// 	}
+			// 	fmt.Printf("Master selected: %s\n", masterID)
+
+			// }
+
+			// // If we're not the master, connect to the master using TCP
+			// if id != masterID {
+			// 	clientConn, success := ConnectToMaster(masterID, TCPPort)
+			// 	if success {
+			// 		client.AddClientConnection(id, clientConn, networkChannels.SendChan, networkChannels.ReceiveChan)
+			// 	}
+			// 	go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
+			// 	go ClientSendMessages(networkChannels.SendChan, clientConn)
+			// } else {
+			// 	fmt.Printf("Going to announce master. MasterID: %s\n", id)
+			// 	go AnnounceMaster(id, bcastPortString)
+			// 	go ac.ListenAndAcceptConnections(TCPPort, networkChannels.SendChan, networkChannels.ReceiveChan)
+			// 	go ac.MasterSendMessages(networkChannels.SendChan)
+			// }
 		case r := <-networkChannels.ReceiveChan: // don't really need this case, just for temporary logging
 			fmt.Println("Received a message")
 			fmt.Printf("Received: %#v\n", r)
@@ -178,8 +194,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 			//HandleReceivedMessageToElevator(e)
 
 
-			// case a := <-helloRx:
-			// 	fmt.Printf("Received: %#v\n", a)
+		case a := <-helloRx:
+			fmt.Printf("Received: %#v\n", a)
 		}
 	}
 }
