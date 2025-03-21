@@ -151,23 +151,26 @@ func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedCo
 		}
 	}()
 
-	for{
-		select {
-		case err := <- readChan:
-			if err != nil{
-				fmt.Println("Lost connection with matser. Waiting for timeout to confirm")
-			} else {
-				fmt.Print("Recevied heartbeat from master")
-				timeout.Reset(5 * time.Second)
+	go func ()  {
+		for{
+			select {
+			case err := <- readChan:
+				if err != nil{
+					fmt.Println("Lost connection with matser. Waiting for timeout to confirm")
+				} else {
+					fmt.Print("Recevied heartbeat from master")
+					timeout.Reset(5 * time.Second)
+				}
+			case <- timeout.C:
+				fmt.Println("Master has not sent heartbeat in 5 seconds, starting failover...")
+				if client.Rank == 2 {
+					fmt.Println("backup failover")
+				} else if client.Rank > 2 {
+					fmt.Println("client failover")
+				}
+				return
 			}
-		case <- timeout.C:
-			fmt.Println("Master has not sent heartbeat in 5 seconds, starting failover...")
-			if client.Rank == 2 {
-				fmt.Println("backup failover")
-			} else if client.Rank > 2 {
-				fmt.Println("client failover")
-			}
-			return
 		}
-	}
+	}()
+	
 }
