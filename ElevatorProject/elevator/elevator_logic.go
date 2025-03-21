@@ -128,6 +128,7 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 			// comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
 		case <- NetworkChannels.UpdateChan:
+			fmt.Println("Received update")
 			fsm.Fsm_onRequestsToDo(NetworkChannels,start_timer)
 		}
 	}
