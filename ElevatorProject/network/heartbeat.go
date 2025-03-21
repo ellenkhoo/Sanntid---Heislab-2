@@ -144,22 +144,22 @@ func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedCo
 		_, err := client.ClientConn.Read(buffer)
 
 		if err != nil {
-			fmt.Printf("%s: lost connection with master! starter failover...")
+			fmt.Println(" lost connection with master! starter failover...")
 			if client.Rank == 2 {
-				fmt.Printf("%s: Performing failover as backup...\n")
+				fmt.Println("Performing failover as backup...")
 
 				//hva backupen gjør når master dør
 				//blir nye masyer
 
 			} else if client.Rank > 2 {
-				fmt.Printf("%s: Handling master loss as regular client...\n")
+				fmt.Println(" Handling master loss as regular client...")
 				//hva klientene gjør når master dør
 			}
 			return
 		}
 
 		if string(buffer) != "HB" {
-			fmt.Printf("%s: Received heartbeat from master\n")
+			fmt.Println(" Received heartbeat from master")
 			timeout.Reset(5 * time.Second)
 		}
 	}
