@@ -208,13 +208,15 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 
 	fmt.Println("MasterData: ", masterData)
 	elevatorData := CreateElevatorData(masterData, clientID)
-	fsm.El.AssignedRequests = elevatorData.AssignedRequests
-	fsm.El.GlobalHallRequests = elevatorData.GlobalHallRequests
+	fmt.Println("ElevatorData: ", elevatorData)
 
+	assignedRequests := elevatorData.AssignedRequests
+	globalHallRequests := elevatorData.GlobalHallRequests
+	
 	// requestsToDo = assigend requests + cab requests
 	for floor := 0; floor < elevator.N_FLOORS; floor++ {
 		for button := 0; button < elevator.N_BUTTONS-1; button++ {
-			if fsm.El.AssignedRequests[floor][button] {
+			if assignedRequests[floor][button] {
 				fmt.Println("Assigned request at floor: ", floor, " button: ", button)
 				fsm.El.RequestsToDo[floor][button] = true
 			}
@@ -223,9 +225,13 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 		if fsm.El.ElevStates.CabRequests[floor] {
 			fmt.Println("Assigned cab request at floor: ", floor)
 			fsm.El.RequestsToDo[floor][elevio.BT_Cab] = true
+		} else {
+			fmt.Println("No cab request at floor: ", floor)
 		}
 	}
 
+	fsm.El.AssignedRequests = assignedRequests
+	fsm.El.GlobalHallRequests = globalHallRequests
 	fmt.Println("After update:", fsm.El.RequestsToDo)
 }
 
