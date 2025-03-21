@@ -87,13 +87,13 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 	var targetConn net.Conn
 	for msg := range networkChannels.SendChan {
 		switch msg.Target {
-		// TROR IKKE VI TRENGER EN EGEN FOR BACKUP, BARE CLIENT
-		// case sharedConsts.TargetBackup:
-		// 	fmt.Println("Backup is target")
-		// 	for clients := range ac.Conns {
-		// 		targetConn = ac.Conns[clients].HostConn
-		// 		SendMessage(msg, targetConn)
-		// 	}
+		// Må sende worldview til backup først, så til heis
+		case sharedConsts.TargetBackup:
+			fmt.Println("Backup is target")
+			for clients := range ac.Conns {
+				targetConn = ac.Conns[clients].HostConn
+				SendMessage(msg, targetConn)
+			}
 
 			// if targetConn != nil {
 			// 	encoder := json.NewEncoder(targetConn)
