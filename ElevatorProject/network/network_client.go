@@ -207,7 +207,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 
 			go func() {
 				<-clientConn.HeartbeatTimer.C
-				fmt.Println("⏳ Timeout! Assuming master is dead...")
+				fmt.Println("Timeout! Assuming master is dead...")
 				//HandleMasterDisconnection() // Kall en funksjon for å håndtere failover
 			}()
 			}
