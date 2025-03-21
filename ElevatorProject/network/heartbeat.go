@@ -124,7 +124,7 @@ func (ac *ActiveConnections) SendHeartbeats(sendChan chan sharedConsts.Message) 
 
 	msg := sharedConsts.Message{
 		Type:    sharedConsts.Heartbeat,
-		Target:  sharedConsts.TargetMaster,
+		Target:  sharedConsts.TargetClient,
 		Payload: heartbeatPayload,
 	}
 	for {
