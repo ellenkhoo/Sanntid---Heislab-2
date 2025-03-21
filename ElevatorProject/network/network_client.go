@@ -200,17 +200,18 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			if !clientConn.HeartbeatTimer.Stop(){
 				select {
 				case <-clientConn.HeartbeatTimer.C:
+					fmt.Println("Timeout! Assuming master is dead...")
 				default:
 				}
 			}
 			clientConn.HeartbeatTimer.Reset(10 * time.Second)
 
-			go func() {
-				<-clientConn.HeartbeatTimer.C
-				fmt.Println("Timeout! Assuming master is dead...")
-				//HandleMasterDisconnection() // Kall en funksjon for å håndtere failover
-			}()
-			}
+			// go func() {
+			// 	<-clientConn.HeartbeatTimer.C
+			// 	fmt.Println("Timeout! Assuming master is dead...")
+			// 	//HandleMasterDisconnection() // Kall en funksjon for å håndtere failover
+			// }()
+			// }
 
 		// 	// start timer
 		// case timeout:
