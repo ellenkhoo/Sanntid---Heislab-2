@@ -138,9 +138,6 @@ func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedCo
 	buffer := make([]byte, 2)
 	timeout := time.NewTimer(5 * time.Second)
 
-	networkChannels = sharedConsts.NetworkChannels{
-		FailoverChannel: make(chan string),
-	}
 
 	for {
 		client.ClientConn.SetReadDeadline(time.Now().Add(5 * time.Second))

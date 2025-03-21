@@ -81,7 +81,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		}
 		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
 		go ClientSendMessages(networkChannels.SendChan, clientConn)
-		go ListenForHeartbeats(clientConn, "backup" )
+		go client.ListenForHeartbeats(networkChannels)
 	} else {
 		// This whole part should be startMaster() ?
 		// No master found, announce ourselves as the master
