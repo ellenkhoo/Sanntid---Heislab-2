@@ -2,6 +2,7 @@ package network
 
 import (
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -143,7 +144,7 @@ func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedCo
 	go func () {
 		for {
 			client.ClientConn.SetReadDeadline(time.Now().Add(5 * time.Second))
-			_, err := client.ClientConn.Read(buffer)
+			_, err := io.ReadFull(client.ClientConn, buffer)
 			select {
 			case readChan <- err:
 			default:
