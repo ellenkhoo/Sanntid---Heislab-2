@@ -209,6 +209,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 	fmt.Println("MasterData: ", masterData)
 	elevatorData := CreateElevatorData(masterData, clientID)
 	fmt.Println("ElevatorData: ", elevatorData)
+	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
 
 	assignedRequests := elevatorData.AssignedRequests
 	globalHallRequests := elevatorData.GlobalHallRequests

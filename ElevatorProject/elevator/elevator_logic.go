@@ -50,6 +50,7 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 			// If cab call
 			if order.Button == B_Cab {
 				fsm.El.ElevStates.CabRequests[order.Floor] = true
+				fmt.Println("Cab request in elevLogic: ", fsm.El.ElevStates.CabRequests)
 			} else {
 
 				// Marshal order
