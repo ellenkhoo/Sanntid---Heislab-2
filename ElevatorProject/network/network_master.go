@@ -121,18 +121,33 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 		case sharedConsts.TargetElevator:
 			// do something
 		case sharedConsts.TargetClient:
-			// Send to the local elevator
-			networkChannels.ElevatorChan <- msg
-			// Send to all other remote clients
-			for clients := range ac.Conns {
-				targetConn = ac.Conns[clients].HostConn
-				encoder := json.NewEncoder(targetConn)
-				fmt.Println("Sending message:", msg)
-				err := encoder.Encode(msg)
-				if err != nil {
-					fmt.Println("Error encoding message: ", err)
-					return
+			// Send to remote clients
+			if msg.Type == sharedConsts.RankMessage {
+				for clients := range ac.Conns {
+					targetConn = ac.Conns[clients].HostConn
+					encoder := json.NewEncoder(targetConn)
+					fmt.Println("Sending message:", msg)
+					err := encoder.Encode(msg)
+					if err != nil {
+						fmt.Println("Error encoding message: ", err)
+						return
+					}
 				}
+			} else {
+				networkChannels.ElevatorChan <- msg
+				for clients := range ac.Conns {
+					targetConn = ac.Conns[clients].HostConn
+					encoder := json.NewEncoder(targetConn)
+					fmt.Println("Sending message:", msg)
+					err := encoder.Encode(msg)
+					if err != nil {
+						fmt.Println("Error encoding message: ", err)
+						return
+					}
+				}	
+			//networkChannels.ElevatorChan <- msg
+			// Send to all other remote clients
+			
 			}
 		}
 	}
