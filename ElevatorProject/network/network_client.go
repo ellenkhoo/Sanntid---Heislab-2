@@ -199,6 +199,9 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			if clientConn.HeartbeatTimer == nil {
 				clientConn.HeartbeatTimer = time.NewTimer(5 * time.Second)
 			} else {
+				if !clientConn.HeartbeatTimer.Stop(){
+					<- clientConn.HeartbeatTimer.C
+				}
 				clientConn.HeartbeatTimer.Reset(5 * time.Second)
 			}
 			go func(){
