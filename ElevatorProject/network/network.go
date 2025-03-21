@@ -77,7 +77,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		//Try to connect to the master
 		clientConn, success := ConnectToMaster(masterID, TCPPort)
 		if success {
-			client.AddClientConnection(id, clientConn, networkChannels.SendChan, networkChannels.ReceiveChan)
+			client.AddClientConnection(id, clientConn, networkChannels)
 		}
 		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
 		go ClientSendMessages(networkChannels.SendChan, clientConn)

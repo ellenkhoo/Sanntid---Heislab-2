@@ -60,7 +60,7 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 }
 
 // When a new connection is established on the client side, this function adds it to the list of active connections
-func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, sendChan chan sharedConsts.Message, receiveChan chan sharedConsts.Message) {
+func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, channels sharedConsts.NetworkChannels) {
 	//defer conn.Close()
 	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
 
@@ -70,8 +70,7 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 		ID:          id,
 		HostIP:      remoteIP,
 		ClientConn:  clientConn,
-		SendChan:    sendChan,
-		ReceiveChan: receiveChan,
+		Channels: channels,
 	}
 
 	fmt.Println("Going to handle connection")
@@ -91,7 +90,7 @@ func HandleConnection(client ClientConnectionInfo) {
 				fmt.Println("Error decoding message: ", err)
 				return
 			}
-			client.ReceiveChan <- msg
+			client.Channels.ReceiveChan <- msg
 		}
 	}()
 
@@ -99,7 +98,7 @@ func HandleConnection(client ClientConnectionInfo) {
 	fmt.Println("Ready to send on TCP")
 	go func() {
 		encoder := json.NewEncoder(client.ClientConn)
-		for msg := range client.SendChan {
+		for msg := range client.Channels.SendChan {
 			err := encoder.Encode(msg)
 			if err != nil {
 				fmt.Println("Error encoding message: ", err)
@@ -184,8 +183,8 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		fmt.Println("Sending messages to backup and elevator")
-		clientConn.ReceiveChan <- backupMsg
-		clientConn.ReceiveChan <- elevatorMsg
+		clientConn.Channels.BackupChan <- backupMsg
+		clientConn.Channels.ElevatorChan <- elevatorMsg
 
 		// case heartbeat: //
 		// 	// start timer
@@ -207,6 +206,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 		return
 	}
 
+	fmt.Println("MasterData: ", masterData)
 	elevatorData := CreateElevatorData(masterData, clientID)
 	fsm.El.AssignedRequests = elevatorData.AssignedRequests
 	fsm.El.GlobalHallRequests = elevatorData.GlobalHallRequests
