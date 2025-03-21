@@ -137,6 +137,34 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		// 	// start backup
 		// }
 
+	case sharedConsts.MasterWorldviewMessage:
+		fmt.Println("Received master worldview message")
+		data := msg.Payload
+		var masterData BackupData
+		err := json.Unmarshal(data, &masterData)
+		if err != nil {
+			fmt.Println("Error decoding message: ", err)
+			return
+		}
+
+		backupData := CreateBackupData(masterData)
+		// Marshal backupData
+		backupDataJSON, err := json.Marshal(backupData)
+		if err != nil {
+			fmt.Println("Error marshalling backup data: ", err)
+			return
+		}
+
+		backupMsg := sharedConsts.Message{
+			Type:    sharedConsts.MasterWorldviewMessage,
+			Target:  sharedConsts.TargetBackup,
+			Payload: backupDataJSON,
+		}
+		
+		// Må sende worldview til master først, master sammenligner, så kan vi sende til heis
+		
+		// clientConn.Channels.BackupChan <- backupMsg
+
 	case sharedConsts.MasterOrdersMessage:
 		data := msg.Payload
 		var masterData BackupData

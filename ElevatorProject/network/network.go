@@ -65,7 +65,7 @@ func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts
 	}
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()

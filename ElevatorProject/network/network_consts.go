@@ -54,6 +54,7 @@ type ClientConnectionInfo struct {
 	// Rank        int
 	ClientConn  net.Conn
 	Channels sharedConsts.NetworkChannels
+	Worldview BackupData
 }
 
 // type NetworkChannels struct {

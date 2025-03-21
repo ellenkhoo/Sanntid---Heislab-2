@@ -189,11 +189,44 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 
 		// Create message
 		orderMsg := sharedConsts.Message{
-			Type:    sharedConsts.MasterOrdersMessage,
+			Type:    sharedConsts.MasterWorldviewMessage,
 			Target:  sharedConsts.TargetClient,
 			Payload: clientDataJSON,
 		}
 		// Send message
 		networkChannels.SendChan <- orderMsg
+
+	case sharedConsts.MasterWorldviewMessage:
+		var backupWorldview BackupData
+		err := json.Unmarshal(msg.Payload, &backupWorldview)
+		if err != nil {
+			fmt.Println("Error decoding message to master: ", err)
+			return
+		}
+		backupHallRequests := backupWorldview.GlobalHallRequests
+		backupAssignedRequests := backupWorldview.AllAssignedRequests
+		if masterData.GlobalHallRequests == backupHallRequests && mapsAreEqual(masterData.AllAssignedRequests, backupAssignedRequests) {
+			fmt.Println("Worldviews are the same")
+		} else {
+			fmt.Println("Worldviews are different")
+		}
 	}
+}
+
+// flytt til et annet sted?
+func mapsAreEqual(map1, map2 map[string][4][2]bool) bool {
+    // First, check if the lengths are the same
+    if len(map1) != len(map2) {
+        return false
+    }
+
+    // Now, check if all the keys and their corresponding values are equal
+    for key, val1 := range map1 {
+        val2, exists := map2[key]
+        if !exists || val1 != val2 {
+            return false
+        }
+    }
+
+    return true
 }
