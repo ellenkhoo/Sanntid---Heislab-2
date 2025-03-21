@@ -176,9 +176,9 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 		floor := elevStates.Floor
 		dirn := elevStates.Direction
 		if dirn == "D_Up"{
-			MasterData.GlobalHallRequests[floor][0] = false
+			masterData.GlobalHallRequests[floor][0] = false
 		} else if dirn == "D_Down" {
-			MasterData.GlobalHallRequests[floor][1] = false
+			masterData.GlobalHallRequests[floor][1] = false
 		}
 		masterData.mutex.Unlock()
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)

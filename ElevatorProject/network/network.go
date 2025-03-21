@@ -69,7 +69,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		fmt.Printf("id: %s", id)
 	}
 
-	go RouteMessages(&client, networkChannels.ReceiveChan, networkChannels)
+	go RouteMessages(client, networkChannels.ReceiveChan, networkChannels)
 	// Listen for the master
 	var masterID string = ""
 	masterID, found := ListenForMaster(bcastPortString)
