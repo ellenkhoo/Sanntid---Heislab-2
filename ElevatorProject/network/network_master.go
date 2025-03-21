@@ -119,12 +119,12 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
 				SendMessage(msg, targetConn)
-			}	
+			}
 		}
 	}
 }
 
-func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Message, networkChannels sharedConsts.NetworkChannels) {
+func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, networkChannels sharedConsts.NetworkChannels, ackTracker *AcknowledgeTracker) {
 
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
@@ -161,7 +161,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 		masterData.AllElevStates[ID] = elevStates
 		floor := elevStates.Floor
 		dirn := elevStates.Direction
-		if dirn == "D_Up"{
+		if dirn == "D_Up" {
 			masterData.GlobalHallRequests[floor][0] = false
 		} else if dirn == "D_Down" {
 			masterData.GlobalHallRequests[floor][1] = false
@@ -195,38 +195,84 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 		}
 		// Send message
 		networkChannels.SendChan <- orderMsg
+		ackTracker.AwaitAcknowledge(ID, orderMsg)
 
-	case sharedConsts.MasterWorldviewMessage:
-		var backupWorldview BackupData
-		err := json.Unmarshal(msg.Payload, &backupWorldview)
+	case sharedConsts.BackupAcknowledgeMessage:
+		var clientID string
+		err := json.Unmarshal(msg.Payload, &clientID)
 		if err != nil {
-			fmt.Println("Error decoding message to master: ", err)
+			fmt.Println("Error decoding BackupAcknoledgement:", err)
 			return
 		}
-		backupHallRequests := backupWorldview.GlobalHallRequests
-		backupAssignedRequests := backupWorldview.AllAssignedRequests
-		if masterData.GlobalHallRequests == backupHallRequests && mapsAreEqual(masterData.AllAssignedRequests, backupAssignedRequests) {
-			fmt.Println("Worldviews are the same")
-		} else {
-			fmt.Println("Worldviews are different")
+		ackTracker.Acknowledge(clientID)
+
+		if ackTracker.AllAcknowledged() {
+			fmt.Println("All acknowledgments received. Orders can be sent to elevators.")
+			clientData := "Send requests to elevator"
+			clientDataJSON, err := json.Marshal(clientData)
+			if err != nil {
+				fmt.Println("Error marshalling backup data: ", err)
+				return
+			}
+
+			clientMsg := sharedConsts.Message{
+				Type:    sharedConsts.UpdateOrdersMessage,
+				Target:  sharedConsts.TargetClient,
+				Payload: clientDataJSON,
+			}
+
+			var targetConn net.Conn
+			for clients := range ac.Conns {
+				targetConn = ac.Conns[clients].HostConn
+				SendMessage(clientMsg, targetConn)
+			}
 		}
+		// case sharedConsts.MasterWorldviewMessage:
+		// 	var backupWorldview BackupData
+		// 	err := json.Unmarshal(msg.Payload, &backupWorldview)
+		// 	if err != nil {
+		// 		fmt.Println("Error decoding message to master: ", err)
+		// 		return
+		// 	}
+		// 	backupHallRequests := backupWorldview.GlobalHallRequests
+		// 	backupAssignedRequests := backupWorldview.AllAssignedRequests
+		// 	if masterData.GlobalHallRequests == backupHallRequests && mapsAreEqual(masterData.AllAssignedRequests, backupAssignedRequests) {
+		// 		fmt.Println("Worldviews are the same")
+
+		// 		data := "Send requests to elevator"
+		// 		dataJSON, err := json.Marshal(data)
+		// 		if err != nil {
+		// 			fmt.Println("Error marshalling backup data: ", err)
+		// 			return
+		// 		}
+
+		// 		backupMsg := sharedConsts.Message{
+		// 			Type:    sharedConsts.UpdateOrdersMessage,
+		// 			Target:  sharedConsts.TargetMaster,
+		// 			Payload: backupDataJSON,
+		// 		}
+		// 		// backup can send worldview to elevator
+		// 	} else {
+		// 		fmt.Println("Worldviews are different")
+		// 		// send master's worldview again
+		// 	}
 	}
 }
 
 // flytt til et annet sted?
 func mapsAreEqual(map1, map2 map[string][4][2]bool) bool {
-    // First, check if the lengths are the same
-    if len(map1) != len(map2) {
-        return false
-    }
+	// First, check if the lengths are the same
+	if len(map1) != len(map2) {
+		return false
+	}
 
-    // Now, check if all the keys and their corresponding values are equal
-    for key, val1 := range map1 {
-        val2, exists := map2[key]
-        if !exists || val1 != val2 {
-            return false
-        }
-    }
+	// Now, check if all the keys and their corresponding values are equal
+	for key, val1 := range map1 {
+		val2, exists := map2[key]
+		if !exists || val1 != val2 {
+			return false
+		}
+	}
 
-    return true
+	return true
 }

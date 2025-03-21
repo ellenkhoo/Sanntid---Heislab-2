@@ -3,11 +3,14 @@ package main
 import (
 	// 	"ElevatorProject/comm"
 	//"ElevatorProject/roles"
+	"time"
+
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
+
 	//"github.com/ellenkhoo/ElevatorProject/roles"
-	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	// "fmt"
 	// "time"
 )
@@ -18,80 +21,68 @@ func main() {
 	// dumt at ac lages her? da vil alle pc-ene ha det
 	ac := network.CreateActiveConnections()
 	client := network.ClientConnectionInfo{}
-	masterData := network.MasterData{
-		GlobalHallRequests: [elevator.N_FLOORS][2]bool{},
-		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
-		AllElevStates: make(map[string]elevator.ElevStates),
-	}
+	masterData := network.CreateMasterData()
+	ackTracker := network.NewAcknowledgeTracker(10 * time.Millisecond)
 
 	localIP, _ := localip.LocalIP()
-	var bcastPortInt = 16569
-	// var bcastPortString = "16569"
-	// For use on same computer?
-	var bcastPortString = "9999"
-	var peersPort = 15647
-	var TCPPort = "8081"
 
 	// Initialize network channels
 	networkChannels := sharedConsts.NetworkChannels{
-		SendChan : make(chan sharedConsts.Message),
-		ReceiveChan : make(chan sharedConsts.Message),
+		SendChan:     make(chan sharedConsts.Message),
+		ReceiveChan:  make(chan sharedConsts.Message),
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message),
 	}
 
-
 	fsm := elevator.InitElevator(localIP, networkChannels)
-	go network.InitMasterSlaveNetwork(ac, &client, &masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, &fsm)
+	go network.InitMasterSlaveNetwork(ac, &client, masterData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, &fsm)
 	//go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
-	
-  	
 	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
 	// Start elevator
 	//go roles.InitElevator()
 
 	// Actual main program, ish
-/*
-	localIp := "127.0.0.1"
-
-	// masse greier for å få det til å kjøre på samme pc, sikker helt unødvednig
-	var listenPort string
-	var broadcastPort string
-
-	//Instance 1
-	// broadcastPort = "8081"
-	// listenPort = "8082"
-
-	// //Instance 2
-	// broadcastPort = "8082"
-	// listenPort = "8081"
-*/
 	/*
-	//Instance 3
-	broadcastPort = "8081"
-	listenPort = "8083"
+		localIp := "127.0.0.1"
 
-	masterIP, found := comm.ListenForMaster(listenPort)
+		// masse greier for å få det til å kjøre på samme pc, sikker helt unødvednig
+		var listenPort string
+		var broadcastPort string
 
-	if found {
-		rank, conn, success := comm.ConnectToMaster(masterIP, "8081")
-		if success {
-			if rank == 2 {
-				fmt.Println("Going to start backup")
-				go roles.StartBackup(conn)
-				time.Sleep(5 * time.Second)
-			} else if rank > 2 {
-				go roles.StartSlave(conn)
-				time.Sleep(5 * time.Second)
+		//Instance 1
+		// broadcastPort = "8081"
+		// listenPort = "8082"
+
+		// //Instance 2
+		// broadcastPort = "8082"
+		// listenPort = "8081"
+	*/
+	/*
+		//Instance 3
+		broadcastPort = "8081"
+		listenPort = "8083"
+
+		masterIP, found := comm.ListenForMaster(listenPort)
+
+		if found {
+			rank, conn, success := comm.ConnectToMaster(masterIP, "8081")
+			if success {
+				if rank == 2 {
+					fmt.Println("Going to start backup")
+					go roles.StartBackup(conn)
+					time.Sleep(5 * time.Second)
+				} else if rank > 2 {
+					go roles.StartSlave(conn)
+					time.Sleep(5 * time.Second)
+				}
 			}
+		} else {
+			go comm.AnnounceMaster(localIp, broadcastPort)
+			go roles.StartMaster(broadcastPort)
 		}
-	} else {
-		go comm.AnnounceMaster(localIp, broadcastPort)
-		go roles.StartMaster(broadcastPort)
-	}
-		*/
+	*/
 
 	// Test, sende til egen PC
 

@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"net"
 	"io"
+	"net"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -17,6 +17,14 @@ import (
 
 func CreateActiveConnections() *ActiveConnections {
 	return &ActiveConnections{}
+}
+
+func CreateMasterData() *MasterData {
+	return &MasterData{
+		GlobalHallRequests:  [elevator.N_FLOORS][2]bool{},
+		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
+		AllElevStates:       make(map[string]elevator.ElevStates),
+	}
 }
 
 func SendMessage(msg sharedConsts.Message, targetConn net.Conn) {
@@ -51,21 +59,15 @@ func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts
 		switch msg.Target {
 		case sharedConsts.TargetMaster:
 			networkChannels.MasterChan <- msg
-		// case sharedConsts.TargetBackup:
-		// 	networkChannels.BackupChan <- msg
-		// case sharedConsts.TargetElevator:
-		// 	networkChannels.ElevatorChan <- msg
 		case sharedConsts.TargetClient:
-			// Messages that all clients should receive
 			client.HandleReceivedMessageToClient(msg)
-
 		default:
 			fmt.Println("Unknown message target")
 		}
 	}
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, ackTracker *AcknowledgeTracker, bcastPort string, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -85,7 +87,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 	go RouteMessages(client, networkChannels.ReceiveChan, networkChannels)
 	// Listen for the master
 	var masterID string = ""
-	masterID, found := ListenForMaster(bcastPortString)
+	masterID, found := ListenForMaster(bcastPort)
 	if found {
 		//Try to connect to the master
 		clientConn, success := ConnectToMaster(masterID, TCPPort)
@@ -95,45 +97,22 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
 		go ClientSendMessagesFromSendChan(networkChannels.SendChan, clientConn)
 	} else {
-		// This whole part should be startMaster() ?
 		// No master found, announce ourselves as the master
 		masterID = id
-		client.ID = id
+		client.ID = id // local client (elevator)
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
-		go AnnounceMaster(id, bcastPortString)
+		go AnnounceMaster(id, bcastPort)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
 		go ac.MasterSendMessages(networkChannels)
-		//go startMaster()
 	}
 
-	// Main loop to handle peer updates and hello message reception
-	fmt.Println("Started")
 	for {
 		select {
-		// case r := <-networkChannels.ReceiveChan: // don't really need this case, just for temporary logging
-		// 	fmt.Println("Received a message")
-		// 	fmt.Printf("Received: %#v\n", r)
-
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Master received a message")
-			masterData.HandleReceivedMessagesToMaster(m, networkChannels)
-
-		// case b := <-networkChannels.BackupChan:
-		// fmt.Println("Got a message from master to backup")
-		// fmt.Printf("Received: %#v\n", b)
-		// msg:= Message{
-		// 	Type: currentStateMessage,
-		// 	Target: TargetMaster,
-		// 	Payload: elevst,
-		// }
-
-		//Overskriver requests lokalt om man får ny melding fra master
+			masterData.HandleReceivedMessagesToMaster(ac, m, networkChannels, ackTracker)
 		case e := <-networkChannels.ElevatorChan:
-			// fmt.Printf("Elevator received: %#v\n", e)
 			client.UpdateElevatorWorldview(fsm, e)
-
-			// case a := <-helloRx:
-			// 	fmt.Printf("Received: %#v\n", a)
 		}
 	}
 }

@@ -12,7 +12,7 @@ type MessageType int
 
 const (
 	MasterWorldviewMessage MessageType = iota
-	ElevatorOrdersMessage
+	UpdateOrdersMessage
 	BackupAcknowledgeMessage
 	LocalRequestMessage
 	CurrentStateMessage
@@ -36,10 +36,10 @@ type Message struct {
 }
 
 type NetworkChannels struct {
-	SendChan 	 chan Message
+	SendChan     chan Message
 	ReceiveChan  chan Message
 	MasterChan   chan Message
 	BackupChan   chan Message
 	ElevatorChan chan Message
-	UpdateChan 	 chan string
+	UpdateChan   chan string
 }

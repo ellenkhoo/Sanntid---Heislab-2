@@ -67,10 +67,10 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	fmt.Println("Adding client connection")
 
 	*client = ClientConnectionInfo{
-		ID:          id,
-		HostIP:      remoteIP,
-		ClientConn:  clientConn,
-		Channels: channels,
+		ID:         id,
+		HostIP:     remoteIP,
+		ClientConn: clientConn,
+		Channels:   channels,
 	}
 
 	fmt.Println("Going to handle connection")
@@ -130,12 +130,12 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 	// 		return
 	// 	}
 
-		// fmt.Println("Setting my rank to", rank)
-		// clientConn.Rank = rank
-		// if rank == 2 {
-		// 	fmt.Println("My rank is 2 and I will become backup")
-		// 	// start backup
-		// }
+	// fmt.Println("Setting my rank to", rank)
+	// clientConn.Rank = rank
+	// if rank == 2 {
+	// 	fmt.Println("My rank is 2 and I will become backup")
+	// 	// start backup
+	// }
 
 	case sharedConsts.MasterWorldviewMessage:
 		fmt.Println("Received master worldview message")
@@ -148,41 +148,45 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		backupData := CreateBackupData(masterData)
+		clientConn.ClientMtx.Lock()
+		clientConn.Worldview = backupData
+		clientConn.ClientMtx.Unlock()
+
 		// Marshal backupData
-		backupDataJSON, err := json.Marshal(backupData)
+		backupDataJSON, err := json.Marshal(clientConn.ID)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
 			return
 		}
 
 		backupMsg := sharedConsts.Message{
-			Type:    sharedConsts.MasterWorldviewMessage,
-			Target:  sharedConsts.TargetBackup,
+			Type:    sharedConsts.BackupAcknowledgeMessage,
+			Target:  sharedConsts.TargetMaster,
 			Payload: backupDataJSON,
 		}
-		
+
+		clientConn.Channels.SendChan <- backupMsg
+
 		// Må sende worldview til master først, master sammenligner, så kan vi sende til heis
-		
-		// clientConn.Channels.BackupChan <- backupMsg
 
-	case sharedConsts.MasterOrdersMessage:
-		data := msg.Payload
-		var masterData BackupData
-		err := json.Unmarshal(data, &masterData)
-		if err != nil {
-			fmt.Println("Error decoding master orders message: ", err)
-			return
-		}
+	case sharedConsts.UpdateOrdersMessage:
+		// data := msg.Payload
+		// var masterData BackupData
+		// err := json.Unmarshal(data, &masterData)
+		// if err != nil {
+		// 	fmt.Println("Error decoding master orders message: ", err)
+		// 	return
+		// }
 
-		backupData := CreateBackupData(masterData)
-		elevatorData := CreateElevatorData(masterData, clientID)
+		backupData := clientConn.Worldview
+		elevatorData := CreateElevatorData(backupData, clientID)
 
 		// Marshal backupData and elevatorData
-		backupDataJSON, err := json.Marshal(backupData)
-		if err != nil {
-			fmt.Println("Error marshalling backup data: ", err)
-			return
-		}
+		// backupDataJSON, err := json.Marshal(backupData)
+		// if err != nil {
+		// 	fmt.Println("Error marshalling backup data: ", err)
+		// 	return
+		// }
 
 		elevatorDataJSON, err := json.Marshal(elevatorData)
 		if err != nil {
@@ -190,20 +194,20 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			return
 		}
 
-		backupMsg := sharedConsts.Message{
-			Type:    sharedConsts.MasterOrdersMessage,
-			Target:  sharedConsts.TargetBackup,
-			Payload: backupDataJSON,
-		}
+		// backupMsg := sharedConsts.Message{
+		// 	Type:    sharedConsts.MasterOrdersMessage,
+		// 	Target:  sharedConsts.TargetBackup,
+		// 	Payload: backupDataJSON,
+		// }
 
 		elevatorMsg := sharedConsts.Message{
-			Type:    sharedConsts.MasterOrdersMessage,
+			Type:    sharedConsts.UpdateOrdersMessage,
 			Target:  sharedConsts.TargetElevator,
 			Payload: elevatorDataJSON,
 		}
 
-		fmt.Println("Sending messages to backup and elevator")
-		clientConn.Channels.BackupChan <- backupMsg
+		fmt.Println("Sending orders to elevator")
+		// clientConn.Channels.BackupChan <- backupMsg
 		clientConn.Channels.ElevatorChan <- elevatorMsg
 
 		// case heartbeat: //
@@ -232,7 +236,7 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 
 	assignedRequests := elevatorData.AssignedRequests
 	globalHallRequests := elevatorData.GlobalHallRequests
-	
+
 	fsm.Fsm_mtx.Lock()
 
 	// requestsToDo = assigend requests + cab requests
