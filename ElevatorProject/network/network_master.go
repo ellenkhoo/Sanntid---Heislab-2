@@ -218,7 +218,11 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 			return
 		}	
 		fmt.Println("Received heartbeat from client: ", clientID)
-		masterData.HeartbeatTimer.Reset(5 * time.Second)
+		if masterData.HeartbeatTimer == nil {
+			masterData.HeartbeatTimer = time.NewTimer(5 * time.Second)
+		} else {
+			masterData.HeartbeatTimer.Reset(5 * time.Second)
+		}
 	
 	}
 }
