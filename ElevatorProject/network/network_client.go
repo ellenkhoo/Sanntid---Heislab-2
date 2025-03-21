@@ -203,7 +203,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 				default:
 				}
 			}
-			clientConn.HeartbeatTimer.Reset(5 * time.Second)
+			clientConn.HeartbeatTimer.Reset(10 * time.Second)
 
 			go func() {
 				<-clientConn.HeartbeatTimer.C
