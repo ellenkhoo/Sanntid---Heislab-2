@@ -218,6 +218,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		// 	// start master
 	}
 }
+}
 
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *elevator.FSM, msg sharedConsts.Message) {
 
