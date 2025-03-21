@@ -115,7 +115,7 @@ import (
 // 	}
 // }
 
-func (ac *ActiveConnections) SendHeartbeats(sendChan chan sharedConsts.Message) {
+func (ac *ActiveConnections) MasterSendHeartbeats(sendChan chan sharedConsts.Message) {
 	heartbeatPayload, err := json.Marshal("HB")
 	if err != nil {
 		fmt.Println("Error marshalling heartbeat: ", err)
@@ -132,10 +132,26 @@ func (ac *ActiveConnections) SendHeartbeats(sendChan chan sharedConsts.Message) 
 		fmt.Println("sending heartbeat to clients")
 		sendChan <- msg
 	}
-
-	
 }
 
+func (clientConn *ClientConnectionInfo) ClientSendHeartbeats(sendChan chan sharedConsts.Message) {
+	heartbeatPayload, err := json.Marshal(clientConn.ID)
+	if err != nil {
+		fmt.Println("Error marshalling heartbeat: ", err)
+		return
+	}
+
+	msg := sharedConsts.Message{
+		Type:    sharedConsts.Heartbeat,
+		Target:  sharedConsts.TargetMaster,
+		Payload: heartbeatPayload,
+	}
+	for {
+		time.Sleep(5 * time.Second)
+		fmt.Println("sending heartbeat from clients", clientConn.ID)
+		sendChan <- msg
+	}
+}
 // func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedConsts.NetworkChannels) {
 // 	buffer := make([]byte, 1024)
 // 	timeout := time.NewTimer(5 * time.Second)

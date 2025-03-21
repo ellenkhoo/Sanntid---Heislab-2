@@ -83,6 +83,7 @@ type MasterData struct {
 	AllAssignedRequests   map[string][elevator.N_FLOORS][2]bool	`json:"allAssignedRequests"`
 	AllElevStates map[string]elevator.ElevStates	`json:"allElevStates"`
 	mutex sync.Mutex
+	HeartbeatTimer *time.Timer
 }
 
 type BackupData struct {

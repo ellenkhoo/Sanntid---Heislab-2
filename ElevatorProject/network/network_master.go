@@ -209,5 +209,16 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 		}
 		// Send message
 		networkChannels.SendChan <- orderMsg
+	
+	case sharedConsts.Heartbeat:
+		var clientID int
+		err := json.Unmarshal(msg.Payload, &clientID)
+		if err != nil {
+			fmt.Println("Error decoding heartbeat message: ", err)
+			return
+		}	
+		fmt.Println("Received heartbeat from client: ", clientID)
+		masterData.HeartbeatTimer.Reset(5 * time.Second)
+	
 	}
 }

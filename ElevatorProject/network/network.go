@@ -91,7 +91,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		go AnnounceMaster(id, bcastPortString)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
 		go ac.MasterSendMessages(networkChannels)
-		go ac.SendHeartbeats(networkChannels.SendChan)
+		go ac.MasterSendHeartbeats(networkChannels.SendChan)
 		//go startMaster()
 	}
 
