@@ -196,7 +196,15 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 		if heartbeat == "HB" {	
 		fmt.Println("Received heartbeat from master")
-		clientConn.HeartbeatTimer.Reset(5 * time.Second)
+			if clientConn.HeartbeatTimer == nil {
+				clientConn.HeartbeatTimer = time.NewTimer(5 * time.Second)
+			} else {
+				clientConn.HeartbeatTimer.Reset(5 * time.Second)
+			}
+			go func(){
+				<- clientConn.HeartbeatTimer.C
+				fmt.Println("master heartbeat timeout! handelig master disconnection...")
+			}()
 		}
 		// 	// start timer
 		// case timeout:
