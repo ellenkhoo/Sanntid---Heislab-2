@@ -52,7 +52,7 @@ func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts
 	}
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData MasterData, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -69,7 +69,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		fmt.Printf("id: %s", id)
 	}
 
-	go RouteMessages(&client, networkChannels.ReceiveChan, networkChannels)
+	go RouteMessages(client, networkChannels.ReceiveChan, networkChannels)
 	// Listen for the master
 	var masterID string = ""
 	masterID, found := ListenForMaster(bcastPortString)
