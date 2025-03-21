@@ -37,13 +37,13 @@ func (fsm *FSM) Fsm_onInitBetweenFloors() {
 
 // Handle button press event
 //Mulig at det trengs bedre navn
-func (fsm *FSM) Fsm_onRequestsToDo(btn_floor int, btn_type elevio.ButtonType, start_timer chan time.Duration) {
+func (fsm *FSM) Fsm_onRequestsToDo(start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d, %s)\n", btn_floor, btn_type)
 	Elevator_print(fsm.El)
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
-		if Requests_shouldClearImmediately(fsm.El, btn_floor, btn_type) {
+		if Requests_shouldClearImmediately(fsm.El) {
 			start_timer <- fsm.El.Config.DoorOpenDuration
 
 			var elevStates elevator.ElevStates
