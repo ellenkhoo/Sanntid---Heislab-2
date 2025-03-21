@@ -6,6 +6,7 @@ import (
 	"math/rand/v2"
 	"net"
 	"time"
+	"sync"
 
 	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
 	//"github.com/ellenkhoo/ElevatorProject/roles"
@@ -214,6 +215,8 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 	assignedRequests := elevatorData.AssignedRequests
 	globalHallRequests := elevatorData.GlobalHallRequests
 	
+	fsm.fsm_mtx.Lock()
+
 	// requestsToDo = assigend requests + cab requests
 	for floor := 0; floor < elevator.N_FLOORS; floor++ {
 		for button := 0; button < elevator.N_BUTTONS-1; button++ {
@@ -234,6 +237,9 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 	fsm.El.AssignedRequests = assignedRequests
 	fsm.El.GlobalHallRequests = globalHallRequests
 	fmt.Println("After update:", fsm.El.RequestsToDo)
+	fsm.fsm_mtx.Unlock()
+
+	sharedConsts.NetworkChannels.UpdateChan <- "You are ready to do things"
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests

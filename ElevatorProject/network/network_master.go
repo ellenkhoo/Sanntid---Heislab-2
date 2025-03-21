@@ -173,6 +173,13 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 		masterData.mutex.Lock()
 		fmt.Println("Updating allElevStates")
 		masterData.AllElevStates[ID] = elevStates
+		floor := elevStates.Floor
+		dirn := elevStates.Direction
+		if dirn == "D_Up"{
+			MasterData.GlobalHallRequests[floor][0] = false
+		} else if dirn == "D_Down" {
+			MasterData.GlobalHallRequests[floor][1] = false
+		}
 		masterData.mutex.Unlock()
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
@@ -202,16 +209,5 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 		}
 		// Send message
 		networkChannels.SendChan <- orderMsg
-
 	}
 }
-
-// func StartMaster() {
-
-// 	fmt.Println("Starting master")
-
-// 	var allElevStates = make(map[string]elevator.ElevStates)
-// 	var globalHallRequests [][2]bool
-
-// 	select {}
-// }

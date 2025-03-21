@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"sync"
 
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -13,6 +14,7 @@ import (
 type FSM struct {
 	El Elevator
 	Od ElevOutputDevice
+	fsm_mtx sync.Mutex
 }
 
 // Set all elevator lights
@@ -34,7 +36,8 @@ func (fsm *FSM) Fsm_onInitBetweenFloors() {
 }
 
 // Handle button press event
-func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonType, start_timer chan time.Duration) {
+//Mulig at det trengs bedre navn
+func (fsm *FSM) Fsm_onRequestsToDo(btn_floor int, btn_type elevio.ButtonType, start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d, %s)\n", btn_floor, btn_type)
 	Elevator_print(fsm.El)
 
@@ -42,22 +45,33 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 	case EB_DoorOpen:
 		if Requests_shouldClearImmediately(fsm.El, btn_floor, btn_type) {
 			start_timer <- fsm.El.Config.DoorOpenDuration
-		} else {
-			fsm.El.RequestsToDo[btn_floor][btn_type] = true
+
+			var elevStates elevator.ElevStates
+
+			elevStateJSON, err := json.Marshal(&elevStates)
+			if err != nil {
+				fmt.Println("Error marshalling elevStates: ", err)
+				return
+			}
+
+			msg := sharedConsts.Message{
+				Type: sharedConsts.CurrentStateMessage,
+				Target: sharedConsts.TargetMaster,
+				Payload: fsm.El.ElevStates,
+			}
+
+			sendChan <- msg
 		}
 
-	case EB_Moving:
-		fsm.El.RequestsToDo[btn_floor][btn_type] = true
-
 	case EB_Idle:
-		fsm.El.RequestsToDo[btn_floor][btn_type] = true
+		fsm.fsm_mtx.Lock()
 		pair := Requests_chooseDirection(fsm.El)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
 
 		switch pair.Behaviour {
 		case EB_DoorOpen:
-			elevio.SetDoorOpenLamp(false)
+			elevio.SetDoorOpenLamp(true)
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fsm.El = Requests_clearAtCurrentFloor(fsm.El)
 
@@ -67,6 +81,7 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 		case EB_Idle:
 			// Do nothing
 		}
+		fsm.fsm_mtx.Unlock()
 	}
 
 	fsm.SetAllLights()
@@ -97,14 +112,17 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 			fsm.El.Behaviour = EB_DoorOpen
 
 			// Marshal elevStates
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+
+			var elevStates elevator.ElevStates
+
+			elevStatesJSON, err := json.Marshal(&elevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
 			}
 			// Send message to master that order has been cleared
 			msg := sharedConsts.Message{
-				Type:    sharedConsts.ElevClearedOrderMessage,
+				Type:    sharedConsts.CurrentStateMessage,
 				Target:  sharedConsts.TargetMaster,
 				Payload: elevStatesJSON,
 			}

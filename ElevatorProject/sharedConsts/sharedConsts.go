@@ -17,7 +17,6 @@ const (
 	CurrentStateMessage
 	HelloMessage
 	RankMessage
-	ElevClearedOrderMessage
 )
 
 type MessageTarget int
@@ -36,9 +35,10 @@ type Message struct {
 }
 
 type NetworkChannels struct {
-	SendChan 	chan Message
-	ReceiveChan chan Message
+	SendChan 	 chan Message
+	ReceiveChan  chan Message
 	MasterChan   chan Message
 	BackupChan   chan Message
 	ElevatorChan chan Message
+	UpdateChan 	 chan string
 }

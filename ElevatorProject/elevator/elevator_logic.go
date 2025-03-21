@@ -47,6 +47,9 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 
 		case order := <-buttons_chan:
 			fmt.Printf("Button pushed. Order at floor: %d\n", order.Floor)
+	
+			fsm.fsm_mtx.Lock()
+
 			// If cab call
 			if order.Button == B_Cab {
 				fsm.El.ElevStates.CabRequests[order.Floor] = true
@@ -68,7 +71,11 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 				NetworkChannels.SendChan <- reqMsg
 			}
 
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+			fsm.fsm_mtx.Unlock()
+
+			var elevStates elevator.ElevStates
+
+			elevStatesJSON, err := json.Marshal(&elevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
@@ -84,10 +91,14 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
 
+			fsm.fsm_mtx.Lock()
+
 			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
 				//Master informeres i funksjonskallet nedenfor
 				fsm.Fsm_onFloorArrival(NetworkChannels.SendChan, floor_input, start_timer)
 			}
+
+			fsm.fsm_mtx.Unlock()
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
@@ -97,7 +108,10 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 			} else {
 				start_timer <- timers.DoorOpenDuration
 			}
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+			
+			var elevStates elevator.ElevStates
+
+			elevStatesJSON, err := json.Marshal(&elevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
@@ -114,6 +128,9 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 		case <-timer.C:
 			// fsm.Fsm_onDoorTimeout(start_timer)
 			// comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
+
+		case <- sharedConsts.NetworkChannels.UpdateChan:
+
 		}
 
 	}
