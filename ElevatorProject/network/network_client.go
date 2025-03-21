@@ -205,7 +205,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 				}
 			}
 			clientConn.HeartbeatTimer.Reset(10 * time.Second)
-
+			fmt.Println("Timer reset at", time.Now())
 			go func() {
 				<-clientConn.HeartbeatTimer.C
 				fmt.Println("Timeout! Assuming master is dead...")
