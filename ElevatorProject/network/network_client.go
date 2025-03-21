@@ -128,6 +128,7 @@ func ClientSendMessages(sendChan chan sharedConsts.Message, conn net.Conn) {
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
 
 	clientID := clientConn.ID
+	clientConn.HeartbeatTimer = time.NewTimer(5 * time.Second)
 
 	switch msg.Type {
 	case sharedConsts.RankMessage:
@@ -196,19 +197,21 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 		if heartbeat == "HB" {	
 		fmt.Println("Received heartbeat from master")
-			if clientConn.HeartbeatTimer == nil {
-				clientConn.HeartbeatTimer = time.NewTimer(5 * time.Second)
-			} else {
-				if !clientConn.HeartbeatTimer.Stop(){
-					<- clientConn.HeartbeatTimer.C
+			if !clientConn.HeartbeatTimer.Stop(){
+				select {
+				case <-clientConn.HeartbeatTimer.C:
+				default:
 				}
-				clientConn.HeartbeatTimer.Reset(5 * time.Second)
 			}
-			go func(){
-				<- clientConn.HeartbeatTimer.C
-				fmt.Println("master heartbeat timeout! handelig master disconnection...")
+			clientConn.HeartbeatTimer.Reset(5 * time.Second)
+
+			go func() {
+				<-clientConn.HeartbeatTimer.C
+				fmt.Println("⏳ Timeout! Assuming master is dead...")
+				//HandleMasterDisconnection() // Kall en funksjon for å håndtere failover
 			}()
-		}
+			}
+
 		// 	// start timer
 		// case timeout:
 		// 	// start master

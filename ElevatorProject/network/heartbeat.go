@@ -127,8 +127,11 @@ func (ac *ActiveConnections) MasterSendHeartbeats(sendChan chan sharedConsts.Mes
 		Target:  sharedConsts.TargetClient,
 		Payload: heartbeatPayload,
 	}
-	for {
-		time.Sleep(5 * time.Second)
+	
+	ticker := time.NewTimer(5*time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
 		fmt.Println("sending heartbeat to clients")
 		sendChan <- msg
 	}
