@@ -105,9 +105,9 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 			fmt.Println("Master received a message")
 			masterData.HandleReceivedMessagesToMaster(m, networkChannels)
 
-		//case b := <-networkChannels.BackupChan:
-		// fmt.Println("Got a message from master to backup")
-		//fmt.Printf("Received: %#v\n", b)
+		case b := <-networkChannels.BackupChan:
+		fmt.Println("Got a message from master to backup")
+		fmt.Printf("Received: %#v\n", b)
 		// msg:= Message{
 		// 	Type: currentStateMessage,
 		// 	Target: TargetMaster,
