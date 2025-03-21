@@ -135,7 +135,7 @@ func (ac *ActiveConnections) SendHeartbeats() {
 }
 
 func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedConsts.NetworkChannels) {
-	buffer := make([]byte, 2)
+	buffer := make([]byte, 1024)
 	timeout := time.NewTimer(5 * time.Second)
 
 
