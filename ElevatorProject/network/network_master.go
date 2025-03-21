@@ -57,7 +57,7 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 
 	msg := sharedConsts.Message{
 		Type:    sharedConsts.RankMessage,
-		Target:  sharedConsts.TargetBackup,
+		Target:  sharedConsts.TargetClient,
 		Payload: rankJSON,
 	}
 
