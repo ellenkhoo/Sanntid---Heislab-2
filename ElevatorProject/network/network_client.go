@@ -211,7 +211,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			// 	fmt.Println("Timeout! Assuming master is dead...")
 			// 	//HandleMasterDisconnection() // Kall en funksjon for å håndtere failover
 			// }()
-			// }
+			}
 
 		// 	// start timer
 		// case timeout:
