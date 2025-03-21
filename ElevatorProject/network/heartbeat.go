@@ -137,30 +137,32 @@ func (ac *ActiveConnections) SendHeartbeats() {
 func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedConsts.NetworkChannels) {
 	buffer := make([]byte, 1024)
 	timeout := time.NewTimer(5 * time.Second)
+	readChan := make(chan error, 1)
 
 
-	for {
+	go func () {
 		client.ClientConn.SetReadDeadline(time.Now().Add(5 * time.Second))
 		_, err := client.ClientConn.Read(buffer)
+		readChan <- err
+	}()
 
-		if err != nil {
-			fmt.Println(" lost connection with master! starter failover...")
+	for{
+		select {
+		case err := <- readChan:
+			if err != nil{
+				fmt.Println("Lost connection with matser. Waiting for timeout to confirm")
+			} else {
+				fmt.Print("Recevied heartbeat from master")
+				timeout.Reset(5 * time.Second)
+			}
+		case <- timeout.C:
+			fmt.Println("Master has not sent heartbeat in 5 seconds, starting failover...")
 			if client.Rank == 2 {
-				fmt.Println("Performing failover as backup...")
-
-				//hva backupen gjør når master dør
-				//blir nye masyer
-
+				fmt.Println("backup failover")
 			} else if client.Rank > 2 {
-				fmt.Println(" Handling master loss as regular client...")
-				//hva klientene gjør når master dør
+				fmt.Println("client failover")
 			}
 			return
-		}
-
-		if string(buffer) != "HB" {
-			fmt.Println(" Received heartbeat from master")
-			timeout.Reset(5 * time.Second)
 		}
 	}
 }
