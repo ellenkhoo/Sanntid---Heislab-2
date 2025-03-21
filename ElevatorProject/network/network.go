@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"net"
+	"io"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -18,6 +19,15 @@ func CreateActiveConnections() *ActiveConnections {
 	return &ActiveConnections{}
 }
 
+func SendMessage(msg sharedConsts.Message, targetConn net.Conn) {
+	encoder := json.NewEncoder(targetConn)
+	err := encoder.Encode(msg)
+	if err != nil {
+		fmt.Println("Error encoding message: ", err)
+		return
+	}
+}
+
 func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
@@ -26,6 +36,9 @@ func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 		var msg sharedConsts.Message
 		err := decoder.Decode(&msg)
 		if err != nil {
+			if err == io.EOF {
+				fmt.Println("Connection closed")
+			}
 			fmt.Println("Error decoding message: ", err)
 			return
 		}
@@ -80,7 +93,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 			client.AddClientConnection(id, clientConn, networkChannels)
 		}
 		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
-		go ClientSendMessages(networkChannels.SendChan, clientConn)
+		go ClientSendMessagesFromSendChan(networkChannels.SendChan, clientConn)
 	} else {
 		// This whole part should be startMaster() ?
 		// No master found, announce ourselves as the master
@@ -117,7 +130,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		//Overskriver requests lokalt om man får ny melding fra master
 		case e := <-networkChannels.ElevatorChan:
 			// fmt.Printf("Elevator received: %#v\n", e)
-			client.HandleReceivedMessageToElevator(fsm, e)
+			client.UpdateElevatorWorldview(fsm, e)
 
 			// case a := <-helloRx:
 			// 	fmt.Printf("Received: %#v\n", a)

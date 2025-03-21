@@ -44,14 +44,14 @@ import (
 // Keeping track of connections
 type MasterConnectionInfo struct {
 	ClientIP string
-	Rank     int
+	// Rank     int
 	HostConn net.Conn
 }
 
 type ClientConnectionInfo struct {
 	ID          string
 	HostIP      string
-	Rank        int
+	// Rank        int
 	ClientConn  net.Conn
 	Channels sharedConsts.NetworkChannels
 }

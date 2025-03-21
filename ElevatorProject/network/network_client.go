@@ -108,18 +108,11 @@ func HandleConnection(client ClientConnectionInfo) {
 	}()
 }
 
-func ClientSendMessages(sendChan chan sharedConsts.Message, conn net.Conn) {
+func ClientSendMessagesFromSendChan(sendChan chan sharedConsts.Message, conn net.Conn) {
 
 	fmt.Println("Ready to send msg to master")
-
-	encoder := json.NewEncoder(conn)
 	for msg := range sendChan {
-		fmt.Println("Sending message:", msg)
-		err := encoder.Encode(msg)
-		if err != nil {
-			fmt.Println("Error encoding message: ", err)
-			return
-		}
+		SendMessage(msg, conn)
 	}
 }
 
@@ -129,20 +122,20 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 	clientID := clientConn.ID
 
 	switch msg.Type {
-	case sharedConsts.RankMessage:
-		var rank int
-		err := json.Unmarshal(msg.Payload, &rank)
-		if err != nil {
-			fmt.Println("Error decoding rank message: ", err)
-			return
-		}
+	// case sharedConsts.RankMessage:
+	// 	var rank int
+	// 	err := json.Unmarshal(msg.Payload, &rank)
+	// 	if err != nil {
+	// 		fmt.Println("Error decoding rank message: ", err)
+	// 		return
+	// 	}
 
-		fmt.Println("Setting my rank to", rank)
-		clientConn.Rank = rank
-		if rank == 2 {
-			fmt.Println("My rank is 2 and I will become backup")
-			// start backup
-		}
+		// fmt.Println("Setting my rank to", rank)
+		// clientConn.Rank = rank
+		// if rank == 2 {
+		// 	fmt.Println("My rank is 2 and I will become backup")
+		// 	// start backup
+		// }
 
 	case sharedConsts.MasterOrdersMessage:
 		data := msg.Payload
@@ -157,7 +150,6 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		elevatorData := CreateElevatorData(masterData, clientID)
 
 		// Marshal backupData and elevatorData
-
 		backupDataJSON, err := json.Marshal(backupData)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
@@ -193,12 +185,12 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 	}
 }
 
-func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *elevator.FSM, msg sharedConsts.Message) {
+func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedConsts.Message) {
 
 	fmt.Println("At handleMessageToElevator\n")
 	fmt.Println("Before update:", fsm.El.RequestsToDo)
 	clientID := clientConn.ID
-	fmt.Println("Client ID: ", clientID) // returnerer ingenting akkurat nå
+
 	var masterData BackupData
 	err := json.Unmarshal(msg.Payload, &masterData)
 	if err != nil {
@@ -206,7 +198,6 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 		return
 	}
 
-	fmt.Println("MasterData: ", masterData)
 	elevatorData := CreateElevatorData(masterData, clientID)
 	fmt.Println("ElevatorData: ", elevatorData)
 	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
@@ -237,7 +228,6 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 	fsm.El.GlobalHallRequests = globalHallRequests
 	fmt.Println("After update:", fsm.El.RequestsToDo)
 	fsm.Fsm_mtx.Unlock()
-
 	clientConn.Channels.UpdateChan <- "You are ready to do things"
 }
 

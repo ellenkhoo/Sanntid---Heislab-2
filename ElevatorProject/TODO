@@ -2,3 +2,4 @@
 * TCP-instillinger, timeout
 * KeepAlive
 * Send mld til backup først, så sende til heisene
+* UPDATE: tester at alle er backup
