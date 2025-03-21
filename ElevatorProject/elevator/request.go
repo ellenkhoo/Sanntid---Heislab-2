@@ -120,8 +120,8 @@ func Requests_shouldStop(e Elevator) bool {
 
 func Requests_shouldClearImmediately(e Elevator) bool {
 	switch e.Config.ClearRequestVariant {
-	case "CV_All":
-		return e.ElevStates.Floor == btn_floor
+	// case "CV_All":
+	// 	return e.ElevStates.Floor == btn_floor
 
 	case "CV_InDirn":
 		if e.RequestsToDo[e.ElevStates.Floor][B_Cab] {

@@ -68,13 +68,13 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 					Target:  sharedConsts.TargetMaster,
 					Payload: orderJSON,
 				}
+				fmt.Println("Going to send msg on chan")
 				NetworkChannels.SendChan <- reqMsg
 			}
 
 			fsm.Fsm_mtx.Unlock()
 
-			var elevStates ElevStates
-			elevStatesJSON, err := json.Marshal(&elevStates)
+			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
@@ -127,8 +127,8 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 			// fsm.Fsm_onDoorTimeout(start_timer)
 			// comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
-		case <- sharedConsts.NetworkChannels.UpdateChan:
-			Fsm_onRequestsToDo(timer)
+		case <- NetworkChannels.UpdateChan:
+			fsm.Fsm_onRequestsToDo(NetworkChannels,start_timer)
 		}
 	}
 }

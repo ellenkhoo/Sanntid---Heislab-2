@@ -38,17 +38,14 @@ func (fsm *FSM) Fsm_onInitBetweenFloors() {
 // Handle button press event
 //Mulig at det trengs bedre navn
 func (fsm *FSM) Fsm_onRequestsToDo(networkChannels sharedConsts.NetworkChannels, start_timer chan time.Duration) {
-	fmt.Printf("\n\n(%d, %s)\n", btn_floor, btn_type)
 	Elevator_print(fsm.El)
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
 		if Requests_shouldClearImmediately(fsm.El) {
 			start_timer <- fsm.El.Config.DoorOpenDuration
-
-			var elevStates ElevStates
-
-			elevStateJSON, err := json.Marshal(&elevStates)
+			
+			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
@@ -57,7 +54,7 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels sharedConsts.NetworkChannels,
 			msg := sharedConsts.Message{
 				Type: sharedConsts.CurrentStateMessage,
 				Target: sharedConsts.TargetMaster,
-				Payload: elevStateJSON,
+				Payload: elevStatesJSON,
 			}
 
 			networkChannels.SendChan <- msg
@@ -110,12 +107,10 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
+			fmt.Println("Elevator behaviour: ", fsm.El.Behaviour)
 
 			// Marshal elevStates
-
-			var elevStates ElevStates
-
-			elevStatesJSON, err := json.Marshal(&elevStates)
+			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
