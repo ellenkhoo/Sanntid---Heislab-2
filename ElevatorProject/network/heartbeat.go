@@ -132,10 +132,9 @@ func (ac *ActiveConnections) MasterSendHeartbeats(sendChan chan sharedConsts.Mes
 	defer ticker.Stop()
 
 	for {
-		<- ticker.C {
+		<- ticker.C
 		fmt.Println("sending heartbeat to clients")
 		sendChan <- msg
-		}
 	}
 }
 
