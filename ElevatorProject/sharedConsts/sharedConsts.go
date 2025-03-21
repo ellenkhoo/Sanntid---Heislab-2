@@ -17,6 +17,7 @@ const (
 	CurrentStateMessage
 	HelloMessage
 	RankMessage
+	Heartbeat
 )
 
 type MessageTarget int

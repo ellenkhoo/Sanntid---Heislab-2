@@ -2,8 +2,8 @@ package network
 
 import (
 	"fmt"
-	"io"
 	"time"
+	"encoding/json"
 
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	// "github.com/ellenkhoo/ElevatorProject/heartbeat"
@@ -115,63 +115,64 @@ import (
 // 	}
 // }
 
-func (ac *ActiveConnections) SendHeartbeats() {
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	heartbeatMsg := []byte("HB")
-
-	for range ticker.C {
-		fmt.Println("Master: Sending heartbeat")
-
-		ac.mutex.Lock()
-		for _, conn := range ac.Conns {
-			_, err := conn.HostConn.Write(heartbeatMsg)
-			if err != nil {
-				fmt.Println("Error sending heartbeat to", conn.ClientIP, ":", err)
-			}
-		}
-		ac.mutex.Unlock()
+func (ac *ActiveConnections) SendHeartbeats(sendChan chan sharedConsts.Message) {
+	heartbeatPayload, err := json.Marshal("HB")
+	if err != nil {
+		fmt.Println("Error marshalling heartbeat: ", err)
+		return
 	}
-}
 
-func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedConsts.NetworkChannels) {
-	buffer := make([]byte, 1024)
-	timeout := time.NewTimer(5 * time.Second)
-	readChan := make(chan error, 1)
+	msg := sharedConsts.Message{
+		Type:    sharedConsts.Heartbeat,
+		Target:  sharedConsts.TargetMaster,
+		Payload: heartbeatPayload,
+	}
+	for {
+		time.Sleep(5 * time.Second)
+		fmt.Println("sending heartbeat to clients")
+		sendChan <- msg
+	}
 
-
-	go func () {
-		for {
-			client.ClientConn.SetReadDeadline(time.Now().Add(5 * time.Second))
-			_, err := io.ReadFull(client.ClientConn, buffer)
-			select {
-			case readChan <- err:
-			default:
-			}
-		}
-	}()
-
-	go func ()  {
-		for{
-			select {
-			case err := <- readChan:
-				if err != nil{
-					fmt.Println("Lost connection with matser. Waiting for timeout to confirm")
-				} else {
-					fmt.Print("Recevied heartbeat from master")
-					timeout.Reset(5 * time.Second)
-				}
-			case <- timeout.C:
-				fmt.Println("Master has not sent heartbeat in 5 seconds, starting failover...")
-				if client.Rank == 2 {
-					fmt.Println("backup failover")
-				} else if client.Rank > 2 {
-					fmt.Println("client failover")
-				}
-				return
-			}
-		}
-	}()
 	
 }
+
+// func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedConsts.NetworkChannels) {
+// 	buffer := make([]byte, 1024)
+// 	timeout := time.NewTimer(5 * time.Second)
+// 	readChan := make(chan error, 1)
+
+
+// 	go func () {
+// 		for {
+// 			client.ClientConn.SetReadDeadline(time.Now().Add(5 * time.Second))
+// 			_, err := io.ReadFull(client.ClientConn, buffer)
+// 			select {
+// 			case readChan <- err:
+// 			default:
+// 			}
+// 		}
+// 	}()
+
+// 	go func ()  {
+// 		for{
+// 			select {
+// 			case err := <- readChan:
+// 				if err != nil{
+// 					fmt.Println("Lost connection with matser. Waiting for timeout to confirm")
+// 				} else {
+// 					fmt.Print("Recevied heartbeat from master")
+// 					timeout.Reset(5 * time.Second)
+// 				}
+// 			case <- timeout.C:
+// 				fmt.Println("Master has not sent heartbeat in 5 seconds, starting failover...")
+// 				if client.Rank == 2 {
+// 					fmt.Println("backup failover")
+// 				} else if client.Rank > 2 {
+// 					fmt.Println("client failover")
+// 				}
+// 				return
+// 			}
+// 		}
+// 	}()
+	
+// }

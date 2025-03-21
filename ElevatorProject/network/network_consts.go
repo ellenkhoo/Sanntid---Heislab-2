@@ -3,6 +3,7 @@ package network
 import (
 	"net"
 	"sync"
+	"time"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -54,6 +55,7 @@ type ClientConnectionInfo struct {
 	Rank        int
 	ClientConn  net.Conn
 	Channels sharedConsts.NetworkChannels
+	HeartbeatTimer *time.Timer
 }
 
 // type NetworkChannels struct {

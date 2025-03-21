@@ -71,6 +71,7 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 		HostIP:      remoteIP,
 		ClientConn:  clientConn,
 		Channels: channels,
+		HeartbeatTimer: time.NewTimer(5 * time.Second),
 	}
 
 	fmt.Println("Going to handle connection")
@@ -186,7 +187,10 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		clientConn.Channels.BackupChan <- backupMsg
 		clientConn.Channels.ElevatorChan <- elevatorMsg
 
-		// case heartbeat: //
+	case sharedConsts.Heartbeat: 
+		fmt.Println("Received heartbeat from master")
+		clientConn.HeartbeatTimer.Reset(5 * time.Second)
+
 		// 	// start timer
 		// case timeout:
 		// 	// start master
