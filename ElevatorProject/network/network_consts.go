@@ -53,8 +53,7 @@ type ClientConnectionInfo struct {
 	HostIP      string
 	Rank        int
 	ClientConn  net.Conn
-	SendChan    chan sharedConsts.Message
-	ReceiveChan chan sharedConsts.Message
+	Channels sharedConsts.NetworkChannels
 }
 
 // type NetworkChannels struct {

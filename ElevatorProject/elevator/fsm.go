@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+	"sync"
 
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -13,6 +14,7 @@ import (
 type FSM struct {
 	El Elevator
 	Od ElevOutputDevice
+	Fsm_mtx sync.Mutex
 }
 
 // Set all elevator lights
@@ -34,30 +36,39 @@ func (fsm *FSM) Fsm_onInitBetweenFloors() {
 }
 
 // Handle button press event
-func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonType, start_timer chan time.Duration) {
-	fmt.Printf("\n\n(%d, %s)\n", btn_floor, btn_type)
+//Mulig at det trengs bedre navn
+func (fsm *FSM) Fsm_onRequestsToDo(networkChannels sharedConsts.NetworkChannels, start_timer chan time.Duration) {
 	Elevator_print(fsm.El)
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
-		if Requests_shouldClearImmediately(fsm.El, btn_floor, btn_type) {
+		if Requests_shouldClearImmediately(fsm.El) {
 			start_timer <- fsm.El.Config.DoorOpenDuration
-		} else {
-			fsm.El.RequestsToDo[btn_floor][btn_type] = true
+			
+			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+			if err != nil {
+				fmt.Println("Error marshalling elevStates: ", err)
+				return
+			}
+
+			msg := sharedConsts.Message{
+				Type: sharedConsts.CurrentStateMessage,
+				Target: sharedConsts.TargetMaster,
+				Payload: elevStatesJSON,
+			}
+
+			networkChannels.SendChan <- msg
 		}
 
-	case EB_Moving:
-		fsm.El.RequestsToDo[btn_floor][btn_type] = true
-
 	case EB_Idle:
-		fsm.El.RequestsToDo[btn_floor][btn_type] = true
+		fsm.Fsm_mtx.Lock()
 		pair := Requests_chooseDirection(fsm.El)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
 
 		switch pair.Behaviour {
 		case EB_DoorOpen:
-			elevio.SetDoorOpenLamp(false)
+			elevio.SetDoorOpenLamp(true)
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fsm.El = Requests_clearAtCurrentFloor(fsm.El)
 
@@ -67,6 +78,7 @@ func (fsm *FSM) Fsm_onRequestButtonPress(btn_floor int, btn_type elevio.ButtonTy
 		case EB_Idle:
 			// Do nothing
 		}
+		fsm.Fsm_mtx.Unlock()
 	}
 
 	fsm.SetAllLights()
@@ -95,6 +107,7 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
+			fmt.Println("Elevator behaviour: ", fsm.El.Behaviour)
 
 			// Marshal elevStates
 			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
@@ -104,7 +117,7 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 			}
 			// Send message to master that order has been cleared
 			msg := sharedConsts.Message{
-				Type:    sharedConsts.ElevClearedOrderMessage,
+				Type:    sharedConsts.CurrentStateMessage,
 				Target:  sharedConsts.TargetMaster,
 				Payload: elevStatesJSON,
 			}

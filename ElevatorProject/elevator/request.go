@@ -118,16 +118,18 @@ func Requests_shouldStop(e Elevator) bool {
 	}
 }
 
-func Requests_shouldClearImmediately(e Elevator, btn_floor int, btn_type elevio.ButtonType) bool {
+func Requests_shouldClearImmediately(e Elevator) bool {
 	switch e.Config.ClearRequestVariant {
-	case "CV_All":
-		return e.ElevStates.Floor == btn_floor
+	// case "CV_All":
+	// 	return e.ElevStates.Floor == btn_floor
 
 	case "CV_InDirn":
-		return e.ElevStates.Floor == btn_floor && ((e.Dirn == elevio.MD_Up && btn_type == B_HallUp) ||
-			(e.Dirn == elevio.MD_Down && btn_type == B_HallDown) ||
-			e.Dirn == elevio.MD_Stop ||
-			btn_type == B_Cab)
+		if e.RequestsToDo[e.ElevStates.Floor][B_Cab] {
+		   e.RequestsToDo[e.ElevStates.Floor][B_Cab] = false
+		   return true
+		}
+		return (e.Dirn == elevio.MD_Up && e.RequestsToDo[e.ElevStates.Floor][B_HallUp]) ||
+			   (e.Dirn == elevio.MD_Down && e.RequestsToDo[e.ElevStates.Floor][B_HallDown])
 
 	default:
 		return false

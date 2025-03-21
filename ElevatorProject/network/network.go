@@ -77,7 +77,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		//Try to connect to the master
 		clientConn, success := ConnectToMaster(masterID, TCPPort)
 		if success {
-			client.AddClientConnection(id, clientConn, networkChannels.SendChan, networkChannels.ReceiveChan)
+			client.AddClientConnection(id, clientConn, networkChannels)
 		}
 		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
 		go ClientSendMessages(networkChannels.SendChan, clientConn)
@@ -86,6 +86,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		// This whole part should be startMaster() ?
 		// No master found, announce ourselves as the master
 		masterID = id
+		client.ID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPortString)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
@@ -106,9 +107,9 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 			fmt.Println("Master received a message")
 			masterData.HandleReceivedMessagesToMaster(m, networkChannels)
 
-		//case b := <-networkChannels.BackupChan:
+		// case b := <-networkChannels.BackupChan:
 		// fmt.Println("Got a message from master to backup")
-		//fmt.Printf("Received: %#v\n", b)
+		// fmt.Printf("Received: %#v\n", b)
 		// msg:= Message{
 		// 	Type: currentStateMessage,
 		// 	Target: TargetMaster,

@@ -60,7 +60,7 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 }
 
 // When a new connection is established on the client side, this function adds it to the list of active connections
-func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, sendChan chan sharedConsts.Message, receiveChan chan sharedConsts.Message) {
+func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, channels sharedConsts.NetworkChannels) {
 	//defer conn.Close()
 	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
 
@@ -70,8 +70,7 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 		ID:          id,
 		HostIP:      remoteIP,
 		ClientConn:  clientConn,
-		SendChan:    sendChan,
-		ReceiveChan: receiveChan,
+		Channels: channels,
 	}
 
 	fmt.Println("Going to handle connection")
@@ -91,7 +90,7 @@ func HandleConnection(client ClientConnectionInfo) {
 				fmt.Println("Error decoding message: ", err)
 				return
 			}
-			client.ReceiveChan <- msg
+			client.Channels.ReceiveChan <- msg
 		}
 	}()
 
@@ -99,7 +98,7 @@ func HandleConnection(client ClientConnectionInfo) {
 	fmt.Println("Ready to send on TCP")
 	go func() {
 		encoder := json.NewEncoder(client.ClientConn)
-		for msg := range client.SendChan {
+		for msg := range client.Channels.SendChan {
 			err := encoder.Encode(msg)
 			if err != nil {
 				fmt.Println("Error encoding message: ", err)
@@ -184,8 +183,8 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		fmt.Println("Sending messages to backup and elevator")
-		clientConn.ReceiveChan <- backupMsg
-		clientConn.ReceiveChan <- elevatorMsg
+		clientConn.Channels.BackupChan <- backupMsg
+		clientConn.Channels.ElevatorChan <- elevatorMsg
 
 		// case heartbeat: //
 		// 	// start timer
@@ -207,14 +206,20 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 		return
 	}
 
+	fmt.Println("MasterData: ", masterData)
 	elevatorData := CreateElevatorData(masterData, clientID)
-	fsm.El.AssignedRequests = elevatorData.AssignedRequests
-	fsm.El.GlobalHallRequests = elevatorData.GlobalHallRequests
+	fmt.Println("ElevatorData: ", elevatorData)
+	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
+
+	assignedRequests := elevatorData.AssignedRequests
+	globalHallRequests := elevatorData.GlobalHallRequests
+	
+	fsm.Fsm_mtx.Lock()
 
 	// requestsToDo = assigend requests + cab requests
 	for floor := 0; floor < elevator.N_FLOORS; floor++ {
 		for button := 0; button < elevator.N_BUTTONS-1; button++ {
-			if fsm.El.AssignedRequests[floor][button] {
+			if assignedRequests[floor][button] {
 				fmt.Println("Assigned request at floor: ", floor, " button: ", button)
 				fsm.El.RequestsToDo[floor][button] = true
 			}
@@ -223,10 +228,17 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToElevator(fsm *ele
 		if fsm.El.ElevStates.CabRequests[floor] {
 			fmt.Println("Assigned cab request at floor: ", floor)
 			fsm.El.RequestsToDo[floor][elevio.BT_Cab] = true
+		} else {
+			fmt.Println("No cab request at floor: ", floor)
 		}
 	}
 
+	fsm.El.AssignedRequests = assignedRequests
+	fsm.El.GlobalHallRequests = globalHallRequests
 	fmt.Println("After update:", fsm.El.RequestsToDo)
+	fsm.Fsm_mtx.Unlock()
+
+	clientConn.Channels.UpdateChan <- "You are ready to do things"
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests

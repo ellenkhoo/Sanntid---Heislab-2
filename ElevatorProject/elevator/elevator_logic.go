@@ -47,9 +47,13 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 
 		case order := <-buttons_chan:
 			fmt.Printf("Button pushed. Order at floor: %d\n", order.Floor)
+	
+			fsm.Fsm_mtx.Lock()
+
 			// If cab call
 			if order.Button == B_Cab {
 				fsm.El.ElevStates.CabRequests[order.Floor] = true
+				fmt.Println("Cab request in elevLogic: ", fsm.El.ElevStates.CabRequests)
 			} else {
 
 				// Marshal order
@@ -64,8 +68,11 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 					Target:  sharedConsts.TargetMaster,
 					Payload: orderJSON,
 				}
+				fmt.Println("Going to send msg on chan")
 				NetworkChannels.SendChan <- reqMsg
 			}
+
+			fsm.Fsm_mtx.Unlock()
 
 			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
@@ -83,10 +90,14 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
 
+			fsm.Fsm_mtx.Lock()
+
 			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
 				//Master informeres i funksjonskallet nedenfor
 				fsm.Fsm_onFloorArrival(NetworkChannels.SendChan, floor_input, start_timer)
 			}
+
+			fsm.Fsm_mtx.Unlock()
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
@@ -96,7 +107,9 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 			} else {
 				start_timer <- timers.DoorOpenDuration
 			}
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+			
+			var elevStates ElevStates
+			elevStatesJSON, err := json.Marshal(&elevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
@@ -113,7 +126,9 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 		case <-timer.C:
 			// fsm.Fsm_onDoorTimeout(start_timer)
 			// comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
-		}
 
+		case <- NetworkChannels.UpdateChan:
+			fsm.Fsm_onRequestsToDo(NetworkChannels,start_timer)
+		}
 	}
 }
