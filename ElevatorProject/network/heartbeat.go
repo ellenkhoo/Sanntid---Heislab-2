@@ -2,8 +2,9 @@ package network
 
 import (
 	"fmt"
-	"net"
 	"time"
+
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	// "github.com/ellenkhoo/ElevatorProject/heartbeat"
 	// "github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
@@ -133,22 +134,35 @@ func (ac *ActiveConnections) SendHeartbeats() {
 	}
 }
 
-func ListenForHeartbeats(conn net.Conn, role string) {
+func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedConsts.NetworkChannels) {
 	buffer := make([]byte, 2)
 	timeout := time.NewTimer(5 * time.Second)
 
+	networkChannels = sharedConsts.NetworkChannels{
+		FailoverChannel: make(chan string),
+	}
+
 	for {
-		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
-		_, err := conn.Read(buffer)
+		client.ClientConn.SetReadDeadline(time.Now().Add(5 * time.Second))
+		_, err := client.ClientConn.Read(buffer)
 
 		if err != nil {
-			fmt.Printf("%s: lost connection with master! starter failover...", role)
-			//onMasterFail()
+			fmt.Printf("%s: lost connection with master! starter failover...")
+			if client.Rank == 2 {
+				fmt.Printf("%s: Performing failover as backup...\n")
+
+				//hva backupen gjør når master dør
+				//blir nye masyer
+
+			} else if client.Rank > 2 {
+				fmt.Printf("%s: Handling master loss as regular client...\n")
+				//hva klientene gjør når master dør
+			}
 			return
 		}
 
 		if string(buffer) != "HB" {
-			fmt.Printf("%s: Received heartbeat from master\n", role)
+			fmt.Printf("%s: Received heartbeat from master\n")
 			timeout.Reset(5 * time.Second)
 		}
 	}
