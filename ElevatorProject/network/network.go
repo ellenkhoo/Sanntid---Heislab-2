@@ -85,6 +85,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client ClientConnectionInfo, 
 		// This whole part should be startMaster() ?
 		// No master found, announce ourselves as the master
 		masterID = id
+		client.ID = id
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPortString)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
