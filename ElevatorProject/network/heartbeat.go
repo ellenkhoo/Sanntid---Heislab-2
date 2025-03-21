@@ -117,12 +117,14 @@ func (ac *ActiveConnections) SendHeartbeats() {
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
+	heartbeatMsg := []byte("HB")
+
 	for range ticker.C {
 		fmt.Println("Master: Sending heartbeat")
 
 		ac.mutex.Lock()
 		for _, conn := range ac.Conns {
-			_, err := conn.HostConn.Write([]byte("HB"))
+			_, err := conn.HostConn.Write(heartbeatMsg)
 			if err != nil {
 				fmt.Println("Error sending heartbeat to", conn.ClientIP, ":", err)
 			}
@@ -139,13 +141,15 @@ func ListenForHeartbeats(conn net.Conn, role string) {
 		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
 		_, err := conn.Read(buffer)
 
-		if err != nil || string(buffer) != "HB" {
+		if err != nil {
 			fmt.Printf("%s: lost connection with master! starter failover...", role)
 			//onMasterFail()
 			return
 		}
 
-		fmt.Printf("%s: Received heartbeat from master\n", role)
-		timeout.Reset(5 * time.Second)
+		if string(buffer) != "HB" {
+			fmt.Printf("%s: Received heartbeat from master\n", role)
+			timeout.Reset(5 * time.Second)
+		}
 	}
 }
