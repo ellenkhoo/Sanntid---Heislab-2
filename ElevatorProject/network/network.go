@@ -51,10 +51,10 @@ func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts
 		switch msg.Target {
 		case sharedConsts.TargetMaster:
 			networkChannels.MasterChan <- msg
-		case sharedConsts.TargetBackup:
-			networkChannels.BackupChan <- msg
-		case sharedConsts.TargetElevator:
-			networkChannels.ElevatorChan <- msg
+		// case sharedConsts.TargetBackup:
+		// 	networkChannels.BackupChan <- msg
+		// case sharedConsts.TargetElevator:
+		// 	networkChannels.ElevatorChan <- msg
 		case sharedConsts.TargetClient:
 			// Messages that all clients should receive
 			client.HandleReceivedMessageToClient(msg)

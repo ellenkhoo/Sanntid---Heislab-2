@@ -11,7 +11,8 @@ type HelloMsg struct {
 type MessageType int
 
 const (
-	MasterOrdersMessage MessageType = iota
+	MasterWorldviewMessage MessageType = iota
+	ElevatorOrdersMessage
 	BackupAcknowledgeMessage
 	LocalRequestMessage
 	CurrentStateMessage
