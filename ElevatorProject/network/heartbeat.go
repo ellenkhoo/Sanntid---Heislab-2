@@ -131,7 +131,7 @@ func (ac *ActiveConnections) SendHeartbeats() {
 	}
 }
 
-func ListenForHeartbeats(conn net.Conn, role string, onMasterFail func()) {
+func ListenForHeartbeats(conn net.Conn, role string) {
 	buffer := make([]byte, 2)
 	timeout := time.NewTimer(5 * time.Second)
 
@@ -141,7 +141,7 @@ func ListenForHeartbeats(conn net.Conn, role string, onMasterFail func()) {
 
 		if err != nil || string(buffer) != "HB" {
 			fmt.Printf("%s: lost connection with master! starter failover...", role)
-			onMasterFail()
+			//onMasterFail()
 			return
 		}
 

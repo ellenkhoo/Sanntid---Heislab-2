@@ -46,6 +46,7 @@ func main() {
 	go network.InitMasterSlaveNetwork(ac, client, masterData, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels, &fsm)
 	//go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
+	
 	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)
 	// Start elevator
 	//go roles.InitElevator()
