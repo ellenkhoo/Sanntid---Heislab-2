@@ -144,9 +144,11 @@ func (client *ClientConnectionInfo) ListenForHeartbeats(networkChannels sharedCo
 		for {
 			client.ClientConn.SetReadDeadline(time.Now().Add(5 * time.Second))
 			_, err := client.ClientConn.Read(buffer)
-			readChan <- err
+			select {
+			case readChan <- err:
+			default:
+			}
 		}
-		
 	}()
 
 	for{
