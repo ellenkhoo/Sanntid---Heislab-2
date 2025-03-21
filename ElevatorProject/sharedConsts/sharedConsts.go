@@ -18,6 +18,7 @@ const (
 	HelloMessage
 	RankMessage
 	ElevClearedOrderMessage
+	HeartbeatMessage
 )
 
 type MessageTarget int
@@ -36,8 +37,8 @@ type Message struct {
 }
 
 type NetworkChannels struct {
-	SendChan 	chan Message
-	ReceiveChan chan Message
+	SendChan     chan Message
+	ReceiveChan  chan Message
 	MasterChan   chan Message
 	BackupChan   chan Message
 	ElevatorChan chan Message

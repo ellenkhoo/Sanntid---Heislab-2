@@ -1,10 +1,12 @@
 package network
 
-// import (
-// 	"fmt"
-// 	"net"
-// 	"time"
-// )
+import (
+	"fmt"
+	"net"
+	"time"
+	// "github.com/ellenkhoo/ElevatorProject/heartbeat"
+	// "github.com/ellenkhoo/ElevatorProject/sharedConsts"
+)
 
 // func SendHeartbeatToMaster(ac *ActiveConnections, sendChan chan Message, receiveChan chan Message) bool {
 // 	sendChan <- Message{
@@ -110,3 +112,40 @@ package network
 // 		}
 // 	}
 // }
+
+func (ac *ActiveConnections) SendHeartbeats() {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		fmt.Println("Master: Sending heartbeat")
+
+		ac.mutex.Lock()
+		for _, conn := range ac.Conns {
+			_, err := conn.HostConn.Write([]byte("HB"))
+			if err != nil {
+				fmt.Println("Error sending heartbeat to", conn.ClientIP, ":", err)
+			}
+		}
+		ac.mutex.Unlock()
+	}
+}
+
+func ListenForHeartbeats(conn net.Conn, role string, onMasterFail func()) {
+	buffer := make([]byte, 2)
+	timeout := time.NewTimer(5 * time.Second)
+
+	for {
+		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+		_, err := conn.Read(buffer)
+
+		if err != nil || string(buffer) != "HB" {
+			fmt.Printf("%s: lost connection with master! starter failover...", role)
+			onMasterFail()
+			return
+		}
+
+		fmt.Printf("%s: Received heartbeat from master\n", role)
+		timeout.Reset(5 * time.Second)
+	}
+}
