@@ -24,7 +24,7 @@ func (ac *ActiveConnections) MasterSendHeartbeats(sendChan chan sharedConsts.Mes
 		Payload: heartbeatPayload,
 	}
 	
-	ticker := time.NewTicker(5*time.Second)
+	ticker := time.NewTicker(2*time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -35,7 +35,7 @@ func (ac *ActiveConnections) MasterSendHeartbeats(sendChan chan sharedConsts.Mes
 }
 
 
-func (client *ClientConnectionInfo) clientHandleHeartbeatTimeout() {
+func (client *ClientConnectionInfo) ClientHandleHeartbeatTimeout() {
 	for {
 		select {
 		case <- client.HeartbeatTimer.C:

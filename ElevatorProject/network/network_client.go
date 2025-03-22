@@ -128,7 +128,7 @@ func ClientSendMessages(sendChan chan sharedConsts.Message, conn net.Conn) {
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
 
 	clientID := clientConn.ID
-	clientConn.HeartbeatTimer = time.NewTimer(5 * time.Second)
+	//clientConn.HeartbeatTimer = time.NewTimer(5 * time.Second)
 
 	switch msg.Type {
 	case sharedConsts.RankMessage:
@@ -196,13 +196,13 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			return
 		}
 		if heartbeat == "HB" {	
-		clientConn.HeartbeatTimer.Reset(7 * time.Second)
+			clientConn.HeartbeatTimer.Reset(7 * time.Second)
 			
-		fmt.Println("Received heartbeat from master")
+			fmt.Println("Received heartbeat from master")
 		// 	// start timer
 		// case timeout:
 		// 	// start master
-	}
+		}
 }
 }
 
