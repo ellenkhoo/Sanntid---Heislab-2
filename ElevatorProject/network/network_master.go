@@ -113,8 +113,6 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels *sharedConsts.Ne
 		// case sharedConsts.TargetElevator:
 		// 	// do something
 		case sharedConsts.TargetClient:
-			// Send to local client
-			networkChannels.ElevatorChan <- msg
 			// Send to remote clients
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
@@ -209,6 +207,8 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 		if ackTracker.AllAcknowledged() {
 			fmt.Println("All acknowledgments received. Orders can be sent to elevators.")
+
+			// Data to remote clients
 			clientData := "Send requests to elevator"
 			clientDataJSON, err := json.Marshal(clientData)
 			if err != nil {
@@ -227,6 +227,9 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				targetConn = ac.Conns[clients].HostConn
 				SendMessage(clientMsg, targetConn)
 			}
+
+			// Local elevator also needs update
+
 		}
 		// case sharedConsts.MasterWorldviewMessage:
 		// 	var backupWorldview BackupData
