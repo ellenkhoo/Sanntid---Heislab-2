@@ -165,9 +165,8 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			Payload: backupDataJSON,
 		}
 
+		fmt.Println("Sending ack")
 		clientConn.Channels.SendChan <- backupMsg
-
-		// Må sende worldview til master først, master sammenligner, så kan vi sende til heis
 
 	case sharedConsts.UpdateOrdersMessage:
 		// data := msg.Payload

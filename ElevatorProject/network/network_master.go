@@ -198,6 +198,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		ackTracker.AwaitAcknowledge(ID, orderMsg)
 
 	case sharedConsts.BackupAcknowledgeMessage:
+		fmt.Println("At backup ack")
 		var clientID string
 		err := json.Unmarshal(msg.Payload, &clientID)
 		if err != nil {
