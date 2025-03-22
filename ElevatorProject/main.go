@@ -22,7 +22,7 @@ func main() {
 	ac := network.CreateActiveConnections()
 	client := network.ClientConnectionInfo{}
 	masterData := network.CreateMasterData()
-	ackTracker := network.NewAcknowledgeTracker(10 * time.Millisecond)
+	ackTracker := network.NewAcknowledgeTracker(2 * time.Second)
 
 	localIP, _ := localip.LocalIP()
 
