@@ -196,7 +196,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			return
 		}
 		if heartbeat == "HB" {	
-		clientConn.HeartbeatTimer.Reset(2 * time.Second)
+		clientConn.HeartbeatTimer.Reset(7 * time.Second)
 			
 		fmt.Println("Received heartbeat from master")
 		// 	// start timer
