@@ -68,17 +68,14 @@ type ElevStates struct {
 
 // elevator struct representerer statene til heisen
 type Elevator struct {
-	ElevStates 		 ElevStates
-	//IP               string //er det bedre med tall (1, 2, 3) basert på rolle, som da må oppdateres underveis?
+	ElevStates 		 *ElevStates
 	Rank             int
-	//Floor            int
 	PrevFloor        int
 	Dirn             elevio.MotorDirection
 	Behaviour        ElevatorBehaviour
 	GlobalHallRequests     [N_FLOORS][N_BUTTONS - 1]bool
-	//CabRequests      [N_FLOORS]bool
 	AssignedRequests [N_FLOORS][N_BUTTONS - 1]bool
-	RequestsToDo     [N_FLOORS][N_BUTTONS]bool //cabRequests + AssignedRequests
+	RequestsToDo     [N_FLOORS][N_BUTTONS]bool //CabRequests + AssignedRequests
 	Config           ElevatorConfig
 	//State HRAElevState
 }
@@ -134,7 +131,7 @@ type ElevatorConfig struct {
 // funksjonen for å returnere en uinitialisert heis
 func Elevator_uninitialized() Elevator {
 	return Elevator{
-		ElevStates: ElevStates{
+		ElevStates: &ElevStates{
 			Behaviour: "idle",
 			Floor: -1,
 			Direction: "stop",       

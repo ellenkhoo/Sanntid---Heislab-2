@@ -120,20 +120,6 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 	clientID := clientConn.ID
 
 	switch msg.Type {
-	// case sharedConsts.RankMessage:
-	// 	var rank int
-	// 	err := json.Unmarshal(msg.Payload, &rank)
-	// 	if err != nil {
-	// 		fmt.Println("Error decoding rank message: ", err)
-	// 		return
-	// 	}
-
-	// fmt.Println("Setting my rank to", rank)
-	// clientConn.Rank = rank
-	// if rank == 2 {
-	// 	fmt.Println("My rank is 2 and I will become backup")
-	// 	// start backup
-	// }
 
 	case sharedConsts.MasterWorldviewMessage:
 		fmt.Println("Received master worldview message")
@@ -183,54 +169,11 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		clientConn.Channels.ElevatorChan <- elevatorMsg
-		/*
-			case sharedConsts.UpdateOrdersMessage:
-				// data := msg.Payload
-				// var masterData BackupData
-				// err := json.Unmarshal(data, &masterData)
-				// if err != nil {
-				// 	fmt.Println("Error decoding master orders message: ", err)
-				// 	return
-				// }
-
-				backupData := clientConn.Worldview
-				elevatorData := CreateElevatorData(backupData, clientID)
-
-				// Marshal backupData and elevatorData
-				// backupDataJSON, err := json.Marshal(backupData)
-				// if err != nil {
-				// 	fmt.Println("Error marshalling backup data: ", err)
-				// 	return
-				// }
-
-				elevatorDataJSON, err := json.Marshal(elevatorData)
-				if err != nil {
-					fmt.Println("Error marshalling elevator data: ", err)
-					return
-				}
-
-				// backupMsg := sharedConsts.Message{
-				// 	Type:    sharedConsts.MasterOrdersMessage,
-				// 	Target:  sharedConsts.TargetBackup,
-				// 	Payload: backupDataJSON,
-				// }
-
-
-				elevatorMsg := sharedConsts.Message{
-					Type:    sharedConsts.UpdateOrdersMessage,
-					Target:  sharedConsts.TargetElevator,
-					Payload: elevatorDataJSON,
-				}
-
-				fmt.Println("Sending orders to elevator")
-				// clientConn.Channels.BackupChan <- backupMsg
-				//clientConn.Channels.ElevatorChan <- elevatorMsg
-		*/
-
-		// case heartbeat: //
-		// 	// start timer
-		// case timeout:
-		// 	// start master
+		
+	// case heartbeat: //
+	// 	// start timer
+	// case timeout:
+	// 	// start master
 	}
 }
 
@@ -283,7 +226,9 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
 func UpdateElevatorData(backupData BackupData, elevatorID string) ElevatorRequest {
 
+	fmt.Println("My id: ", elevatorID)
 	localAssignedRequests := backupData.AllAssignedRequests[elevatorID]
+	fmt.Println("assigned requests to me", localAssignedRequests)
 	globalHallRequests := backupData.GlobalHallRequests
 
 	elevatorData := ElevatorRequest{
