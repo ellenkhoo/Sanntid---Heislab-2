@@ -34,16 +34,25 @@ func (ac *ActiveConnections) MasterSendHeartbeats(sendChan chan sharedConsts.Mes
 	}
 }
 
-
-func (client *ClientConnectionInfo) ClientHandleHeartbeatTimeout() {
-	for {
-		select {
-		case <- client.HeartbeatTimer.C:
-			fmt.Println("no heartbeat received from master.Master may be down, staring failover!")
-			return
+func (ac *ActiveConnections) MasterHandleHeartbeatTimeout() {
+	ac.mutex.Lock()
+	for clientID, timer := range ac.ClientTimers {
+		select  {
+		case <- timer.C: 
+			fmt.Println("no heartbeat received from client:", clientID, "starting failover...")
+		default:
 		}
 	}
+	ac.mutex.Unlock()
 }
+
+// func (masterData *MasterData) MasterStartheartbeatTimer(){
+
+// 	masterData.HeartbeatTimer = time.NewTimer(5 * time.Second)
+// }
+
+/*______________________________________________________________________________________________________________-
+______________________________________________________________________________________________________________-*/
 
 
 func (clientConn *ClientConnectionInfo) ClientSendHeartbeats(sendChan chan sharedConsts.Message) {
@@ -65,5 +74,15 @@ func (clientConn *ClientConnectionInfo) ClientSendHeartbeats(sendChan chan share
 		<- ticker.C
 		fmt.Println("sending heartbeat from client:", clientConn.ID)
 		sendChan <- msg
+	}
+}
+
+func (client *ClientConnectionInfo) ClientHandleHeartbeatTimeout() {
+	for {
+		select {
+		case <- client.HeartbeatTimer.C:
+			fmt.Println("no heartbeat received from master.Master may be down, staring failover!")
+			return
+		}
 	}
 }

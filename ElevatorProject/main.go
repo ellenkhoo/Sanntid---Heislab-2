@@ -10,7 +10,7 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	// "fmt"
-	// "time"
+	 //"time"
 )
 
 func main() {
@@ -23,6 +23,8 @@ func main() {
 		GlobalHallRequests:  [elevator.N_FLOORS][2]bool{},
 		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
 		AllElevStates:       make(map[string]elevator.ElevStates),
+		//HeartbeatTimer: time.NewTimer(5 * time.Second),
+
 	}
 
 	localIP, _ := localip.LocalIP()
@@ -30,7 +32,7 @@ func main() {
 	// var bcastPortString = "16569"
 	// For use on same computer?
 	var bcastPortString = "9999"
-	var peersPort = 15647
+	var peersPort = 15648
 	var TCPPort = "8081"
 
 	// Initialize network channels

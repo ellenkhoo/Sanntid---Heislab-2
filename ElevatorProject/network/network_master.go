@@ -40,12 +40,14 @@ func (ac *ActiveConnections) AddHostConnection(rank int, conn net.Conn, sendChan
 		ClientIP: remoteIP,
 		Rank:     rank,
 		HostConn: conn,
+		HeartbeatTimer: time.NewTimer(5*time.Second),
 	}
 
 	fmt.Printf("NewConn. ClientIP: %s, Rank: %d", newConn.ClientIP, newConn.Rank)
 
 	ac.mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
+	newConn.ClientTimers[remoteIP] = newConn.HeartbeatTimer
 	ac.mutex.Unlock()
 
 	// Marshal rank
@@ -138,7 +140,7 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 	}
 }
 
-func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Message, networkChannels sharedConsts.NetworkChannels) {
+func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Message, networkChannels sharedConsts.NetworkChannels, ac *ActiveConnections) {
 
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
@@ -218,11 +220,15 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(msg sharedConsts.Me
 			return
 		}	
 		fmt.Println("Received heartbeat from client: ", clientID)
-		if masterData.HeartbeatTimer == nil {
-			masterData.HeartbeatTimer = time.NewTimer(5 * time.Second)
+
+		ac.mutex.Lock()
+		if timer, exists := ac.ClientTimers[clientID]; exists {
+			timer.Reset(7*time.Second)
+			fmt.Println("Reset heartbeat for client: ", clientID)
 		} else {
-			masterData.HeartbeatTimer.Reset(5 * time.Second)
+			fmt.Println("No timer foiund for client: ", clientID)
 		}
-	
+		ac.mutex.Unlock()
+		
 	}
 }

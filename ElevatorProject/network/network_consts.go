@@ -47,6 +47,7 @@ type MasterConnectionInfo struct {
 	ClientIP string
 	Rank     int
 	HostConn net.Conn
+	HeartbeatTimer *time.Timer
 }
 
 type ClientConnectionInfo struct {
@@ -69,6 +70,7 @@ type ClientConnectionInfo struct {
 type ActiveConnections struct {
 	mutex sync.Mutex
 	Conns []MasterConnectionInfo
+	//ClientTimers map[string]*time.Timer
 }
 
 // type MasterData struct {
@@ -83,7 +85,7 @@ type MasterData struct {
 	AllAssignedRequests   map[string][elevator.N_FLOORS][2]bool	`json:"allAssignedRequests"`
 	AllElevStates map[string]elevator.ElevStates	`json:"allElevStates"`
 	mutex sync.Mutex
-	HeartbeatTimer *time.Timer
+	//HeartbeatTimer *time.Timer
 }
 
 type BackupData struct {

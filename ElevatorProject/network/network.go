@@ -92,8 +92,10 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPortString)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
+		
 		go ac.MasterSendMessages(networkChannels)
 		go ac.MasterSendHeartbeats(networkChannels.SendChan)
+		go ac.MasterHandleHeartbeatTimeout()
 		//go startMaster()
 	}
 
@@ -107,7 +109,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Master received a message")
-			masterData.HandleReceivedMessagesToMaster(m, networkChannels)
+			masterData.HandleReceivedMessagesToMaster(m, networkChannels, ac)
 
 		// case b := <-networkChannels.BackupChan:
 		// fmt.Println("Got a message from master to backup")
