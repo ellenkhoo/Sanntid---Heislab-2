@@ -62,9 +62,11 @@ func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 }
 
 func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.NetworkChannels) {
+	fmt.Println("Router received msg")
 	for msg := range networkChannels.ReceiveChan {
 		switch msg.Target {
 		case sharedConsts.TargetMaster:
+			fmt.Println("Msg is to master")
 			networkChannels.MasterChan <- msg
 		case sharedConsts.TargetClient:
 			client.HandleReceivedMessageToClient(msg)
