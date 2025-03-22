@@ -27,7 +27,7 @@ func main() {
 	localIP, _ := localip.LocalIP()
 
 	// Initialize network channels
-	networkChannels := sharedConsts.NetworkChannels{
+	networkChannels := &sharedConsts.NetworkChannels{
 		SendChan:     make(chan sharedConsts.Message),
 		ReceiveChan:  make(chan sharedConsts.Message),
 		MasterChan:   make(chan sharedConsts.Message),

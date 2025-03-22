@@ -55,8 +55,8 @@ func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 	}
 }
 
-func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts.Message, networkChannels sharedConsts.NetworkChannels) {
-	for msg := range receiveChan {
+func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.NetworkChannels) {
+	for msg := range networkChannels.ReceiveChan {
 		switch msg.Target {
 		case sharedConsts.TargetMaster:
 			networkChannels.MasterChan <- msg
@@ -68,7 +68,7 @@ func RouteMessages(client *(ClientConnectionInfo), receiveChan chan sharedConsts
 	}
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, ackTracker *AcknowledgeTracker, bcastPort string, TCPPort string, networkChannels sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, ackTracker *AcknowledgeTracker, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()

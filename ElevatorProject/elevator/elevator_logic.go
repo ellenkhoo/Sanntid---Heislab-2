@@ -12,7 +12,7 @@ import (
 	//"net"
 )
 
-func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM, maxDuration time.Duration) {
+func ElevLogic_runElevator(networkChannels sharedConsts.NetworkChannels, fsm FSM, maxDuration time.Duration) {
 
 	fmt.Println("Arrived at runElevator")
 
@@ -69,7 +69,7 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 					Payload: orderJSON,
 				}
 				fmt.Println("Going to send msg on chan")
-				NetworkChannels.SendChan <- reqMsg
+				networkChannels.SendChan <- reqMsg
 			}
 
 			fsm.Fsm_mtx.Unlock()
@@ -85,7 +85,7 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 				Target:  sharedConsts.TargetMaster,
 				Payload: elevStatesJSON,
 			}
-			NetworkChannels.SendChan <- stateMsg
+			networkChannels.SendChan <- stateMsg
 
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
@@ -94,7 +94,7 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 
 			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
 				//Master informeres i funksjonskallet nedenfor
-				fsm.Fsm_onFloorArrival(NetworkChannels.SendChan, floor_input, start_timer)
+				fsm.Fsm_onFloorArrival(networkChannels.SendChan, floor_input, start_timer)
 			}
 
 			fsm.Fsm_mtx.Unlock()
@@ -121,15 +121,15 @@ func ElevLogic_runElevator(NetworkChannels sharedConsts.NetworkChannels, fsm FSM
 				Payload: elevStatesJSON,
 			}
 
-			NetworkChannels.SendChan <- stateMsg
+			networkChannels.SendChan <- stateMsg
 
 		case <-timer.C:
 			// fsm.Fsm_onDoorTimeout(start_timer)
 			// comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
-		case <- NetworkChannels.UpdateChan:
+		case <- networkChannels.UpdateChan:
 			fmt.Println("Received update")
-			fsm.Fsm_onRequestsToDo(NetworkChannels,start_timer)
+			fsm.Fsm_onRequestsToDo(networkChannels,start_timer)
 		}
 	}
 }

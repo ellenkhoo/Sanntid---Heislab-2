@@ -60,7 +60,7 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 }
 
 // When a new connection is established on the client side, this function adds it to the list of active connections
-func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, networkChannels sharedConsts.NetworkChannels) {
+func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, networkChannels *sharedConsts.NetworkChannels) {
 	//defer conn.Close()
 	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
 
@@ -155,7 +155,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		clientConn.ClientMtx.Unlock()
 
 		// Marshal backupData
-		backupDataJSON, err := json.Marshal(clientConn.ID)
+		backupIDJSON, err := json.Marshal(clientConn.ID)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
 			return
@@ -164,7 +164,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		backupMsg := sharedConsts.Message{
 			Type:    sharedConsts.BackupAcknowledgeMessage,
 			Target:  sharedConsts.TargetMaster,
-			Payload: backupDataJSON,
+			Payload: backupIDJSON,
 		}
 
 		fmt.Println("Sending ack")
