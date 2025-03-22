@@ -74,11 +74,11 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	}
 
 	fmt.Println("Going to handle connection")
-	go HandleConnection(client)
+	go ClientSendAndReceive(client)
 }
 
 // Maybe not the most describing name
-func HandleConnection(client *ClientConnectionInfo) {
+func ClientsendAndReceive(client *ClientConnectionInfo) {
 	// Read from TCP connection and send to the receive channel
 	fmt.Println("Ready to read from TCP")
 	go func() {
@@ -99,6 +99,7 @@ func HandleConnection(client *ClientConnectionInfo) {
 	go func() {
 		encoder := json.NewEncoder(client.ClientConn)
 		for msg := range client.Channels.SendChan {
+			fmt.Println("Sending")
 			err := encoder.Encode(msg)
 			if err != nil {
 				fmt.Println("Error encoding message: ", err)
