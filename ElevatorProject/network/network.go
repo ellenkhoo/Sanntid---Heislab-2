@@ -28,6 +28,7 @@ func CreateMasterData() *MasterData {
 }
 
 func SendMessage(msg sharedConsts.Message, conn net.Conn) {
+	fmt.Println("At SendMessage")
 	encoder := json.NewEncoder(conn)
 	err := encoder.Encode(msg)
 	if err != nil {
