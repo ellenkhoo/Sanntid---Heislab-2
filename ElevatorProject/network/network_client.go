@@ -60,7 +60,7 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 }
 
 // When a new connection is established on the client side, this function adds it to the list of active connections
-func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, channels sharedConsts.NetworkChannels) {
+func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, networkChannels sharedConsts.NetworkChannels) {
 	//defer conn.Close()
 	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
 
@@ -70,15 +70,15 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 		ID:         id,
 		HostIP:     remoteIP,
 		ClientConn: clientConn,
-		Channels:   channels,
+		Channels:   networkChannels,
 	}
 
 	fmt.Println("Going to handle connection")
-	go HandleConnection(*client)
+	go HandleConnection(client)
 }
 
 // Maybe not the most describing name
-func HandleConnection(client ClientConnectionInfo) {
+func HandleConnection(client *ClientConnectionInfo) {
 	// Read from TCP connection and send to the receive channel
 	fmt.Println("Ready to read from TCP")
 	go func() {

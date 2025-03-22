@@ -95,8 +95,8 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		if success {
 			client.AddClientConnection(id, clientConn, networkChannels)
 		}
-		go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
-		go ClientSendMessagesFromSendChan(networkChannels.SendChan, clientConn)
+		// go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
+		// go ClientSendMessagesFromSendChan(networkChannels.SendChan, clientConn)
 	} else {
 		// No master found, announce ourselves as the master
 		masterID = id
