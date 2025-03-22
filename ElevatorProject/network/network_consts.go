@@ -52,14 +52,12 @@ var TCPPort = "8081"
 // Keeping track of connections
 type MasterConnectionInfo struct {
 	ClientIP string
-	// Rank     int
 	HostConn net.Conn
 }
 
 type ClientConnectionInfo struct {
 	ID     string
 	HostIP string
-	// Rank        int
 	ClientConn net.Conn
 	Channels   sharedConsts.NetworkChannels
 	Worldview  BackupData
@@ -90,6 +88,7 @@ type MasterData struct {
 	GlobalHallRequests  [elevator.N_FLOORS][2]bool            `json:"globalHallRequests"`
 	AllAssignedRequests map[string][elevator.N_FLOORS][2]bool `json:"allAssignedRequests"`
 	AllElevStates       map[string]elevator.ElevStates        `json:"allElevStates"`
+	BackupData          BackupData
 	mutex               sync.Mutex
 }
 

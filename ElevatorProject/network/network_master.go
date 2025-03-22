@@ -36,7 +36,6 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 
 	newConn := MasterConnectionInfo{
 		ClientIP: remoteIP,
-		// Rank:     rank,
 		HostConn: conn,
 	}
 
@@ -178,6 +177,11 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			AllAssignedRequests: masterData.AllAssignedRequests,
 		}
 
+		// Update local backupdata
+		masterData.mutex.Lock()
+		masterData.BackupData = clientData
+		masterData.mutex.Unlock()
+
 		// Marshal clientData
 		clientDataJSON, err := json.Marshal(clientData)
 		if err != nil {
@@ -200,7 +204,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		var clientID string
 		err := json.Unmarshal(msg.Payload, &clientID)
 		if err != nil {
-			fmt.Println("Error decoding BackupAcknoledgement:", err)
+			fmt.Println("Error decoding BackupAcknowledgement:", err)
 			return
 		}
 		ackTracker.Acknowledge(clientID)
@@ -229,6 +233,21 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			}
 
 			// Local elevator also needs update
+			elevatorData := UpdateElevatorData(masterData.BackupData, clientID)
+
+			elevatorDataJSON, err := json.Marshal(elevatorData)
+			if err != nil {
+				fmt.Println("Error marshalling backup data: ", err)
+				return
+			}
+
+			elevatorMsg := sharedConsts.Message{
+				Type:    sharedConsts.BackupAcknowledgeMessage,
+				Target:  sharedConsts.TargetMaster,
+				Payload: elevatorDataJSON,
+			}
+
+			networkChannels.ElevatorChan <- elevatorMsg
 
 		}
 		// case sharedConsts.MasterWorldviewMessage:

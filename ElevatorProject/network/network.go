@@ -27,6 +27,12 @@ func CreateMasterData() *MasterData {
 	}
 }
 
+func CreateBackupData() *BackupData {
+	return &BackupData{
+		GlobalHallRequests:  [elevator.N_FLOORS][2]bool{},
+		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
+	}
+}
 func SendMessage(msg sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At SendMessage")
 	encoder := json.NewEncoder(conn)
@@ -68,7 +74,7 @@ func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.N
 	}
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, ackTracker *AcknowledgeTracker, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, backupData *BackupData, ackTracker *AcknowledgeTracker, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()

@@ -149,7 +149,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			return
 		}
 
-		backupData := CreateBackupData(masterData)
+		backupData := UpdateBackupData(masterData)
 		clientConn.ClientMtx.Lock()
 		clientConn.Worldview = backupData
 		clientConn.ClientMtx.Unlock()
@@ -170,6 +170,23 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		fmt.Println("Sending ack")
 		clientConn.Channels.SendChan <- backupMsg
 
+	case sharedConsts.UpdateOrdersMessage:
+
+		elevatorData := UpdateElevatorData(clientConn.Worldview, clientID)
+
+		elevatorDataJSON, err := json.Marshal(elevatorData)
+		if err != nil {
+			fmt.Println("Error marshalling backup data: ", err)
+			return
+		}
+
+		elevatorMsg := sharedConsts.Message{
+			Type:    sharedConsts.BackupAcknowledgeMessage,
+			Target:  sharedConsts.TargetMaster,
+			Payload: elevatorDataJSON,
+		}
+
+		clientConn.Channels.ElevatorChan <- elevatorMsg
 		/*
 			case sharedConsts.UpdateOrdersMessage:
 				// data := msg.Payload
@@ -234,7 +251,7 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 		return
 	}
 
-	elevatorData := CreateElevatorData(masterData, clientID)
+	elevatorData := UpdateElevatorData(masterData, clientID)
 	fmt.Println("ElevatorData: ", elevatorData)
 	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
 
@@ -268,10 +285,10 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func CreateElevatorData(masterData BackupData, elevatorID string) ElevatorRequest {
+func UpdateElevatorData(backupData BackupData, elevatorID string) ElevatorRequest {
 
-	localAssignedRequests := masterData.AllAssignedRequests[elevatorID]
-	globalHallRequests := masterData.GlobalHallRequests
+	localAssignedRequests := backupData.AllAssignedRequests[elevatorID]
+	globalHallRequests := backupData.GlobalHallRequests
 
 	elevatorData := ElevatorRequest{
 		GlobalHallRequests: globalHallRequests,
@@ -281,7 +298,7 @@ func CreateElevatorData(masterData BackupData, elevatorID string) ElevatorReques
 	return elevatorData
 }
 
-func CreateBackupData(masterData BackupData) BackupData {
+func UpdateBackupData(masterData BackupData) BackupData {
 
 	AllAssignedRequests := masterData.AllAssignedRequests
 	globalHallRequests := masterData.GlobalHallRequests
