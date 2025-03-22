@@ -70,7 +70,7 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 		ID:         id,
 		HostIP:     remoteIP,
 		ClientConn: clientConn,
-		Channels:   networkChannels,
+		Channels:   *networkChannels,
 	}
 
 	fmt.Println("Going to handle connection")

@@ -12,7 +12,7 @@ import (
 	//"net"
 )
 
-func ElevLogic_runElevator(networkChannels sharedConsts.NetworkChannels, fsm FSM, maxDuration time.Duration) {
+func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm FSM, maxDuration time.Duration) {
 
 	fmt.Println("Arrived at runElevator")
 

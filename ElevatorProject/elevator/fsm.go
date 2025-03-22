@@ -37,7 +37,7 @@ func (fsm *FSM) Fsm_onInitBetweenFloors() {
 
 // Handle button press event
 //Mulig at det trengs bedre navn
-func (fsm *FSM) Fsm_onRequestsToDo(networkChannels sharedConsts.NetworkChannels, start_timer chan time.Duration) {
+func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels, start_timer chan time.Duration) {
 	Elevator_print(fsm.El)
 
 	switch fsm.El.Behaviour {

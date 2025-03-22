@@ -64,7 +64,7 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 }
 
 // Master listenes and accepts connections
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels sharedConsts.NetworkChannels) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
@@ -81,7 +81,7 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChan
 	}
 }
 
-func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.NetworkChannels) {
+func (ac *ActiveConnections) MasterSendMessages(networkChannels *sharedConsts.NetworkChannels) {
 
 	fmt.Println("Arrived at masterSend")
 	var targetConn net.Conn
@@ -124,7 +124,7 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels sharedConsts.Net
 	}
 }
 
-func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, networkChannels sharedConsts.NetworkChannels, ackTracker *AcknowledgeTracker) {
+func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, networkChannels *sharedConsts.NetworkChannels, ackTracker *AcknowledgeTracker) {
 
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
