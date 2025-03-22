@@ -233,6 +233,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			}
 
 			// Local elevator also needs update
+			fmt.Println("Sending update to local client as well")
 			elevatorData := UpdateElevatorData(masterData.BackupData, clientID)
 
 			elevatorDataJSON, err := json.Marshal(elevatorData)

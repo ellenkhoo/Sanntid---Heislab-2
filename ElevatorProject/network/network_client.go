@@ -72,10 +72,6 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 		ClientConn: clientConn,
 		Channels:   *networkChannels,
 	}
-
-	fmt.Println("Going to handle connection")
-	go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
-	go ClientSendMessagesFromSendChan(networkChannels.SendChan, clientConn)
 }
 
 // // Maybe not the most describing name
