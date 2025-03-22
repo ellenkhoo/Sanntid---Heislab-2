@@ -150,9 +150,12 @@ func (clientConn *ClientConnectionInfo) ClientSendHeartbeats(sendChan chan share
 		Target:  sharedConsts.TargetMaster,
 		Payload: heartbeatPayload,
 	}
+	ticker := time.NewTicker(5*time.Second)
+	defer ticker.Stop()
+
 	for {
-		time.Sleep(5 * time.Second)
-		fmt.Println("sending heartbeat from clients", clientConn.ID)
+		<- ticker.C
+		fmt.Println("sending heartbeat from client:", clientConn.ID)
 		sendChan <- msg
 	}
 }
