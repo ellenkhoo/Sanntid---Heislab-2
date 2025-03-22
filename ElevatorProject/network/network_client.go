@@ -196,27 +196,9 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			return
 		}
 		if heartbeat == "HB" {	
+		clientConn.HeartbeatTimer.Reset(2 * time.Second)
+			
 		fmt.Println("Received heartbeat from master")
-		if clientConn.HeartbeatTimer == nil {
-            clientConn.HeartbeatTimer = time.NewTimer(10 * time.Second)
-		} else {
-			if !clientConn.HeartbeatTimer.Stop(){
-				select {
-				case <-clientConn.HeartbeatTimer.C:
-					fmt.Println("Timeout! Assuming master is dead...")
-				default:
-				}
-			}
-			clientConn.HeartbeatTimer.Reset(10 * time.Second)
-		}
-			fmt.Println("Timer reset at", time.Now())
-		go func() {
-			<-clientConn.HeartbeatTimer.C
-			fmt.Println("Timeout! Assuming master is dead... (in go func)")
-			// 	//HandleMasterDisconnection() // Kall en funksjon for å håndtere failover
-			// }()
-		}()
-
 		// 	// start timer
 		// case timeout:
 		// 	// start master
