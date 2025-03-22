@@ -80,18 +80,18 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChan
 	}
 }
 
-func (ac *ActiveConnections) MasterSendMessages(networkChannels *sharedConsts.NetworkChannels) {
+func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 
 	fmt.Println("Arrived at masterSend")
 	var targetConn net.Conn
-	for msg := range networkChannels.SendChan {
+	for msg := range client.Channels.SendChan {
 		switch msg.Target {
 		// Må sende worldview til backup først, så til heis
 		case sharedConsts.TargetBackup:
 			fmt.Println("Backup is target")
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
-				SendMessage(msg, targetConn)
+				SendMessage(client, msg, targetConn)
 			}
 
 			// if targetConn != nil {
@@ -106,8 +106,8 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels *sharedConsts.Ne
 			// 	fmt.Println("No valid connection found for the message")
 			// }
 
-		// case sharedConsts.TargetMaster:
-		// 	networkChannels.MasterChan <- msg
+		case sharedConsts.TargetMaster:
+			client.Channels.MasterChan <- msg
 
 		// case sharedConsts.TargetElevator:
 		// 	// do something
@@ -115,13 +115,13 @@ func (ac *ActiveConnections) MasterSendMessages(networkChannels *sharedConsts.Ne
 			// Send to remote clients
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
-				SendMessage(msg, targetConn)
+				SendMessage(client, msg, targetConn)
 			}
 		}
 	}
 }
 
-func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, networkChannels *sharedConsts.NetworkChannels, ackTracker *AcknowledgeTracker) {
+func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientConnectionInfo, ackTracker *AcknowledgeTracker) {
 
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
@@ -196,9 +196,27 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			Payload: clientDataJSON,
 		}
 		// Send message
-		networkChannels.SendChan <- orderMsg
-		ackTracker.AwaitAcknowledge(ID, orderMsg)
+		if client.ID == client.HostIP {
+			// If the elevator is on the master, send an ACK immediately
 
+			masterIDJSON, err := json.Marshal(client.ID)
+			if err != nil {
+				fmt.Println("Error marshalling backup data: ", err)
+				return
+			}
+			masterACK := sharedConsts.Message{
+				Type: sharedConsts.BackupAcknowledgeMessage,
+				Target: sharedConsts.TargetMaster,
+				Payload: masterIDJSON,
+			}
+			client.Channels.MasterChan <- masterACK
+		} else {
+			client.Channels.SendChan <- orderMsg
+		}
+		for _, conn := range ac.Conns {
+			ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
+		}
+		
 	case sharedConsts.BackupAcknowledgeMessage:
 		fmt.Println("At backup ack")
 		var clientID string
@@ -229,7 +247,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			var targetConn net.Conn
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
-				SendMessage(clientMsg, targetConn)
+				SendMessage(client, clientMsg, targetConn)
 			}
 
 			// Local elevator also needs update
@@ -248,8 +266,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				Payload: elevatorDataJSON,
 			}
 
-			networkChannels.ElevatorChan <- elevatorMsg
-
+			client.Channels.ElevatorChan <- elevatorMsg
 		}
 		// case sharedConsts.MasterWorldviewMessage:
 		// 	var backupWorldview BackupData

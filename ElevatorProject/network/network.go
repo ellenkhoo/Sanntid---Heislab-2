@@ -33,14 +33,19 @@ func CreateBackupData() *BackupData {
 		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
 	}
 }
-func SendMessage(msg sharedConsts.Message, conn net.Conn) {
+func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At SendMessage")
-	encoder := json.NewEncoder(conn)
-	err := encoder.Encode(msg)
-	if err != nil {
-		fmt.Println("Error encoding message: ", err)
-		return
+	if client.ID == client.HostIP {
+		client.Channels.ReceiveChan <- msg
+	} else {
+		encoder := json.NewEncoder(conn)
+		err := encoder.Encode(msg)
+		if err != nil {
+			fmt.Println("Error encoding message: ", err)
+			return
+		}
 	}
+	
 }
 
 func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
@@ -55,7 +60,7 @@ func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 				fmt.Println("Connection closed")
 			}
 			fmt.Println("Error decoding message: ", err)
-			return
+			break // eller continue?
 		}
 		receiveChan <- msg
 	}
@@ -70,6 +75,8 @@ func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.N
 			networkChannels.MasterChan <- msg
 		case sharedConsts.TargetClient:
 			client.HandleReceivedMessageToClient(msg)
+		case sharedConsts.TargetElevator:
+			networkChannels.ElevatorChan <- msg
 		default:
 			fmt.Println("Unknown message target")
 		}
@@ -103,25 +110,26 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		if success {
 			client.AddClientConnection(id, clientConn, networkChannels)
 			go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
-			go ClientSendMessagesFromSendChan(networkChannels.SendChan, clientConn)
+			go ClientSendMessagesFromSendChan(client, networkChannels.SendChan, clientConn)
 		}
 	} else {
 		// No master found, announce ourselves as the master
 		masterID = id
 		client.ID = id // local client (elevator)
+		client.HostIP = masterID
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPort)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
-		go ac.MasterSendMessages(networkChannels)
+		go ac.MasterSendMessages(client)
 	}
 
 	for {
 		select {
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Master received a message")
-			masterData.HandleReceivedMessagesToMaster(ac, m, networkChannels, ackTracker)
+			go masterData.HandleReceivedMessagesToMaster(ac, m, client, ackTracker)
 		case e := <-networkChannels.ElevatorChan:
-			client.UpdateElevatorWorldview(fsm, e)
+			go client.UpdateElevatorWorldview(fsm, e)
 		}
 	}
 }

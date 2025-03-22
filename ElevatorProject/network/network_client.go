@@ -106,11 +106,11 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 // 	}()
 // }
 
-func ClientSendMessagesFromSendChan(sendChan chan sharedConsts.Message, conn net.Conn) {
+func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
 
 	fmt.Println("Ready to send msg to master")
 	for msg := range sendChan {
-		SendMessage(msg, conn)
+		SendMessage(client, msg, conn)
 	}
 }
 
