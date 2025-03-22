@@ -155,7 +155,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		clientConn.ClientMtx.Unlock()
 
 		// Marshal backupData
-		backupIDJSON, err := json.Marshal(clientConn.ID)
+		backupIDJSON, err := json.Marshal(clientID)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
 			return
@@ -170,46 +170,49 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		fmt.Println("Sending ack")
 		clientConn.Channels.SendChan <- backupMsg
 
-	case sharedConsts.UpdateOrdersMessage:
-		// data := msg.Payload
-		// var masterData BackupData
-		// err := json.Unmarshal(data, &masterData)
-		// if err != nil {
-		// 	fmt.Println("Error decoding master orders message: ", err)
-		// 	return
-		// }
+		/*
+			case sharedConsts.UpdateOrdersMessage:
+				// data := msg.Payload
+				// var masterData BackupData
+				// err := json.Unmarshal(data, &masterData)
+				// if err != nil {
+				// 	fmt.Println("Error decoding master orders message: ", err)
+				// 	return
+				// }
 
-		backupData := clientConn.Worldview
-		elevatorData := CreateElevatorData(backupData, clientID)
+				backupData := clientConn.Worldview
+				elevatorData := CreateElevatorData(backupData, clientID)
 
-		// Marshal backupData and elevatorData
-		// backupDataJSON, err := json.Marshal(backupData)
-		// if err != nil {
-		// 	fmt.Println("Error marshalling backup data: ", err)
-		// 	return
-		// }
+				// Marshal backupData and elevatorData
+				// backupDataJSON, err := json.Marshal(backupData)
+				// if err != nil {
+				// 	fmt.Println("Error marshalling backup data: ", err)
+				// 	return
+				// }
 
-		elevatorDataJSON, err := json.Marshal(elevatorData)
-		if err != nil {
-			fmt.Println("Error marshalling elevator data: ", err)
-			return
-		}
+				elevatorDataJSON, err := json.Marshal(elevatorData)
+				if err != nil {
+					fmt.Println("Error marshalling elevator data: ", err)
+					return
+				}
 
-		// backupMsg := sharedConsts.Message{
-		// 	Type:    sharedConsts.MasterOrdersMessage,
-		// 	Target:  sharedConsts.TargetBackup,
-		// 	Payload: backupDataJSON,
-		// }
+				// backupMsg := sharedConsts.Message{
+				// 	Type:    sharedConsts.MasterOrdersMessage,
+				// 	Target:  sharedConsts.TargetBackup,
+				// 	Payload: backupDataJSON,
+				// }
 
-		elevatorMsg := sharedConsts.Message{
-			Type:    sharedConsts.UpdateOrdersMessage,
-			Target:  sharedConsts.TargetElevator,
-			Payload: elevatorDataJSON,
-		}
 
-		fmt.Println("Sending orders to elevator")
-		// clientConn.Channels.BackupChan <- backupMsg
-		clientConn.Channels.ElevatorChan <- elevatorMsg
+				elevatorMsg := sharedConsts.Message{
+					Type:    sharedConsts.UpdateOrdersMessage,
+					Target:  sharedConsts.TargetElevator,
+					Payload: elevatorDataJSON,
+				}
+
+				fmt.Println("Sending orders to elevator")
+				// clientConn.Channels.BackupChan <- backupMsg
+				//clientConn.Channels.ElevatorChan <- elevatorMsg
+		*/
 
 		// case heartbeat: //
 		// 	// start timer
