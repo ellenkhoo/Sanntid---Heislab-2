@@ -35,7 +35,9 @@ func main() {
 		ElevatorChan: make(chan sharedConsts.Message),
 	}
 
-	fsm := elevator.InitElevator(localIP, networkChannels)
+	client.Channels = *networkChannels
+
+	fsm := elevator.InitElevator(localIP, &client.Channels)
 	go network.InitMasterSlaveNetwork(ac, &client, masterData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, &fsm)
 	//go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 

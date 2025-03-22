@@ -2,12 +2,12 @@ package roles
 
 import (
 	"github.com/ellenkhoo/ElevatorProject/elevator"
-	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
-	"github.com/ellenkhoo/ElevatorProject/timers"
+	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	"github.com/ellenkhoo/ElevatorProject/timers"
 )
 
-func InitElevator(localIp string, networkChannels sharedConsts.NetworkChannels) elevator.FSM {
+func InitElevator(localIp string, networkChannels *sharedConsts.NetworkChannels) elevator.FSM {
 	elevio.Init("localhost:15657", elevator.N_FLOORS)
 
 	fsm := elevator.FSM{El: elevator.Elevator_uninitialized(), Od: elevator.Elevio_getOutputDevice()}
