@@ -250,23 +250,27 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				SendMessage(client, clientMsg, targetConn)
 			}
 
-			// Local elevator also needs update
-			fmt.Println("Sending update to local client as well")
-			elevatorData := UpdateElevatorData(masterData.BackupData, clientID)
+			if client.ID == client.HostIP {
+				fmt.Println("Sending update to local client as well")
+				elevatorData := UpdateElevatorData(masterData.BackupData, clientID)
 
-			elevatorDataJSON, err := json.Marshal(elevatorData)
-			if err != nil {
-				fmt.Println("Error marshalling backup data: ", err)
-				return
+				elevatorDataJSON, err := json.Marshal(elevatorData)
+				if err != nil {
+					fmt.Println("Error marshalling backup data: ", err)
+					return
+				}
+
+				elevatorMsg := sharedConsts.Message{
+					Type:    sharedConsts.UpdateOrdersMessage,
+					Target:  sharedConsts.TargetElevator,
+					Payload: elevatorDataJSON,
+				}
+
+				client.Channels.ElevatorChan <- elevatorMsg
 			}
 
-			elevatorMsg := sharedConsts.Message{
-				Type:    sharedConsts.BackupAcknowledgeMessage,
-				Target:  sharedConsts.TargetMaster,
-				Payload: elevatorDataJSON,
-			}
-
-			client.Channels.ElevatorChan <- elevatorMsg
+			
+			
 		}
 		// case sharedConsts.MasterWorldviewMessage:
 		// 	var backupWorldview BackupData

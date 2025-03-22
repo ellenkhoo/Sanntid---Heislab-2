@@ -63,6 +63,7 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 	case EB_Idle:
 		fsm.Fsm_mtx.Lock()
 		pair := Requests_chooseDirection(fsm.El)
+		fmt.Println("Chose direction:", pair.Dirn)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
 

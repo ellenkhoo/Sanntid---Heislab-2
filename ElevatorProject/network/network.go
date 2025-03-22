@@ -129,6 +129,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 			fmt.Println("Master received a message")
 			go masterData.HandleReceivedMessagesToMaster(ac, m, client, ackTracker)
 		case e := <-networkChannels.ElevatorChan:
+			fmt.Println("Going to update my worldview")
 			go client.UpdateElevatorWorldview(fsm, e)
 		}
 	}

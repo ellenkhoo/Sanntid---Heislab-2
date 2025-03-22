@@ -180,7 +180,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedConsts.Message) {
 
 	fmt.Println("At handleMessageToElevator\n")
-	fmt.Println("Before update:", fsm.El.RequestsToDo)
+	fmt.Println("RequestsToDo before update:", fsm.El.RequestsToDo)
 	clientID := clientConn.ID
 
 	var masterData BackupData
@@ -218,9 +218,11 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 
 	fsm.El.AssignedRequests = assignedRequests
 	fsm.El.GlobalHallRequests = globalHallRequests
-	fmt.Println("After update:", fsm.El.RequestsToDo)
+	fmt.Println("RequestsToDo after update:", fsm.El.RequestsToDo)
 	fsm.Fsm_mtx.Unlock()
-	clientConn.Channels.UpdateChan <- "You are ready to do things"
+	fmt.Println("Trying to send on elevator update chan")
+	sendMsg := "You are ready to do things"
+	clientConn.Channels.UpdateChan <- sendMsg
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests

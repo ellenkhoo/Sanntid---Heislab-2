@@ -34,6 +34,7 @@ func main() {
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message),
+		UpdateChan: make(chan string),
 	}
 
 	client.Channels = *networkChannels
