@@ -111,7 +111,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
 	case sharedConsts.LocalRequestMessage:
-		// Update GlobalHallRequests
+		
 		var request elevio.ButtonEvent
 		err := json.Unmarshal(msg.Payload, &request)
 		if err != nil {
@@ -128,7 +128,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		masterData.mutex.Unlock()
 
 	case sharedConsts.CurrentStateMessage:
-		// Update allElevStates
+
 		var elevMessage elevator.MessageToMaster
 		err := json.Unmarshal(msg.Payload, &elevMessage)
 		if err != nil {
@@ -141,13 +141,14 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		masterData.mutex.Lock()
 		fmt.Println("Updating allElevStates")
 		masterData.AllElevStates[ID] = elevMessage.ElevStates
+		masterData.mutex.Unlock()
 		// floor := elevMessage.ElevStates.Floor
 		// dirn := elevMessage.ElevStates.Direction
 		// behaviour := elevMessage.ElevStates.Behaviour
 		requestsToDo := elevMessage.RequestsToDo
 		Requests_clearHallRequestAtCurrentFloor(requestsToDo, *masterData, ID)
 	
-		masterData.mutex.Unlock()
+		
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
 		for ID, orders := range *assignedOrders {
