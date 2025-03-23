@@ -154,21 +154,23 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 
 	case sharedConsts.UpdateOrdersMessage:
 
-		elevatorData := UpdateElevatorData(clientConn.Worldview, clientID)
+		if clientID != clientConn.HostIP {
+			fmt.Println("I am not on the master computer")
+			elevatorData := UpdateElevatorData(clientConn.Worldview, clientID)
 
-		elevatorDataJSON, err := json.Marshal(elevatorData)
-		if err != nil {
-			fmt.Println("Error marshalling backup data: ", err)
-			return
+			elevatorDataJSON, err := json.Marshal(elevatorData)
+			if err != nil {
+				fmt.Println("Error marshalling backup data: ", err)
+				return
+			}
+
+			elevatorMsg := sharedConsts.Message{
+				Payload: elevatorDataJSON,
+			}
+
+			clientConn.Channels.ElevatorChan <- elevatorMsg
 		}
-
-		elevatorMsg := sharedConsts.Message{
-			Type:    sharedConsts.BackupAcknowledgeMessage,
-			Target:  sharedConsts.TargetMaster,
-			Payload: elevatorDataJSON,
-		}
-
-		clientConn.Channels.ElevatorChan <- elevatorMsg
+		
 		
 	// case heartbeat: //
 	// 	// start timer
@@ -179,7 +181,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 
 func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedConsts.Message) {
 
-	fmt.Println("At handleMessageToElevator\n")
+	fmt.Println("At UpdateElevatorWorldview\n")
 	fmt.Println("RequestsToDo before update:", fsm.El.RequestsToDo)
 	clientID := clientConn.ID
 

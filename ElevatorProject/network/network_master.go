@@ -237,7 +237,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 			if client.ID == client.HostIP {
 				fmt.Println("Sending update to local client as well")
-				elevatorData := UpdateElevatorData(masterData.BackupData, clientID)
+				elevatorData := masterData.BackupData
 
 				elevatorDataJSON, err := json.Marshal(elevatorData)
 				if err != nil {
