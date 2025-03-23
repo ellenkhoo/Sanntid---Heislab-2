@@ -118,7 +118,7 @@ func Requests_shouldStop(e Elevator) bool {
 	}
 }
 
-func Requests_shouldClearImmediately(e Elevator) bool {
+func Requests_shouldClearImmediately(e *Elevator) bool {
 	switch e.Config.ClearRequestVariant {
 	// case "CV_All":
 	// 	return e.ElevStates.Floor == btn_floor

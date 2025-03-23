@@ -129,25 +129,24 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 	case sharedConsts.CurrentStateMessage:
 		// Update allElevStates
-		var elevStates elevator.ElevStates
-		err := json.Unmarshal(msg.Payload, &elevStates)
+		var elevMessage elevator.MessageToMaster
+		err := json.Unmarshal(msg.Payload, &elevMessage)
 		if err != nil {
 			fmt.Println("Error unmarshalling payload: ", err)
 			return
 		}
 
-		fmt.Printf("Received current state from elevator: %#v\n", elevStates)
-		ID := elevStates.IP
+		fmt.Printf("Received current state from elevator: %#v\n", elevMessage.ElevStates)
+		ID := elevMessage.ElevStates.IP
 		masterData.mutex.Lock()
 		fmt.Println("Updating allElevStates")
-		masterData.AllElevStates[ID] = elevStates
-		floor := elevStates.Floor
-		dirn := elevStates.Direction
-		if dirn == "D_Up" {
-			masterData.GlobalHallRequests[floor][0] = false
-		} else if dirn == "D_Down" {
-			masterData.GlobalHallRequests[floor][1] = false
-		}
+		masterData.AllElevStates[ID] = elevMessage.ElevStates
+		// floor := elevMessage.ElevStates.Floor
+		// dirn := elevMessage.ElevStates.Direction
+		// behaviour := elevMessage.ElevStates.Behaviour
+		requestsToDo := elevMessage.RequestsToDo
+		Requests_clearHallRequestAtCurrentFloor(requestsToDo, *masterData, ID)
+	
 		masterData.mutex.Unlock()
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
@@ -253,56 +252,22 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 				client.Channels.ElevatorChan <- elevatorMsg
 			}
-
-			
-			
 		}
-		// case sharedConsts.MasterWorldviewMessage:
-		// 	var backupWorldview BackupData
-		// 	err := json.Unmarshal(msg.Payload, &backupWorldview)
-		// 	if err != nil {
-		// 		fmt.Println("Error decoding message to master: ", err)
-		// 		return
-		// 	}
-		// 	backupHallRequests := backupWorldview.GlobalHallRequests
-		// 	backupAssignedRequests := backupWorldview.AllAssignedRequests
-		// 	if masterData.GlobalHallRequests == backupHallRequests && mapsAreEqual(masterData.AllAssignedRequests, backupAssignedRequests) {
-		// 		fmt.Println("Worldviews are the same")
-
-		// 		data := "Send requests to elevator"
-		// 		dataJSON, err := json.Marshal(data)
-		// 		if err != nil {
-		// 			fmt.Println("Error marshalling backup data: ", err)
-		// 			return
-		// 		}
-
-		// 		backupMsg := sharedConsts.Message{
-		// 			Type:    sharedConsts.UpdateOrdersMessage,
-		// 			Target:  sharedConsts.TargetMaster,
-		// 			Payload: backupDataJSON,
-		// 		}
-		// 		// backup can send worldview to elevator
-		// 	} else {
-		// 		fmt.Println("Worldviews are different")
-		// 		// send master's worldview again
-		// 	}
 	}
 }
 
-// flytt til et annet sted?
-func mapsAreEqual(map1, map2 map[string][4][2]bool) bool {
-	// First, check if the lengths are the same
-	if len(map1) != len(map2) {
-		return false
-	}
 
-	// Now, check if all the keys and their corresponding values are equal
-	for key, val1 := range map1 {
-		val2, exists := map2[key]
-		if !exists || val1 != val2 {
-			return false
+func Requests_clearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData MasterData, ID string) {
+	// Compare the elevator's requestsToDo with the assigned requests
+
+	for f := 0; f < elevator.N_FLOORS; f++ {
+		for btn := 0; btn < elevator.N_BUTTONS-1; btn++ {
+			if RequestsToDo[f][btn] != masterData.AllAssignedRequests[ID][f][btn] {
+				masterData.mutex.Lock()
+				masterData.GlobalHallRequests[f][btn] = false
+				masterData.mutex.Unlock()
+				fmt.Println("GlobalHallRequest cleared at floor", f, "Btn:", btn)
+			}
 		}
 	}
-
-	return true
 }

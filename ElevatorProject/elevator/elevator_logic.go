@@ -13,8 +13,18 @@ import (
 )
 
 func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, fsm *FSM) {
-	// Marshal elevStates
-	elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+
+	fsm.Fsm_mtx.Lock()
+	FormatElevStates(fsm.El, fsm.El.ElevStates)
+	fsm.Fsm_mtx.Unlock()
+
+	msgToMaster := MessageToMaster{
+		ElevStates: *fsm.El.ElevStates,
+		RequestsToDo: fsm.El.RequestsToDo,
+	}
+
+	// Marshal message
+	elevStatesJSON, err := json.Marshal(msgToMaster)
 	if err != nil {
 		fmt.Println("Error marshalling elevStates: ", err)
 		return
@@ -98,14 +108,9 @@ func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm *F
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
 
-			// fsm.Fsm_mtx.Lock()
-
 			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
-				//Master informeres i funksjonskallet nedenfor
 				fsm.Fsm_onFloorArrival(networkChannels, floor_input, start_timer)
 			}
-
-			// fsm.Fsm_mtx.Unlock()
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
