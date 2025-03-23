@@ -12,6 +12,39 @@ import (
 	//"net"
 )
 
+func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, fsm *FSM) {
+	// Marshal elevStates
+	elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
+	if err != nil {
+		fmt.Println("Error marshalling elevStates: ", err)
+		return
+	}
+	// Create message
+	stateMsg := sharedConsts.Message{
+		Type:    sharedConsts.CurrentStateMessage,
+		Target:  sharedConsts.TargetMaster,
+		Payload: elevStatesJSON,
+	}
+	//Send message
+	networkChannels.SendChan <- stateMsg
+}
+
+func sendLocalOrder(order elevio.ButtonEvent, networkChannels *sharedConsts.NetworkChannels) {
+	// Marshal order
+	orderJSON, err := json.Marshal(order)
+	if err != nil {
+		fmt.Println("Error marshalling order: ", err)
+		return
+	}
+	// Create message
+	reqMsg := sharedConsts.Message{
+		Type:    sharedConsts.LocalRequestMessage,
+		Target:  sharedConsts.TargetMaster,
+		Payload: orderJSON,
+	}
+	// Send message
+	networkChannels.SendChan <- reqMsg
+}
 func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDuration time.Duration) {
 
 	fmt.Println("Arrived at runElevator")
@@ -55,49 +88,24 @@ func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm *F
 				fsm.El.ElevStates.CabRequests[order.Floor] = true
 				fmt.Println("Cab request in elevLogic: ", fsm.El.ElevStates.CabRequests)
 			} else {
-
-				// Marshal order
-				orderJSON, err := json.Marshal(order)
-				if err != nil {
-					fmt.Println("Error marshalling order: ", err)
-					return
-				}
-				//Send hall call to master
-				reqMsg := sharedConsts.Message{
-					Type:    sharedConsts.LocalRequestMessage,
-					Target:  sharedConsts.TargetMaster,
-					Payload: orderJSON,
-				}
-				fmt.Println("Going to send msg on chan")
-				networkChannels.SendChan <- reqMsg
+				sendLocalOrder(order, networkChannels)
 			}
 
 			fsm.Fsm_mtx.Unlock()
 
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
-			if err != nil {
-				fmt.Println("Error marshalling elevStates: ", err)
-				return
-			}
-			// Send current state
-			stateMsg := sharedConsts.Message{
-				Type:    sharedConsts.CurrentStateMessage,
-				Target:  sharedConsts.TargetMaster,
-				Payload: elevStatesJSON,
-			}
-			networkChannels.SendChan <- stateMsg
+			SendCurrentState(networkChannels, fsm)
 
 		case floor_input := <-floors_chan:
 			fmt.Printf("Floor sensor: %d\n", floor_input)
 
-			fsm.Fsm_mtx.Lock()
+			// fsm.Fsm_mtx.Lock()
 
 			if floor_input != -1 && floor_input != fsm.El.ElevStates.Floor {
 				//Master informeres i funksjonskallet nedenfor
-				fsm.Fsm_onFloorArrival(networkChannels.SendChan, floor_input, start_timer)
+				fsm.Fsm_onFloorArrival(networkChannels, floor_input, start_timer)
 			}
 
-			fsm.Fsm_mtx.Unlock()
+			// fsm.Fsm_mtx.Unlock()
 
 		case obstruction := <-obstruction_chan:
 			if obstruction {
@@ -108,21 +116,10 @@ func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm *F
 				start_timer <- timers.DoorOpenDuration
 			}
 			
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
-			if err != nil {
-				fmt.Println("Error marshalling elevStates: ", err)
-				return
-			}
-			// Send current state
-			stateMsg := sharedConsts.Message{
-				Type:    sharedConsts.CurrentStateMessage,
-				Target:  sharedConsts.TargetMaster,
-				Payload: elevStatesJSON,
-			}
-			networkChannels.SendChan <- stateMsg
+			SendCurrentState(networkChannels, fsm)
 
 		case <-timer.C:
-			// fsm.Fsm_onDoorTimeout(start_timer)
+			fsm.Fsm_onDoorTimeout(start_timer)
 			// comm.Comm_sendCurrentState(fsm.El.ElevStates, conn)
 
 		case <- networkChannels.UpdateChan:

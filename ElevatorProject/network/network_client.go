@@ -144,7 +144,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		backupMsg := sharedConsts.Message{
-			Type:    sharedConsts.BackupAcknowledgeMessage,
+			Type:    sharedConsts.AcknowledgeMessage,
 			Target:  sharedConsts.TargetMaster,
 			Payload: backupIDJSON,
 		}
@@ -221,8 +221,9 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 	fsm.El.AssignedRequests = assignedRequests
 	fsm.El.GlobalHallRequests = globalHallRequests
 	fmt.Println("RequestsToDo after update:", fsm.El.RequestsToDo)
+	fmt.Println("GlobalHallRequests: ", fsm.El.GlobalHallRequests)
 	fsm.Fsm_mtx.Unlock()
-	fmt.Println("Trying to send on elevator update chan")
+
 	sendMsg := "You are ready to do things"
 	clientConn.Channels.UpdateChan <- sendMsg
 }

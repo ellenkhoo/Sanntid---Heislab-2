@@ -13,7 +13,7 @@ type MessageType int
 const (
 	MasterWorldviewMessage MessageType = iota
 	UpdateOrdersMessage
-	BackupAcknowledgeMessage
+	AcknowledgeMessage
 	LocalRequestMessage
 	CurrentStateMessage
 	HelloMessage

@@ -190,7 +190,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				return
 			}
 			masterACK := sharedConsts.Message{
-				Type: sharedConsts.BackupAcknowledgeMessage,
+				Type: sharedConsts.AcknowledgeMessage,
 				Target: sharedConsts.TargetMaster,
 				Payload: masterIDJSON,
 			}
@@ -202,12 +202,11 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
 		}
 		
-	case sharedConsts.BackupAcknowledgeMessage:
-		fmt.Println("At backup ack")
+	case sharedConsts.AcknowledgeMessage:
 		var clientID string
 		err := json.Unmarshal(msg.Payload, &clientID)
 		if err != nil {
-			fmt.Println("Error decoding BackupAcknowledgement:", err)
+			fmt.Println("Error decoding Acknowledgement:", err)
 			return
 		}
 		ackTracker.Acknowledge(clientID)
@@ -235,6 +234,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				SendMessage(client, clientMsg, targetConn)
 			}
 
+			// Data to local client
 			if client.ID == client.HostIP {
 				fmt.Println("Sending update to local client as well")
 				elevatorData := masterData.BackupData

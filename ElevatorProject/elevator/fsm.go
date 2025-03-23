@@ -3,11 +3,12 @@ package elevator
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 	"sync"
+	"time"
 
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	"github.com/ellenkhoo/ElevatorProject/timers"
 )
 
 // Elevator FSM struct
@@ -43,7 +44,8 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
 		if Requests_shouldClearImmediately(*fsm.El) {
-			start_timer <- fsm.El.Config.DoorOpenDuration
+			fmt.Println("Should clear order immediately")
+			start_timer <- timers.DoorOpenDuration
 			
 			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
@@ -58,6 +60,8 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 			}
 
 			networkChannels.SendChan <- msg
+		} else {
+			fmt.Println("Shouldn't clear order immediately")
 		}
 
 	case EB_Idle:
@@ -70,8 +74,8 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 		switch pair.Behaviour {
 		case EB_DoorOpen:
 			elevio.SetDoorOpenLamp(true)
-			start_timer <- fsm.El.Config.DoorOpenDuration
-			fsm.El = Requests_clearAtCurrentFloor(fsm.El)
+			start_timer <- timers.DoorOpenDuration
+			//fsm.El = Requests_clearAtCurrentFloor(fsm.El)
 
 		case EB_Moving:
 			fsm.Od.MotorDirection(fsm.El.Dirn)
@@ -88,11 +92,10 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 }
 
 // Handle floor arrival event
-func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor int, start_timer chan time.Duration) {
+func (fsm *FSM) Fsm_onFloorArrival(networkChannels *sharedConsts.NetworkChannels, newFloor int, start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d)\n", newFloor)
 	Elevator_print(*fsm.El)
 
-	// fsm.El.PrevFloor = fsm.El.Floor
 	fsm.El.ElevStates.Floor = newFloor
 
 	elevio.SetFloorIndicator(newFloor)
@@ -102,28 +105,19 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 		if Requests_shouldStop(*fsm.El) {
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.ElevStates.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
+
+			fmt.Println("Going to lock fsm")
 			fsm.Fsm_mtx.Lock()
 			fsm.El.ElevStates.CabRequests[fsm.El.ElevStates.Floor] = false
+			
 			elevio.SetDoorOpenLamp(true)
-			//fsm.SetAllLights()
-			start_timer <- fsm.El.Config.DoorOpenDuration
+			start_timer <- timers.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
 			fmt.Println("Elevator behaviour: ", fsm.El.Behaviour)
 			fsm.Fsm_mtx.Unlock()
-			// Marshal elevStates
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
-			if err != nil {
-				fmt.Println("Error marshalling elevStates: ", err)
-				return
-			}
-			// Send message to master that order has been cleared
-			msg := sharedConsts.Message{
-				Type:    sharedConsts.CurrentStateMessage,
-				Target:  sharedConsts.TargetMaster,
-				Payload: elevStatesJSON,
-			}
-			sendChan <- msg
+			
+			SendCurrentState(networkChannels, fsm)
 		}
 	}
 
@@ -145,9 +139,9 @@ func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
 
 		switch fsm.El.Behaviour {
 		case EB_DoorOpen:
-			start_timer <- fsm.El.Config.DoorOpenDuration
+			start_timer <- timers.DoorOpenDuration
 			// fsm.El = Requests_clearAtCurrentFloor(fsm.El)
-			fsm.SetAllLights()
+			//fsm.SetAllLights()
 		case EB_Moving, EB_Idle:
 			elevio.SetDoorOpenLamp(false)
 			fsm.Od.MotorDirection(fsm.El.Dirn)

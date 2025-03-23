@@ -125,6 +125,7 @@ func Requests_shouldClearImmediately(e Elevator) bool {
 
 	case "CV_InDirn":
 		if e.RequestsToDo[e.ElevStates.Floor][B_Cab] {
+			fmt.Println("Cab call at", e.ElevStates.Floor)
 		   e.RequestsToDo[e.ElevStates.Floor][B_Cab] = false
 		   return true
 		}
