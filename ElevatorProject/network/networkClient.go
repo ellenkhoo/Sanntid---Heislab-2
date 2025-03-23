@@ -1,17 +1,13 @@
 package network
 
 import (
-	"encoding/json"
-	"fmt"
-	"math/rand/v2"
-	"net"
-	"time"
-
-	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
-	//"github.com/ellenkhoo/ElevatorProject/roles"
-	"github.com/ellenkhoo/ElevatorProject/elevator"
-	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"encoding/json"
+	"math/rand/v2"
+	"time"
+	"fmt"
+	"net"	
 )
 
 func RandRange(min, max int) int {
@@ -212,7 +208,7 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 
 		if fsm.El.ElevStates.CabRequests[floor] {
 			fmt.Println("Assigned cab request at floor: ", floor)
-			fsm.El.RequestsToDo[floor][elevio.BT_Cab] = true
+			fsm.El.RequestsToDo[floor][elevator.B_Cab] = true
 		} else {
 			fmt.Println("No cab request at floor: ", floor)
 		}

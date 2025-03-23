@@ -1,20 +1,19 @@
 package elevator
 
 import (
-	"encoding/json"
-	"fmt"
-	"sync"
-	"time"
-
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/timers"
+	"encoding/json"
+	"sync"
+	"time"
+	"fmt"
 )
 
 // Elevator FSM struct
 type FSM struct {
-	El *Elevator
-	Od *ElevOutputDevice
+	El      *Elevator
+	Od      *ElevOutputDevice
 	Fsm_mtx sync.Mutex
 }
 
@@ -25,28 +24,26 @@ func (fsm *FSM) SetAllLights() {
 		for btn := elevio.ButtonType(0); btn < N_BUTTONS-1; btn++ {
 			fsm.Od.RequestButtonLight(floor, btn, fsm.El.GlobalHallRequests[floor][btn])
 		}
-		fsm.Od.RequestButtonLight(floor, elevio.BT_Cab, fsm.El.ElevStates.CabRequests[floor])
+		fsm.Od.RequestButtonLight(floor, B_Cab, fsm.El.ElevStates.CabRequests[floor])
 	}
 }
 
 // Handle initialization between floors
-func (fsm *FSM) Fsm_onInitBetweenFloors() {
+func (fsm *FSM) InitBetweenFloors() {
 	fsm.Od.MotorDirection(elevio.MD_Up)
 	fsm.El.Dirn = elevio.MD_Up
 	fsm.El.Behaviour = EB_Moving
 }
 
-// Handle button press event
-//Mulig at det trengs bedre navn
-func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels, start_timer chan time.Duration) {
-	Elevator_print(*fsm.El)
+func (fsm *FSM) HandleRequestsToDo(networkChannels *sharedConsts.NetworkChannels, start_timer chan time.Duration) {
+	PrintElevator(*fsm.El)
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
-		if Requests_shouldClearImmediately(fsm.El) {
+		if ShouldClearImmediately(fsm.El) {
 			fmt.Println("Should clear order immediately")
 			start_timer <- timers.DoorOpenDuration
-			
+
 			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
@@ -54,8 +51,8 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 			}
 
 			msg := sharedConsts.Message{
-				Type: sharedConsts.CurrentStateMessage,
-				Target: sharedConsts.TargetMaster,
+				Type:    sharedConsts.CurrentStateMessage,
+				Target:  sharedConsts.TargetMaster,
 				Payload: elevStatesJSON,
 			}
 
@@ -66,7 +63,7 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 
 	case EB_Idle:
 		fsm.Fsm_mtx.Lock()
-		pair := Requests_chooseDirection(*fsm.El)
+		pair := ChooseDirection(*fsm.El)
 		fmt.Println("Chose direction:", pair.Dirn)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
@@ -88,13 +85,13 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 
 	fsm.SetAllLights()
 	fmt.Println("\nNew state:")
-	Elevator_print(*fsm.El)
+	PrintElevator(*fsm.El)
 }
 
 // Handle floor arrival event
-func (fsm *FSM) Fsm_onFloorArrival(networkChannels *sharedConsts.NetworkChannels, newFloor int, start_timer chan time.Duration) {
+func (fsm *FSM) OnFloorArrival(networkChannels *sharedConsts.NetworkChannels, newFloor int, start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d)\n", newFloor)
-	Elevator_print(*fsm.El)
+	PrintElevator(*fsm.El)
 
 	fsm.Fsm_mtx.Lock()
 	fsm.El.ElevStates.Floor = newFloor
@@ -104,34 +101,34 @@ func (fsm *FSM) Fsm_onFloorArrival(networkChannels *sharedConsts.NetworkChannels
 
 	switch fsm.El.Behaviour {
 	case EB_Moving:
-		if Requests_shouldStop(*fsm.El) {
+		if ShouldStop(*fsm.El) {
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.ElevStates.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
 
 			fsm.Fsm_mtx.Lock()
-			fsm.El = Requests_clearAtCurrentFloor(fsm.El)
-		
+			fsm.El = ClearAtCurrentFloor(fsm.El)
+
 			elevio.SetDoorOpenLamp(true)
 			start_timer <- timers.DoorOpenDuration
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
-			
+
 			fsm.Fsm_mtx.Unlock()
 			SendCurrentState(networkChannels, fsm)
 		}
 	}
 
 	fmt.Println("\nNew state:")
-	Elevator_print(*fsm.El)
+	PrintElevator(*fsm.El)
 }
 
 // Handle door timeout event
-func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
-	Elevator_print(*fsm.El)
+func (fsm *FSM) OnDoorTimeout(start_timer chan time.Duration) {
+	PrintElevator(*fsm.El)
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
-		pair := Requests_chooseDirection(*fsm.El)
+		pair := ChooseDirection(*fsm.El)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
 
@@ -148,5 +145,5 @@ func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
 	}
 
 	fmt.Println("\nNew state:")
-	Elevator_print(*fsm.El)
+	PrintElevator(*fsm.El)
 }

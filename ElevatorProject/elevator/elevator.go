@@ -1,11 +1,11 @@
 package elevator
 
 import (
-	"fmt"
-	"time"
-
 	"github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/timers"
+	"time"
+	"fmt"
+
 )
 
 //tar en elevatorBehaviour-verdi som argument og returnerer
@@ -23,47 +23,19 @@ const (
 	EB_Moving
 )
 
-
-func ElevatorBehaviourToString(behaviour ElevatorBehaviour) string {
-	switch behaviour {
-	case EB_Idle:
-		return "idle"
-	case EB_DoorOpen:
-		return "doorOpen"
-	case EB_Moving:
-		return "moving"
-	default:
-		return "unknown"
-	}
-}
-
-func MotorDirectionToString(direction elevio.MotorDirection) string {
-	switch direction {
-	case elevio.MD_Up:
-		return "up"
-	case elevio.MD_Down:
-		return "down"
-	case elevio.MD_Stop:
-		return "stop"
-	default:
-		return "unknown"
-	}	
-}	
-
-func FormatElevStates(elevator *Elevator, ElevStates *ElevStates) {
-	behaviourStr := ElevatorBehaviourToString(elevator.Behaviour)
-	directionStr := MotorDirectionToString(elevator.Dirn)
-
-	ElevStates.Behaviour = behaviourStr
-	ElevStates.Direction = directionStr
-}
-
+const (
+	N_FLOORS   = 4
+	N_BUTTONS  = 3
+	B_HallUp   = 0
+	B_HallDown = 1
+	B_Cab      = 2
+)
 type ElevStates struct {
-	Behaviour   string `json:"behaviour"`
-	Floor       int		`json:"floor"`
-	Direction   string	`json:"direction"`
+	Behaviour   string 			`json:"behaviour"`
+	Floor       int				`json:"floor"`
+	Direction   string			`json:"direction"`
 	CabRequests [N_FLOORS]bool	`json:"cabRequests"`
-	IP          string	`json:"ip"`
+	IP          string			`json:"ip"`
 }
 
 type MessageToMaster struct {
@@ -71,7 +43,6 @@ type MessageToMaster struct {
 	RequestsToDo [N_FLOORS][N_BUTTONS]bool
 }
 
-// elevator struct representerer statene til heisen
 type Elevator struct {
 	ElevStates 		 *ElevStates
 	PrevFloor        int
@@ -81,26 +52,11 @@ type Elevator struct {
 	AssignedRequests [N_FLOORS][N_BUTTONS - 1]bool
 	RequestsToDo     [N_FLOORS][N_BUTTONS]bool //CabRequests + AssignedRequests
 	Config           ElevatorConfig
-	//State HRAElevState
 }
 
-const (
-	N_FLOORS   = 4
-	N_BUTTONS  = 3
-	B_HallUp   = 0
-	B_HallDown = 1
-	B_Cab      = 2
-)
 
-// Nytt, usikkert
-type ElevatorOrder struct {
-	Order      elevio.ButtonEvent
-	ElevatorIP int
-}
 
-//
-
-func Elevator_print(e Elevator) {
+func PrintElevator(e Elevator) {
 	fmt.Println(" +-----------------+")
 	fmt.Printf("|floor = %-2d          |\n", e.ElevStates.Floor)
 	fmt.Printf("  |dirn  = %-12.12s|\n", e.Dirn)
@@ -133,7 +89,7 @@ type ElevatorConfig struct {
 }
 
 // funksjonen for å returnere en uinitialisert heis
-func Elevator_uninitialized() *Elevator {
+func InitializeElevator() *Elevator {
 	return &Elevator{
 		ElevStates: &ElevStates{
 			Behaviour: "idle",
