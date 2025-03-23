@@ -12,7 +12,7 @@ import (
 	//"net"
 )
 
-func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm FSM, maxDuration time.Duration) {
+func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDuration time.Duration) {
 
 	fmt.Println("Arrived at runElevator")
 
@@ -34,7 +34,7 @@ func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm FS
 	go elevio.PollStopButton(stop_chan)
 	go timers.Timer_start(timer, start_timer)
 
-	Clear_all_requests(fsm.El)
+	Clear_all_requests(*fsm.El)
 	fsm.SetAllLights()
 
 	if elevio.GetFloor() == -1 {
@@ -108,8 +108,7 @@ func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm FS
 				start_timer <- timers.DoorOpenDuration
 			}
 			
-			var elevStates ElevStates
-			elevStatesJSON, err := json.Marshal(&elevStates)
+			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
 				fmt.Println("Error marshalling elevStates: ", err)
 				return
@@ -120,7 +119,6 @@ func ElevLogic_runElevator(networkChannels *sharedConsts.NetworkChannels, fsm FS
 				Target:  sharedConsts.TargetMaster,
 				Payload: elevStatesJSON,
 			}
-
 			networkChannels.SendChan <- stateMsg
 
 		case <-timer.C:

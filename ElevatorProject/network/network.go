@@ -74,8 +74,10 @@ func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.N
 			fmt.Println("Msg is to master")
 			networkChannels.MasterChan <- msg
 		case sharedConsts.TargetClient:
+			fmt.Println("Msg is to client")
 			client.HandleReceivedMessageToClient(msg)
 		case sharedConsts.TargetElevator:
+			fmt.Println("Msg is to elevator")
 			networkChannels.ElevatorChan <- msg
 		default:
 			fmt.Println("Unknown message target")

@@ -12,8 +12,8 @@ import (
 
 // Elevator FSM struct
 type FSM struct {
-	El Elevator
-	Od ElevOutputDevice
+	El *Elevator
+	Od *ElevOutputDevice
 	Fsm_mtx sync.Mutex
 }
 
@@ -38,11 +38,11 @@ func (fsm *FSM) Fsm_onInitBetweenFloors() {
 // Handle button press event
 //Mulig at det trengs bedre navn
 func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels, start_timer chan time.Duration) {
-	Elevator_print(fsm.El)
+	Elevator_print(*fsm.El)
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
-		if Requests_shouldClearImmediately(fsm.El) {
+		if Requests_shouldClearImmediately(*fsm.El) {
 			start_timer <- fsm.El.Config.DoorOpenDuration
 			
 			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
@@ -62,7 +62,7 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 
 	case EB_Idle:
 		fsm.Fsm_mtx.Lock()
-		pair := Requests_chooseDirection(fsm.El)
+		pair := Requests_chooseDirection(*fsm.El)
 		fmt.Println("Chose direction:", pair.Dirn)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
@@ -84,13 +84,13 @@ func (fsm *FSM) Fsm_onRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 
 	fsm.SetAllLights()
 	fmt.Println("\nNew state:")
-	Elevator_print(fsm.El)
+	Elevator_print(*fsm.El)
 }
 
 // Handle floor arrival event
 func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor int, start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d)\n", newFloor)
-	Elevator_print(fsm.El)
+	Elevator_print(*fsm.El)
 
 	// fsm.El.PrevFloor = fsm.El.Floor
 	fsm.El.ElevStates.Floor = newFloor
@@ -99,9 +99,10 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 
 	switch fsm.El.Behaviour {
 	case EB_Moving:
-		if Requests_shouldStop(fsm.El) {
+		if Requests_shouldStop(*fsm.El) {
 			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.ElevStates.Floor)
 			fsm.Od.MotorDirection(elevio.MD_Stop)
+			fsm.Fsm_mtx.Lock()
 			fsm.El.ElevStates.CabRequests[fsm.El.ElevStates.Floor] = false
 			elevio.SetDoorOpenLamp(true)
 			//fsm.SetAllLights()
@@ -109,7 +110,7 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 			fmt.Print("Started doorOpen timer")
 			fsm.El.Behaviour = EB_DoorOpen
 			fmt.Println("Elevator behaviour: ", fsm.El.Behaviour)
-
+			fsm.Fsm_mtx.Unlock()
 			// Marshal elevStates
 			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
 			if err != nil {
@@ -127,18 +128,18 @@ func (fsm *FSM) Fsm_onFloorArrival(sendChan chan sharedConsts.Message, newFloor 
 	}
 
 	fmt.Println("\nNew state:")
-	Elevator_print(fsm.El)
+	Elevator_print(*fsm.El)
 }
 
 // Handle door timeout event
 func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
-	Elevator_print(fsm.El)
+	Elevator_print(*fsm.El)
 
 	// fsm.SetAllLights()
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
-		pair := Requests_chooseDirection(fsm.El)
+		pair := Requests_chooseDirection(*fsm.El)
 		fsm.El.Dirn = pair.Dirn
 		fsm.El.Behaviour = pair.Behaviour
 
@@ -155,5 +156,5 @@ func (fsm *FSM) Fsm_onDoorTimeout(start_timer chan time.Duration) {
 	}
 
 	fmt.Println("\nNew state:")
-	Elevator_print(fsm.El)
+	Elevator_print(*fsm.El)
 }

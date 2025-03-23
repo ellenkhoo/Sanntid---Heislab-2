@@ -40,7 +40,8 @@ func main() {
 	client.Channels = *networkChannels
 
 	fsm := elevator.InitElevator(localIP, &client.Channels)
-	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, &fsm)
+	time.Sleep(2 * time.Second)
+	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, fsm)
 	//go StartHeartbeat(ac, networkChannels.MasterChan, networkChannels.BackupChan, bcastPortInt, bcastPortString, peersPort, TCPPort, networkChannels)
 
 	// go network.InitNetwork(ac, bcastPortInt, bcastPortString, peersPort, TCPPort)

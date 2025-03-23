@@ -129,8 +129,8 @@ type ElevatorConfig struct {
 }
 
 // funksjonen for å returnere en uinitialisert heis
-func Elevator_uninitialized() Elevator {
-	return Elevator{
+func Elevator_uninitialized() *Elevator {
+	return &Elevator{
 		ElevStates: &ElevStates{
 			Behaviour: "idle",
 			Floor: -1,

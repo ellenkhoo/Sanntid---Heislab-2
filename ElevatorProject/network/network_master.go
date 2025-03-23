@@ -29,6 +29,24 @@ func AnnounceMaster(localIP string, port string) {
 	}
 }
 
+
+// Master listenes and accepts connections
+func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
+
+	ln, _ := net.Listen("tcp", ":"+port)
+
+	for {
+		hostConn, err := ln.Accept()
+		if err != nil {
+			fmt.Println("Error acepting connection:", err)
+			continue
+		}
+
+		go ReceiveMessage(networkChannels.ReceiveChan, hostConn)
+		go ac.AddHostConnection(hostConn, networkChannels.SendChan)
+	}
+}
+
 // Adds the host's connection with the relevant client in the list of active connections
 func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan sharedConsts.Message) {
 
@@ -44,41 +62,8 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	ac.mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
-
-	// // Marshal rank
-	// rankJSON, err := json.Marshal(rank)
-	// if err != nil {
-	// 	fmt.Println("Error marshalling rank: ", err)
-	// 	return
-	// }
-
-	// msg := sharedConsts.Message{
-	// 	Type:    sharedConsts.RankMessage,
-	// 	Target:  sharedConsts.TargetClient,
-	// 	Payload: rankJSON,
-	// }
-
-	// fmt.Println("Sending rank message on channel")
-	// sendChan <- msg
 }
 
-// Master listenes and accepts connections
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
-
-	ln, _ := net.Listen("tcp", ":"+port)
-
-	for {
-		hostConn, err := ln.Accept()
-		if err != nil {
-			fmt.Println("Error acepting connection:", err)
-			continue
-		}
-		// rank := len(ac.Conns) + 2
-
-		go ReceiveMessage(networkChannels.ReceiveChan, hostConn)
-		go ac.AddHostConnection(hostConn, networkChannels.SendChan)
-	}
-}
 
 func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 

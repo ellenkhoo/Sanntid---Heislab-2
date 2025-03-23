@@ -136,7 +136,7 @@ func Requests_shouldClearImmediately(e Elevator) bool {
 	}
 }
 
-func Requests_clearAtCurrentFloor(e Elevator) Elevator {
+func Requests_clearAtCurrentFloor(e *Elevator) *Elevator {
 	switch e.Config.ClearRequestVariant {
 	case "CV_All":
 		for btn := 0; btn < N_BUTTONS; btn++ {
@@ -148,13 +148,13 @@ func Requests_clearAtCurrentFloor(e Elevator) Elevator {
 
 		switch e.Dirn {
 		case elevio.MD_Up:
-			if !Requests_above(e) && !e.RequestsToDo[e.ElevStates.Floor][B_HallUp] {
+			if !Requests_above(*e) && !e.RequestsToDo[e.ElevStates.Floor][B_HallUp] {
 				e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false
 			}
 			e.RequestsToDo[e.ElevStates.Floor][B_HallUp] = false
 
 		case elevio.MD_Down:
-			if !Requests_below(e) && !e.RequestsToDo[e.ElevStates.Floor][B_HallDown] {
+			if !Requests_below(*e) && !e.RequestsToDo[e.ElevStates.Floor][B_HallDown] {
 				e.RequestsToDo[e.ElevStates.Floor][B_HallUp] = false
 			}
 			e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false

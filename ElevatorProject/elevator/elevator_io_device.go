@@ -111,8 +111,8 @@ func Elevator_hardware_set_stop_lamp(value int) {
 	println("Stop button light set to:", value)
 }
 
-func Elevio_getOutputDevice() ElevOutputDevice {
-	return ElevOutputDevice{
+func Elevio_getOutputDevice() *ElevOutputDevice {
+	return &ElevOutputDevice{
 		FloorIndicator:     Elevator_hardware_set_floor_indicator,
 		RequestButtonLight: Wrap_request_button_light,
 		DoorLight:          Elevator_hardware_set_door_open_lamp,
