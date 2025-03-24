@@ -99,6 +99,7 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 			fmt.Println("Message is to client")
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
+				fmt.Println("IP of client:", ac.Conns[clients].ClientIP)
 				SendMessage(client, msg, targetConn)
 			}
 		}
