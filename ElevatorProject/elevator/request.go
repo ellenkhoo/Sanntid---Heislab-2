@@ -124,7 +124,8 @@ func ShouldClearImmediately(e *Elevator) bool {
 			return true
 		}
 		return (e.Dirn == elevio.MD_Up && e.RequestsToDo[e.ElevStates.Floor][B_HallUp]) ||
-			(e.Dirn == elevio.MD_Down && e.RequestsToDo[e.ElevStates.Floor][B_HallDown])
+			(e.Dirn == elevio.MD_Down && e.RequestsToDo[e.ElevStates.Floor][B_HallDown]) ||
+			e.Dirn == elevio.MD_Stop
 
 	default:
 		return false
@@ -139,7 +140,10 @@ func ClearAtCurrentFloor(e *Elevator) *Elevator {
 		}
 
 	case "CV_InDirn":
+		fmt.Println("Setting cab request to false at floor", e.ElevStates.Floor)
 		e.RequestsToDo[e.ElevStates.Floor][B_Cab] = false
+		e.ElevStates.CabRequests[e.ElevStates.Floor] = false
+		fmt.Print("Cab at floor is", e.ElevStates.CabRequests[e.ElevStates.Floor])
 
 		switch e.Dirn {
 		case elevio.MD_Up:

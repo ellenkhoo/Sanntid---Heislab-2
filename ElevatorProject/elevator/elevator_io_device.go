@@ -37,12 +37,25 @@ func MotorDirectionToString(direction elevio.MotorDirection) string {
 	}
 }
 
-func FormatElevStates(elevator *Elevator, ElevStates *ElevStates) {
+func FormatElevStates(elevator Elevator) MessageToMaster{
 	behaviourStr := ElevatorBehaviourToString(elevator.Behaviour)
 	directionStr := MotorDirectionToString(elevator.Dirn)
-	ElevStates.Behaviour = behaviourStr
-	ElevStates.Direction = directionStr
-	fmt.Println("ElevStates after formatting:", ElevStates)
+	elevator.ElevStates.Behaviour = behaviourStr
+	elevator.ElevStates.Direction = directionStr
+	fmt.Println("ElevStates after formatting:", elevator.ElevStates)
+
+	UpdatedElevStates := ElevStates{
+		Behaviour : behaviourStr,
+		Floor: elevator.ElevStates.Floor,
+		Direction: directionStr,
+		CabRequests: elevator.ElevStates.CabRequests,
+		IP : elevator.ElevStates.IP,
+	}
+
+	return MessageToMaster{
+		ElevStates: UpdatedElevStates,
+		RequestsToDo: elevator.RequestsToDo,
+	}
 }
 
 // Output device

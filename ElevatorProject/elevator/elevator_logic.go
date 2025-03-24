@@ -1,24 +1,23 @@
 package elevator
 
 import (
+	"encoding/json"
+	"fmt"
+	"time"
+
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/timers"
-	"encoding/json"
-	"time"
-	"fmt"
-	
 )
 
-func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, fsm *FSM) {
+func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, elevator Elevator) {
 
-	fsm.Fsm_mtx.Lock()
-	FormatElevStates(fsm.El, fsm.El.ElevStates)
-	fsm.Fsm_mtx.Unlock()
+	//fsm.Fsm_mtx.Lock()
+	msgToMaster := FormatElevStates(elevator)
+	//fsm.Fsm_mtx.Unlock()
 
-	msgToMaster := MessageToMaster{
-		ElevStates:   *fsm.El.ElevStates,
-		RequestsToDo: fsm.El.RequestsToDo,
+	if elevator.ElevStates == nil {
+		fmt.Println("ElevStates is nil")
 	}
 
 	// Marshal message
@@ -53,6 +52,7 @@ func SendLocalOrder(order elevio.ButtonEvent, networkChannels *sharedConsts.Netw
 	// Send message
 	networkChannels.SendChan <- reqMsg
 }
+
 func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDuration time.Duration) {
 
 	fmt.Println("Arrived at runElevator")
@@ -100,13 +100,14 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 
 			fsm.Fsm_mtx.Unlock()
 
-			SendCurrentState(networkChannels, fsm)
+			SendCurrentState(networkChannels, *fsm.El)
 
 		case floorInput := <-floorsChan:
 			fmt.Printf("Floor sensor: %d\n", floorInput)
 
 			if floorInput != -1 && floorInput != fsm.El.ElevStates.Floor {
 				fsm.OnFloorArrival(networkChannels, floorInput, timerChan)
+				SendCurrentState(networkChannels, *fsm.El)
 			}
 
 		case obstruction := <-obstructionChan:
@@ -118,11 +119,11 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 				timerChan <- timers.DoorOpenDuration
 			}
 
-			SendCurrentState(networkChannels, fsm)
+			SendCurrentState(networkChannels, *fsm.El)
 
 		case <-timer.C:
 			fsm.OnDoorTimeout(timerChan)
-			SendCurrentState(networkChannels, fsm)
+			SendCurrentState(networkChannels, *fsm.El)
 
 		case <-networkChannels.UpdateChan:
 			fmt.Println("Received update")

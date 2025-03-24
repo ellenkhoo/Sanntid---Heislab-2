@@ -117,8 +117,6 @@ func (fsm *FSM) OnFloorArrival(networkChannels *sharedConsts.NetworkChannels, ne
 			fsm.Fsm_mtx.Unlock()
 		}
 	}
-
-	SendCurrentState(networkChannels, fsm)
 	fmt.Println("\nNew state:")
 	PrintElevator(*fsm.El)
 }

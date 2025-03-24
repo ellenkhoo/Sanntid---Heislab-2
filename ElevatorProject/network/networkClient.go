@@ -70,38 +70,6 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	}
 }
 
-// // Maybe not the most describing name
-// func ClientSendAndReceive(client *ClientConnectionInfo) {
-// 	// Read from TCP connection and send to the receive channel
-// 	fmt.Println("Ready to read from TCP")
-// 	go func() {
-// 		decoder := json.NewDecoder(client.ClientConn)
-// 		for {
-// 			var msg sharedConsts.Message
-// 			err := decoder.Decode(&msg)
-// 			if err != nil {
-// 				fmt.Println("Error decoding message: ", err)
-// 				return
-// 			}
-// 			client.Channels.ReceiveChan <- msg
-// 		}
-// 	}()
-
-// 	// Read from the send channel and write to the TCP connection
-// 	fmt.Println("Ready to send on TCP")
-// 	go func() {
-// 		encoder := json.NewEncoder(client.ClientConn)
-// 		for msg := range client.Channels.SendChan {
-// 			fmt.Println("Sending")
-// 			err := encoder.Encode(msg)
-// 			if err != nil {
-// 				fmt.Println("Error encoding message: ", err)
-// 				return
-// 			}
-// 		}
-// 	}()
-// }
-
 func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
 
 	fmt.Println("Ready to send msg to master")

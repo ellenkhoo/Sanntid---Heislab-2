@@ -145,7 +145,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		// dirn := elevMessage.ElevStates.Direction
 		// behaviour := elevMessage.ElevStates.Behaviour
 		requestsToDo := elevMessage.RequestsToDo
-		Requests_clearHallRequestAtCurrentFloor(requestsToDo, *masterData, ID)
+		Requests_clearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
 
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
@@ -254,7 +254,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 	}
 }
 
-func Requests_clearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData MasterData, ID string) {
+func Requests_clearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData *MasterData, ID string) {
 	// Compare the elevator's requestsToDo with the assigned requests
 
 	for f := 0; f < elevator.N_FLOORS; f++ {
