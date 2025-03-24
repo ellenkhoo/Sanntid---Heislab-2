@@ -99,7 +99,7 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 			}
 
 			fsm.Fsm_mtx.Unlock()
-
+			time.Sleep(1 * time.Second)
 			SendCurrentState(networkChannels, *fsm.El)
 
 		case floorInput := <-floorsChan:
