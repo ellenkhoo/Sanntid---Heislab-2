@@ -25,14 +25,12 @@ func main() {
 	// dumt at ac lages her? da vil alle pc-ene ha det
 	ac := network.CreateActiveConnections()
 	client := network.ClientConnectionInfo{}
+	client.Channels = *networkChannels
 	masterData := network.CreateMasterData()
 	backupData := network.CreateBackupData()
-	ackTracker := network.NewAcknowledgeTracker(networkChannels.SendChan, 1 * time.Second)
+	ackTracker := network.NewAcknowledgeTracker(client.Channels.SendChan, 1*time.Second)
 
 	localIP, _ := localip.LocalIP()
-
-	
-	client.Channels = *networkChannels
 
 	fsm := elevator.InitElevator(localIP, &client.Channels)
 	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, fsm)
