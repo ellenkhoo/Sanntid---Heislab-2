@@ -122,7 +122,7 @@ func (fsm *FSM) OnFloorArrival(networkChannels *sharedConsts.NetworkChannels, ne
 }
 
 // Handle door timeout event
-func (fsm *FSM) OnDoorTimeout(start_timer chan time.Duration) {
+func (fsm *FSM) OnDoorTimeout(timerChan chan time.Duration) {
 	PrintElevator(*fsm.El)
 
 	switch fsm.El.Behaviour {
@@ -133,7 +133,7 @@ func (fsm *FSM) OnDoorTimeout(start_timer chan time.Duration) {
 
 		switch fsm.El.Behaviour {
 		case EB_DoorOpen:
-			start_timer <- timers.DoorOpenDuration
+			timerChan <- timers.DoorOpenDuration
 			// fsm.El = Requests_clearAtCurrentFloor(fsm.El)
 			//fsm.SetAllLights()
 		case EB_Moving, EB_Idle:
