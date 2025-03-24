@@ -137,16 +137,17 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		}
 
 		fmt.Printf("Received current state from elevator: %#v\n", elevMessage.ElevStates)
-		ID := elevMessage.ElevStates.IP
-		masterData.mutex.Lock()
-		fmt.Println("Updating allElevStates")
-		masterData.AllElevStates[ID] = elevMessage.ElevStates
-		masterData.mutex.Unlock()
-		// floor := elevMessage.ElevStates.Floor
-		// dirn := elevMessage.ElevStates.Direction
-		// behaviour := elevMessage.ElevStates.Behaviour
-		requestsToDo := elevMessage.RequestsToDo
-		Requests_clearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
+
+		// If currentState is valid
+		if elevMessage.ElevStates.Behaviour != "" {
+			ID := elevMessage.ElevStates.IP
+			masterData.mutex.Lock()
+			fmt.Println("Updating allElevStates")
+			masterData.AllElevStates[ID] = elevMessage.ElevStates
+			masterData.mutex.Unlock()
+			requestsToDo := elevMessage.RequestsToDo
+			Requests_clearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
+		}
 
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
