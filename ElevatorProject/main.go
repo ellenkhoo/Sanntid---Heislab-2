@@ -11,16 +11,6 @@ import (
 
 func main() {
 
-	// Start network and store connections
-	// dumt at ac lages her? da vil alle pc-ene ha det
-	ac := network.CreateActiveConnections()
-	client := network.ClientConnectionInfo{}
-	masterData := network.CreateMasterData()
-	backupData := network.CreateBackupData()
-	ackTracker := network.NewAcknowledgeTracker(1 * time.Second)
-
-	localIP, _ := localip.LocalIP()
-
 	// Initialize network channels
 	networkChannels := &sharedConsts.NetworkChannels{
 		SendChan:     make(chan sharedConsts.Message),
@@ -31,6 +21,17 @@ func main() {
 		UpdateChan:   make(chan string),
 	}
 
+	// Start network and store connections
+	// dumt at ac lages her? da vil alle pc-ene ha det
+	ac := network.CreateActiveConnections()
+	client := network.ClientConnectionInfo{}
+	masterData := network.CreateMasterData()
+	backupData := network.CreateBackupData()
+	ackTracker := network.NewAcknowledgeTracker(networkChannels.SendChan, 1 * time.Second)
+
+	localIP, _ := localip.LocalIP()
+
+	
 	client.Channels = *networkChannels
 
 	fsm := elevator.InitElevator(localIP, &client.Channels)

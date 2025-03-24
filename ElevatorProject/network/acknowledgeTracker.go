@@ -13,11 +13,11 @@ type AcknowledgeTracker struct {
 	RetryChannel chan sharedConsts.Message
 }
 
-func NewAcknowledgeTracker(timeout time.Duration) *AcknowledgeTracker {
+func NewAcknowledgeTracker(SendChan chan sharedConsts.Message, timeout time.Duration) *AcknowledgeTracker {
 	return &AcknowledgeTracker{
 		PendingAcks:  make(map[string]bool),
 		Timeout:      timeout,
-		RetryChannel: make(chan sharedConsts.Message),
+		RetryChannel: SendChan,
 	}
 }
 

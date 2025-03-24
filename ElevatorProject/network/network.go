@@ -37,14 +37,13 @@ func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn ne
 	fmt.Println("At SendMessage")
 	if client.ID == client.HostIP {
 		client.Channels.ReceiveChan <- msg
-	} else {
-		fmt.Println("The message is to a remote client")
-		encoder := json.NewEncoder(conn)
-		err := encoder.Encode(msg)
-		if err != nil {
-			fmt.Println("Error encoding message: ", err)
-			return
-		}
+	}
+	fmt.Println("The message is to a remote client")
+	encoder := json.NewEncoder(conn)
+	err := encoder.Encode(msg)
+	if err != nil {
+		fmt.Println("Error encoding message: ", err)
+		return
 	}
 }
 
