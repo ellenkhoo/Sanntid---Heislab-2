@@ -1,13 +1,14 @@
 package elevator
 
 import (
+	"encoding/json"
+	"fmt"
+	"sync"
+	"time"
+
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/timers"
-	"encoding/json"
-	"sync"
-	"time"
-	"fmt"
 )
 
 // Elevator FSM struct
@@ -114,10 +115,10 @@ func (fsm *FSM) OnFloorArrival(networkChannels *sharedConsts.NetworkChannels, ne
 			fsm.El.Behaviour = EB_DoorOpen
 
 			fsm.Fsm_mtx.Unlock()
-			SendCurrentState(networkChannels, fsm)
 		}
 	}
 
+	SendCurrentState(networkChannels, fsm)
 	fmt.Println("\nNew state:")
 	PrintElevator(*fsm.El)
 }

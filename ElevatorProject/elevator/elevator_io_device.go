@@ -1,8 +1,9 @@
 package elevator
 
 import (
-	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"fmt"
+
+	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 )
 
 type Button elevio.ButtonType
@@ -41,6 +42,7 @@ func FormatElevStates(elevator *Elevator, ElevStates *ElevStates) {
 	directionStr := MotorDirectionToString(elevator.Dirn)
 	ElevStates.Behaviour = behaviourStr
 	ElevStates.Direction = directionStr
+	fmt.Println("ElevStates after formatting:", ElevStates)
 }
 
 // Output device

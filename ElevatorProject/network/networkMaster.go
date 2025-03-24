@@ -96,6 +96,7 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 		// 	// do something
 		case sharedConsts.TargetClient:
 			// Send to remote clients
+			fmt.Println("Message is to client")
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
 				SendMessage(client, msg, targetConn)
@@ -154,18 +155,18 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		}
 		masterData.mutex.Unlock()
 
-		clientData := BackupData{
+		backupData := BackupData{
 			GlobalHallRequests:  masterData.GlobalHallRequests,
 			AllAssignedRequests: masterData.AllAssignedRequests,
 		}
 
 		// Update local backupdata
 		masterData.mutex.Lock()
-		masterData.BackupData = clientData
+		masterData.BackupData = backupData
 		masterData.mutex.Unlock()
 
 		// Marshal clientData
-		clientDataJSON, err := json.Marshal(clientData)
+		clientDataJSON, err := json.Marshal(backupData)
 		if err != nil {
 			fmt.Println("Error marshalling clientData: ", err)
 			return
@@ -179,8 +180,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		}
 		// Send message
 		if client.ID == client.HostIP {
-			// If the elevator is on the master, send an ACK immediately
-
+			// If the elevator is on the master PC, send an ACK immediately
 			masterIDJSON, err := json.Marshal(client.ID)
 			if err != nil {
 				fmt.Println("Error marshalling backup data: ", err)
