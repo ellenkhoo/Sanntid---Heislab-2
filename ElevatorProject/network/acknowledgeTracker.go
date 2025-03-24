@@ -23,12 +23,17 @@ func NewAcknowledgeTracker(SendChan chan sharedConsts.Message, timeout time.Dura
 
 func (ackTracker *AcknowledgeTracker) AwaitAcknowledge(clientID string, worldviewMsg sharedConsts.Message) {
 	ackTracker.PendingAcks[clientID] = false
+
+	retryLimit := 3
+	retryCount := 0
+
 	go func() {
-		for {
+		for retryCount < retryLimit {
 			time.Sleep(ackTracker.Timeout)
 			if !ackTracker.PendingAcks[clientID] {
 				fmt.Println("Acknowledgement not received from:", clientID)
 				ackTracker.RetryChannel <- worldviewMsg
+				retryCount++
 			} else {
 				break
 			}
