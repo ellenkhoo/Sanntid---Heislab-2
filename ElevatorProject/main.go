@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
-	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	"time"
+
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
-	"time"
+	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 func main() {
@@ -27,14 +28,13 @@ func main() {
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message),
-		UpdateChan: make(chan string),
+		UpdateChan:   make(chan string),
 	}
 
 	client.Channels = *networkChannels
 
 	fsm := elevator.InitElevator(localIP, &client.Channels)
-	time.Sleep(2 * time.Second)
 	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, fsm)
-	
+
 	select {}
 }

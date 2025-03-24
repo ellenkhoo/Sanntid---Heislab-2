@@ -29,7 +29,6 @@ func AnnounceMaster(localIP string, port string) {
 	}
 }
 
-
 // Master listenes and accepts connections
 func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
 
@@ -64,7 +63,6 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	ac.mutex.Unlock()
 }
 
-
 func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 
 	fmt.Println("Arrived at masterSend")
@@ -72,24 +70,24 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 	for msg := range client.Channels.SendChan {
 		switch msg.Target {
 		// Må sende worldview til backup først, så til heis
-		case sharedConsts.TargetBackup:
-			fmt.Println("Backup is target")
-			for clients := range ac.Conns {
-				targetConn = ac.Conns[clients].HostConn
-				SendMessage(client, msg, targetConn)
-			}
+		// case sharedConsts.TargetBackup:
+		// 	fmt.Println("Backup is target")
+		// 	for clients := range ac.Conns {
+		// 		targetConn = ac.Conns[clients].HostConn
+		// 		SendMessage(client, msg, targetConn)
+		// 	}
 
-			// if targetConn != nil {
-			// 	encoder := json.NewEncoder(targetConn)
-			// 	fmt.Println("Sending message:", msg)
-			// 	err := encoder.Encode(msg)
-			// 	if err != nil {
-			// 		fmt.Println("Error encoding message: ", err)
-			// 		return
-			// } else {
-			// 	// If targetConn is nil, log a message or handle the case
-			// 	fmt.Println("No valid connection found for the message")
-			// }
+		// if targetConn != nil {
+		// 	encoder := json.NewEncoder(targetConn)
+		// 	fmt.Println("Sending message:", msg)
+		// 	err := encoder.Encode(msg)
+		// 	if err != nil {
+		// 		fmt.Println("Error encoding message: ", err)
+		// 		return
+		// } else {
+		// 	// If targetConn is nil, log a message or handle the case
+		// 	fmt.Println("No valid connection found for the message")
+		// }
 
 		case sharedConsts.TargetMaster:
 			client.Channels.MasterChan <- msg
@@ -111,7 +109,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
 	case sharedConsts.LocalRequestMessage:
-		
+
 		var request elevio.ButtonEvent
 		err := json.Unmarshal(msg.Payload, &request)
 		if err != nil {
@@ -147,8 +145,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		// behaviour := elevMessage.ElevStates.Behaviour
 		requestsToDo := elevMessage.RequestsToDo
 		Requests_clearHallRequestAtCurrentFloor(requestsToDo, *masterData, ID)
-	
-		
+
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
 		for ID, orders := range *assignedOrders {
@@ -190,8 +187,8 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				return
 			}
 			masterACK := sharedConsts.Message{
-				Type: sharedConsts.AcknowledgeMessage,
-				Target: sharedConsts.TargetMaster,
+				Type:    sharedConsts.AcknowledgeMessage,
+				Target:  sharedConsts.TargetMaster,
 				Payload: masterIDJSON,
 			}
 			client.Channels.MasterChan <- masterACK
@@ -201,7 +198,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		for _, conn := range ac.Conns {
 			ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
 		}
-		
+
 	case sharedConsts.AcknowledgeMessage:
 		var clientID string
 		err := json.Unmarshal(msg.Payload, &clientID)
@@ -256,7 +253,6 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		}
 	}
 }
-
 
 func Requests_clearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData MasterData, ID string) {
 	// Compare the elevator's requestsToDo with the assigned requests

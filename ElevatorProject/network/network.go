@@ -38,6 +38,7 @@ func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn ne
 	if client.ID == client.HostIP {
 		client.Channels.ReceiveChan <- msg
 	} else {
+		fmt.Println("The message is to a remote client")
 		encoder := json.NewEncoder(conn)
 		err := encoder.Encode(msg)
 		if err != nil {
@@ -45,7 +46,6 @@ func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn ne
 			return
 		}
 	}
-	
 }
 
 func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
@@ -60,7 +60,7 @@ func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
 				fmt.Println("Connection closed")
 			}
 			fmt.Println("Error decoding message: ", err)
-			break // eller continue?
+			continue // eller continue?
 		}
 		receiveChan <- msg
 	}

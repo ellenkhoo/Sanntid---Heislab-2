@@ -5,8 +5,9 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/timers"
 	"encoding/json"
-	"fmt"
 	"time"
+	"fmt"
+	
 )
 
 func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, fsm *FSM) {
@@ -36,7 +37,7 @@ func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, fsm *FSM) {
 	networkChannels.SendChan <- stateMsg
 }
 
-func sendLocalOrder(order elevio.ButtonEvent, networkChannels *sharedConsts.NetworkChannels) {
+func SendLocalOrder(order elevio.ButtonEvent, networkChannels *sharedConsts.NetworkChannels) {
 	// Marshal order
 	orderJSON, err := json.Marshal(order)
 	if err != nil {
@@ -94,7 +95,7 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 			if order.Button == B_Cab {
 				fsm.El.ElevStates.CabRequests[order.Floor] = true
 			} else {
-				sendLocalOrder(order, networkChannels)
+				SendLocalOrder(order, networkChannels)
 			}
 
 			fsm.Fsm_mtx.Unlock()
