@@ -194,7 +194,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			client.Channels.MasterChan <- masterACK
 		}
 
-		if len(ac.Conns) > 1 {
+		if len(ac.Conns) >= 1 {
 			fmt.Println("Sending worldview on sendChan")
 			client.Channels.SendChan <- orderMsg
 		}
