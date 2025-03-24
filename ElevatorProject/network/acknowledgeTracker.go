@@ -1,9 +1,10 @@
 package network
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"fmt"
 	"time"
+
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 type AcknowledgeTracker struct {

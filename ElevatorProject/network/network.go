@@ -35,7 +35,7 @@ func CreateBackupData() *BackupData {
 }
 func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At SendMessage")
-	if !(client.ID == client.HostIP) {
+	if client.ID == client.HostIP {
 		client.Channels.ReceiveChan <- msg
 	} else {
 		fmt.Println("The message is to a remote client")

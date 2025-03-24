@@ -17,7 +17,7 @@ func main() {
 	client := network.ClientConnectionInfo{}
 	masterData := network.CreateMasterData()
 	backupData := network.CreateBackupData()
-	ackTracker := network.NewAcknowledgeTracker(5 * time.Second)
+	ackTracker := network.NewAcknowledgeTracker(1 * time.Second)
 
 	localIP, _ := localip.LocalIP()
 
