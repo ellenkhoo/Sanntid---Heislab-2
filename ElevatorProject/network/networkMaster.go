@@ -193,8 +193,10 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			}
 			client.Channels.MasterChan <- masterACK
 		} else {
+			fmt.Println("Sending worldview on sendChan")
 			client.Channels.SendChan <- orderMsg
 		}
+
 		for _, conn := range ac.Conns {
 			ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
 		}
@@ -225,11 +227,12 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				Payload: clientDataJSON,
 			}
 
-			var targetConn net.Conn
-			for clients := range ac.Conns {
-				targetConn = ac.Conns[clients].HostConn
-				SendMessage(client, clientMsg, targetConn)
-			}
+			client.Channels.SendChan <- clientMsg
+			// var targetConn net.Conn
+			// for clients := range ac.Conns {
+			// 	targetConn = ac.Conns[clients].HostConn
+			// 	SendMessage(client, clientMsg, targetConn)
+			// }
 
 			// Data to local client
 			if client.ID == client.HostIP {

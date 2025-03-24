@@ -120,9 +120,8 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 
 		if clientID != clientConn.HostIP {
 			fmt.Println("I am not on the master computer")
-			elevatorData := UpdateElevatorData(clientConn.Worldview, clientID)
-
-			elevatorDataJSON, err := json.Marshal(elevatorData)
+			
+			elevatorDataJSON, err := json.Marshal(clientConn.Worldview)
 			if err != nil {
 				fmt.Println("Error marshalling backup data: ", err)
 				return
@@ -134,8 +133,6 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 
 			clientConn.Channels.ElevatorChan <- elevatorMsg
 		}
-		
-		
 	// case heartbeat: //
 	// 	// start timer
 	// case timeout:
