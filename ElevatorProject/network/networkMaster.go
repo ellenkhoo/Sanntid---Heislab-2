@@ -192,7 +192,9 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				Payload: masterIDJSON,
 			}
 			client.Channels.MasterChan <- masterACK
-		} else {
+		}
+
+		if len(ac.Conns) > 1 {
 			fmt.Println("Sending worldview on sendChan")
 			client.Channels.SendChan <- orderMsg
 		}
