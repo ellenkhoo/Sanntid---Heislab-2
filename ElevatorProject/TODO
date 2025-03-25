@@ -1,6 +1,7 @@
-* Få kommunikasjon opp og gå
+
 * TCP-instillinger, timeout
 * KeepAlive
 * Send mld til backup først, så sende til heisene
 * UPDATE: tester at alle er backup
 * Oppdater readme-er!
+* Fjern netverk-modul-ting som ikke brukes!

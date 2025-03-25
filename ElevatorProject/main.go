@@ -20,9 +20,7 @@ func main() {
 		ElevatorChan: make(chan sharedConsts.Message),
 		UpdateChan:   make(chan string),
 	}
-
-	// Start network and store connections
-	// dumt at ac lages her? da vil alle pc-ene ha det
+	
 	ac := network.CreateActiveConnections()
 	client := network.ClientConnectionInfo{}
 	client.Channels = *networkChannels

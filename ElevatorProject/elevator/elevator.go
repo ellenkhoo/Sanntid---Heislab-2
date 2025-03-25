@@ -4,16 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	//elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/timers"
 )
-
-//tar en elevatorBehaviour-verdi som argument og returnerer
-//en peker til en streng som representerer navnet på veriden
-
-//eb_toString-funksjonen tar en ElevatorBehaviour-verdi som input
-//den bruker operatoren "? :" til å sammenligne verdien mot kjente
-//enum-verdier (EB_Idle, EB_DoorOpen, EB_Moving)
 
 type ElevatorBehaviour int
 
@@ -47,12 +40,12 @@ type MessageToMaster struct {
 type Elevator struct {
 	ElevStates         *ElevStates
 	PrevFloor          int
-	Dirn               elevio.MotorDirection
+	Dirn               MotorDirection
 	Behaviour          ElevatorBehaviour
 	GlobalHallRequests [N_FLOORS][N_BUTTONS - 1]bool
 	AssignedRequests   [N_FLOORS][N_BUTTONS - 1]bool
 	RequestsToDo       [N_FLOORS][N_BUTTONS]bool //CabRequests + AssignedRequests
-	Config             ElevatorConfig
+	DoorOpenDuration   time.Duration
 }
 
 func PrintElevator(e Elevator) {
@@ -81,13 +74,6 @@ func PrintElevator(e Elevator) {
 	fmt.Println(" +-----------------------+")
 }
 
-// definierer konfigurasjonsstruktur
-type ElevatorConfig struct {
-	ClearRequestVariant string
-	DoorOpenDuration    time.Duration
-}
-
-// funksjonen for å returnere en uinitialisert heis
 func InitializeElevator() *Elevator {
 	return &Elevator{
 		ElevStates: &ElevStates{
@@ -97,7 +83,7 @@ func InitializeElevator() *Elevator {
 			CabRequests: [N_FLOORS]bool{false, false, false, false},
 			IP:          "0.0.0.0",
 		},
-		Dirn:      elevio.MD_Stop,
+		Dirn:      MD_Stop,
 		Behaviour: EB_Idle,
 		GlobalHallRequests: [N_FLOORS][N_BUTTONS - 1]bool{
 			{false, false},
@@ -110,9 +96,6 @@ func InitializeElevator() *Elevator {
 			{false, false, false},
 			{false, false, false},
 		},
-		Config: ElevatorConfig{
-			ClearRequestVariant: "CV_InDirn",
-			DoorOpenDuration:    timers.DoorOpenDuration,
-		},
+		DoorOpenDuration: timers.DoorOpenDuration,
 	}
 }

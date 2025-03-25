@@ -2,7 +2,10 @@ package sharedConsts
 
 import "encoding/json"
 
-// NETWORK CONSTS
+// This module defines shared constants, message types, and communication channels 
+// used by both the network and elevator modules. It ensures consistency in inter-module 
+// communication by standardizing message structures and types.
+
 type HelloMsg struct {
 	Message string
 	Iter    int

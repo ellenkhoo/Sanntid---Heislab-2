@@ -7,8 +7,7 @@ import (
 	"time"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
-	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
-	"github.com/ellenkhoo/ElevatorProject/hra"
+	hra "github.com/ellenkhoo/ElevatorProject/hallRequestAssigner"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
@@ -25,11 +24,10 @@ func AnnounceMaster(localIP string, port string) {
 	for {
 		msg := "I am Master"
 		conn.Write([]byte(msg))
-		time.Sleep(1 * time.Second) //announces every second, maybe it should happen more frequently?
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-// Master listenes and accepts connections
 func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
@@ -46,7 +44,7 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChan
 	}
 }
 
-// Adds the host's connection with the relevant client in the list of active connections
+// Adds the host's connection with a client to ActiveConnections
 func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan sharedConsts.Message) {
 
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
@@ -69,37 +67,13 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 	var targetConn net.Conn
 	for msg := range client.Channels.SendChan {
 		switch msg.Target {
-		// Må sende worldview til backup først, så til heis
-		// case sharedConsts.TargetBackup:
-		// 	fmt.Println("Backup is target")
-		// 	for clients := range ac.Conns {
-		// 		targetConn = ac.Conns[clients].HostConn
-		// 		SendMessage(client, msg, targetConn)
-		// 	}
-
-		// if targetConn != nil {
-		// 	encoder := json.NewEncoder(targetConn)
-		// 	fmt.Println("Sending message:", msg)
-		// 	err := encoder.Encode(msg)
-		// 	if err != nil {
-		// 		fmt.Println("Error encoding message: ", err)
-		// 		return
-		// } else {
-		// 	// If targetConn is nil, log a message or handle the case
-		// 	fmt.Println("No valid connection found for the message")
-		// }
 
 		case sharedConsts.TargetMaster:
 			client.Channels.MasterChan <- msg
 
-		// case sharedConsts.TargetElevator:
-		// 	// do something
 		case sharedConsts.TargetClient:
-			// Send to remote clients
-			fmt.Println("Message is to client")
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
-				fmt.Println("IP of client:", ac.Conns[clients].ClientIP)
 				SendMessage(client, msg, targetConn)
 			}
 		}
@@ -112,7 +86,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 	switch msg.Type {
 	case sharedConsts.LocalRequestMessage:
 
-		var request elevio.ButtonEvent
+		var request elevator.ButtonEvent
 		err := json.Unmarshal(msg.Payload, &request)
 		if err != nil {
 			fmt.Println("Error unmarshalling payload: ", err)
@@ -138,19 +112,19 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 		fmt.Printf("Received current state from elevator: %#v\n", elevMessage.ElevStates)
 
-		// If currentState is valid
+		// Check if the current state is valid
 		if elevMessage.ElevStates.Behaviour != "" {
 			ID := elevMessage.ElevStates.IP
 			masterData.mutex.Lock()
-			fmt.Println("Updating allElevStates")
 			masterData.AllElevStates[ID] = elevMessage.ElevStates
 			masterData.mutex.Unlock()
 			requestsToDo := elevMessage.RequestsToDo
-			Requests_clearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
+			ClearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
 		}
 
 		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
+
 		for ID, orders := range *assignedOrders {
 			masterData.AllAssignedRequests[ID] = orders
 			fmt.Println("Assigned orders for ID: ", ID, " are: ", orders)
@@ -162,7 +136,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			AllAssignedRequests: masterData.AllAssignedRequests,
 		}
 
-		// Update local backupdata
+		// Update local backupData to keep track of what's been sent
 		masterData.mutex.Lock()
 		masterData.BackupData = backupData
 		masterData.mutex.Unlock()
@@ -181,92 +155,16 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			Target:  sharedConsts.TargetClient,
 			Payload: clientDataJSON,
 		}
-		// Send message
-		if client.ID == client.HostIP {
-			// If the elevator is on the master PC, send an ACK immediately
-			masterIDJSON, err := json.Marshal(client.ID)
-			if err != nil {
-				fmt.Println("Error marshalling backup data: ", err)
-				return
-			}
-			masterACK := sharedConsts.Message{
-				Type:    sharedConsts.AcknowledgeMessage,
-				Target:  sharedConsts.TargetMaster,
-				Payload: masterIDJSON,
-			}
-			client.Channels.MasterChan <- masterACK
-		}
 
+		// Send message to clients
 		if len(ac.Conns) >= 1 {
-			fmt.Println("Sending worldview on sendChan")
 			client.Channels.SendChan <- orderMsg
-		}
-
-		// for _, conn := range ac.Conns {
-		// 	ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
-		// }
-
-	case sharedConsts.AcknowledgeMessage:
-		var clientID string
-		err := json.Unmarshal(msg.Payload, &clientID)
-		if err != nil {
-			fmt.Println("Error decoding Acknowledgement:", err)
-			return
-		}
-		ackTracker.Acknowledge(clientID)
-
-		if ackTracker.AllAcknowledged() {
-			fmt.Println("All acknowledgments received. Orders can be sent to elevators.")
-
-			// Data to remote clients
-			clientData := "Send requests to elevator"
-			clientDataJSON, err := json.Marshal(clientData)
-			if err != nil {
-				fmt.Println("Error marshalling backup data: ", err)
-				return
-			}
-
-			clientMsg := sharedConsts.Message{
-				Type:    sharedConsts.UpdateOrdersMessage,
-				Target:  sharedConsts.TargetClient,
-				Payload: clientDataJSON,
-			}
-
-			client.Channels.SendChan <- clientMsg
-			// var targetConn net.Conn
-			// for clients := range ac.Conns {
-			// 	targetConn = ac.Conns[clients].HostConn
-			// 	SendMessage(client, clientMsg, targetConn)
-			// }
-
-			// Data to local client
-			if client.ID == client.HostIP {
-				fmt.Println("Sending update to local client as well")
-				elevatorData := masterData.BackupData
-
-				elevatorDataJSON, err := json.Marshal(elevatorData)
-				if err != nil {
-					fmt.Println("Error marshalling backup data: ", err)
-					return
-				}
-
-				elevatorMsg := sharedConsts.Message{
-					Type:    sharedConsts.UpdateOrdersMessage,
-					Target:  sharedConsts.TargetElevator,
-					Payload: elevatorDataJSON,
-				}
-
-				client.Channels.ElevatorChan <- elevatorMsg
-			}
-		} else {
-			fmt.Println("Have not received all acks")
-			break
 		}
 	}
 }
 
-func Requests_clearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData *MasterData, ID string) {
-	// Compare the elevator's requestsToDo with the assigned requests
+// Compares the elevator's requestsToDo with the master's assigned requests
+func ClearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData *MasterData, ID string) {
 
 	for f := 0; f < elevator.N_FLOORS; f++ {
 		for btn := 0; btn < elevator.N_BUTTONS-1; btn++ {

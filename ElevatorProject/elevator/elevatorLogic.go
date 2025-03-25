@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 	"github.com/ellenkhoo/ElevatorProject/timers"
 )
@@ -37,7 +36,7 @@ func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, elevator El
 	networkChannels.SendChan <- stateMsg
 }
 
-func SendLocalOrder(order elevio.ButtonEvent, networkChannels *sharedConsts.NetworkChannels) {
+func SendLocalOrder(order ButtonEvent, networkChannels *sharedConsts.NetworkChannels) {
 	// Marshal order
 	orderJSON, err := json.Marshal(order)
 	if err != nil {
@@ -60,27 +59,27 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 	fmt.Println("Arrived at runElevator")
 
 	// Initialize channels
-	buttonsChan := make(chan elevio.ButtonEvent)
+	buttonsChan := make(chan ButtonEvent)
 	floorsChan := make(chan int)
 	obstructionChan := make(chan bool)
 	stopChan := make(chan bool)
 	timerChan := make(chan time.Duration)
 
 	// Initialize timer, stop it until needed
-	timer := time.NewTimer(time.Duration(timers.DoorOpenDuration))
+	timer := time.NewTimer(time.Duration(fsm.El.DoorOpenDuration))
 	timer.Stop()
 
 	// Start Goroutines
-	go elevio.PollButtons(buttonsChan)
-	go elevio.PollFloorSensor(floorsChan)
-	go elevio.PollObstructionSwitch(obstructionChan)
-	go elevio.PollStopButton(stopChan)
+	go PollButtons(buttonsChan)
+	go PollFloorSensor(floorsChan)
+	go PollObstructionSwitch(obstructionChan)
+	go PollStopButton(stopChan)
 	go timers.Timer_start(timer, timerChan)
 
 	ClearAllRequests(*fsm.El)
 	fsm.SetAllLights()
 
-	if elevio.GetFloor() == -1 {
+	if GetFloor() == -1 {
 		fsm.InitBetweenFloors()
 		fmt.Printf("Elevator initialized between floors")
 	}
@@ -118,7 +117,7 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 					timerChan <- maxDuration
 				}
 			} else {
-				timerChan <- timers.DoorOpenDuration
+				timerChan <- fsm.El.DoorOpenDuration
 			}
 
 			SendCurrentState(networkChannels, *fsm.El)

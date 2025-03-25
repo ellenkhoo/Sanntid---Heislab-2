@@ -116,7 +116,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 	} else {
 		// No master found, announce ourselves as the master
 		masterID = id
-		client.ID = id // local client (elevator)
+		client.ID = id 
 		client.HostIP = masterID
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPort)
