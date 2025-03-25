@@ -25,5 +25,5 @@ Finding your own local IP address can be done with the [LocalIP](network/localip
 
 
 
-
+HER MÅ VI OPPDATERE!
 

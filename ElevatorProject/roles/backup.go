@@ -1,18 +1,20 @@
 package roles
 
 import (
-	"fmt"
+	//"fmt"
 	"net"
+	//"github.com/ellenkhoo/ElevatorProject/elevator"
+
 )
 
 
 
 func StartBackup(rank int, conn net.Conn) {
-	fmt.Println("Starting backup")
+	// IMPLEMENT BACKUP LOGIC
+	// fmt.Println("Starting backup")
 
 	// var allElevStates = make(map[string]elevator.ElevStates)
 	// var globalHallRequests [][2]bool	
 
-	InitElevator(rank, conn)
 	
 }

@@ -6,17 +6,15 @@ import (
 )
 
 const MaxDuration time.Duration = 1<<63 - 1
+const DoorOpenDuration time.Duration = 3.0 * time.Second
+const heartbeatTimeout time.Duration = 10 * time.Millisecond // just a suggestion
 
-
-func Timer_start(timer *time.Timer, start_timer chan time.Duration) {
+func Timer_start(timer *time.Timer, timerChan chan time.Duration) {
 	for {
 		select {
-		case duration := <-start_timer:
+		case duration := <-timerChan:
 			fmt.Println("Starting timer with duration: ", duration)
 			timer.Reset(duration)
 		}
 	}
-
-	// Bør håndtere dør-operasjoner her, siden det bare er avhengig av timeren?
 }
-
