@@ -1,13 +1,14 @@
 package network
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
-	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"encoding/json"
-	"math/rand/v2"
-	"time"
 	"fmt"
-	"net"	
+	"math/rand/v2"
+	"net"
+	"time"
+
+	"github.com/ellenkhoo/ElevatorProject/elevator"
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 func RandRange(min, max int) int {
@@ -81,7 +82,7 @@ func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan 
 // Messages sent to a client means that the data is meant both for an elevator thread and the potential backup
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
 
-	clientID := clientConn.ID
+	// clientID := clientConn.ID
 
 	switch msg.Type {
 
@@ -128,27 +129,27 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		// fmt.Println("Sending ack")
 		// clientConn.Channels.SendChan <- backupMsg
 
-	// case sharedConsts.UpdateOrdersMessage:
+		// case sharedConsts.UpdateOrdersMessage:
 
-	// 	if clientID != clientConn.HostIP {
-	// 		fmt.Println("I am not on the master computer")
-			
-	// 		elevatorDataJSON, err := json.Marshal(clientConn.Worldview)
-	// 		if err != nil {
-	// 			fmt.Println("Error marshalling backup data: ", err)
-	// 			return
-	// 		}
+		// 	if clientID != clientConn.HostIP {
+		// 		fmt.Println("I am not on the master computer")
 
-	// 		elevatorMsg := sharedConsts.Message{
-	// 			Payload: elevatorDataJSON,
-	// 		}
+		// 		elevatorDataJSON, err := json.Marshal(clientConn.Worldview)
+		// 		if err != nil {
+		// 			fmt.Println("Error marshalling backup data: ", err)
+		// 			return
+		// 		}
 
-	// 		clientConn.Channels.ElevatorChan <- elevatorMsg
-	// 	}
-	// case heartbeat: //
-	// 	// start timer
-	// case timeout:
-	// 	// start master
+		// 		elevatorMsg := sharedConsts.Message{
+		// 			Payload: elevatorDataJSON,
+		// 		}
+
+		// 		clientConn.Channels.ElevatorChan <- elevatorMsg
+		// 	}
+		// case heartbeat: //
+		// 	// start timer
+		// case timeout:
+		// 	// start master
 	}
 }
 
