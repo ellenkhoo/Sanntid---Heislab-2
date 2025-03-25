@@ -168,6 +168,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		masterData.mutex.Unlock()
 
 		// Marshal clientData
+		fmt.Println("Data to be marshaled:", backupData)
 		clientDataJSON, err := json.Marshal(backupData)
 		if err != nil {
 			fmt.Println("Error marshalling clientData: ", err)

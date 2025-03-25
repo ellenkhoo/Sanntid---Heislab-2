@@ -160,7 +160,7 @@ func ClearAtCurrentFloor(e *Elevator) *Elevator {
 
 		default:
 			e.RequestsToDo[e.ElevStates.Floor][B_HallUp] = false
-			e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false
+			//e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false
 		}
 
 	default:

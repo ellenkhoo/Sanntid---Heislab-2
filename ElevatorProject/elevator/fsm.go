@@ -121,7 +121,7 @@ func (fsm *FSM) OnDoorTimeout(timerChan chan time.Duration) {
 		case EB_DoorOpen:
 			timerChan <- timers.DoorOpenDuration
 			fsm.El = ClearAtCurrentFloor(fsm.El)
-			//fsm.SetAllLights()
+			
 		case EB_Moving, EB_Idle:
 			elevio.SetDoorOpenLamp(false)
 			fsm.Od.MotorDirection(fsm.El.Dirn)
