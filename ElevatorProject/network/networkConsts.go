@@ -3,6 +3,7 @@ package network
 import (
 	"net"
 	"sync"
+	"time"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -53,6 +54,7 @@ var TCPPort = "8081"
 type MasterConnectionInfo struct {
 	ClientIP string
 	HostConn net.Conn
+	HeartbeatTimer *time.Timer
 }
 
 type ClientConnectionInfo struct {
@@ -62,6 +64,7 @@ type ClientConnectionInfo struct {
 	Channels   sharedConsts.NetworkChannels
 	Worldview  BackupData
 	ClientMtx  sync.Mutex
+	HeartbeatTimer *time.Timer
 }
 
 // type NetworkChannels struct {

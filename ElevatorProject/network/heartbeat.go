@@ -1,112 +1,87 @@
 package network
 
-// import (
-// 	"fmt"
-// 	"net"
-// 	"time"
-// )
+import (
+	"fmt"
+	"time"
+	"encoding/json"
 
-// func SendHeartbeatToMaster(ac *ActiveConnections, sendChan chan Message, receiveChan chan Message) bool {
-// 	sendChan <- Message{
-// 		Type:   HelloMessage,
-// 		Target: TargetMaster,
-// 		Payload: HelloMsg{
-// 			Message: "heartbeat",
-// 			Iter:    0,
-// 		},
-// 	}
+	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
+	// "github.com/ellenkhoo/ElevatorProject/heartbeat"
+	// "github.com/ellenkhoo/ElevatorProject/sharedConsts"
+)
 
-// 	go ClientSendMessages(sendChan, ac.Conns[0].HostConn)
 
-// 	timeout := time.After(5 * time.Second)
-// 	select {
-// 	case reply := <-receiveChan:
-// 		if reply.Type == HelloMessage {
-// 			return true
+func (ac *ActiveConnections) MasterSendHeartbeats(sendChan chan sharedConsts.Message) {
+	heartbeatPayload, err := json.Marshal("HB")
+	if err != nil {
+		fmt.Println("Error marshalling heartbeat: ", err)
+		return
+	}
+
+	msg := sharedConsts.Message{
+		Type:    sharedConsts.Heartbeat,
+		Target:  sharedConsts.TargetClient,
+		Payload: heartbeatPayload,
+	}
+	
+	ticker := time.NewTicker(2*time.Second)
+	defer ticker.Stop()
+
+	for {
+		<- ticker.C
+		fmt.Println("sending heartbeat to clients")
+		sendChan <- msg
+	}
+}
+
+// func (ac *ActiveConnections) MasterHandleHeartbeatTimeout() {
+// 	ac.mutex.Lock()
+// 	for clientID, timer := range ac.ClientTimers {
+// 		select  {
+// 		case <- timer.C: 
+// 			fmt.Println("no heartbeat received from client:", clientID, "starting failover...")
+// 		default:
 // 		}
-// 	case <-timeout:
-// 		fmt.Println("timeout: no response from master")
-// 		return false
 // 	}
-// 	return false
+// 	ac.mutex.Unlock()
 // }
 
-// func findMasterConnection(ac *ActiveConnections) net.Conn {
-// 	// ac.mutex.Lock()
-// 	// defer ac.mutex.Unlock()
+// func (masterData *MasterData) MasterStartheartbeatTimer(){
 
-// 	for _, conn := range ac.Conns {
-// 		if conn.Rank == 1 {
-// 			return conn.HostConn
-// 		}
-// 	}
-// 	return nil
+// 	masterData.HeartbeatTimer = time.NewTimer(5 * time.Second)
 // }
 
-// func findBackupConnection(ac *ActiveConnections) net.Conn {
-// 	// ac.mutex.Lock()
-// 	// defer ac.mutex.Unlock()
+/*______________________________________________________________________________________________________________-
+______________________________________________________________________________________________________________-*/
 
-// 	for _, conn := range ac.Conns {
-// 		if conn.Rank == 2 {
-// 			return conn.HostConn
-// 		}
-// 	}
-// 	return nil
-// }
+func (clientConn *ClientConnectionInfo) ClientSendHeartbeats(sendChan chan sharedConsts.Message) {
+	heartbeatPayload, err := json.Marshal(clientConn.ID)
+	if err != nil {
+		fmt.Println("Error marshalling heartbeat: ", err)
+		return
+	}
 
-// func SendHeartbeatToClient(ac *ActiveConnections, sendChan chan Message, receiveChan chan Message) bool {
-// 	sendChan <- Message{
-// 		Type:   HelloMessage,
-// 		Target: TargetBackup,
-// 		Payload: HelloMsg{
-// 			Message: "heartbeat",
-// 			Iter:    0,
-// 		},
-// 	}
+	msg := sharedConsts.Message{
+		Type:    sharedConsts.Heartbeat,
+		Target:  sharedConsts.TargetMaster,
+		Payload: heartbeatPayload,
+	}
+	ticker := time.NewTicker(2*time.Second)
+	defer ticker.Stop()
 
-// 	go ac.MasterSendMessages(sendChan)
+	for {
+		<- ticker.C
+		fmt.Println("sending heartbeat from client:", clientConn.ID)
+		sendChan <- msg
+	}
+}
 
-// 	timeout := time.After(5 * time.Second)
-// 	select {
-// 	case reply := <-receiveChan:
-// 		if reply.Type == HelloMessage {
-// 			return true
-// 		}
-// 	case <-timeout:
-// 		fmt.Println("timeout: no response from backup")
-// 		return false
-// 	}
-// 	return false
-// }
-
-// func StartHeartbeat(ac *ActiveConnections, sendChan chan Message, receiveChan chan Message, bcastPortInt int, bcastPortString string, peersPort int, TCPPort string, networkChannels NetworkChannels) {
-// 	ticker := time.NewTicker(5 * time.Second)
-// 	for range ticker.C {
-// 		masterConn := findMasterConnection(ac)
-// 		if masterConn != nil {
-// 			if !SendHeartbeatToMaster(ac, sendChan, receiveChan) {
-// 				fmt.Println("master disconnected, starting failover...")
-// 				bcastPortInt_dis := bcastPortInt
-// 				bcastPortString_dis := bcastPortString
-// 				peersPort_dis := peersPort
-// 				TCPPort_dis := TCPPort
-// 				handleMasterDisconnection(ac, sendChan, receiveChan, bcastPortInt_dis, bcastPortString_dis, peersPort_dis, TCPPort_dis, networkChannels)
-// 			}
-// 		}
-
-// 		backupConn := findBackupConnection(ac)
-// 		if backupConn != nil {
-// 			if !SendHeartbeatToClient(ac, sendChan, receiveChan) {
-// 				fmt.Println("Backup disconnected, starting failover...")
-
-// 				for _, conn := range ac.Conns {
-// 					if conn.HostConn == backupConn {
-// 						ac.HandleClientDisconnection(conn.ClientIP)
-// 						break
-// 					}
-// 				}
-// 			}
-// 		}
-// 	}
-// }
+func (client *ClientConnectionInfo) ClientHandleHeartbeatTimeout() {
+	for {
+		select {
+		case <- client.HeartbeatTimer.C:
+			fmt.Println("no heartbeat received from master.Master may be down, staring failover!")
+			return
+		}
+	}
+}
