@@ -2,7 +2,8 @@ package main
 
 import (
 	"time"
-
+	"context"
+	"fmt"
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
@@ -33,7 +34,15 @@ func main() {
 	localIP, _ := localip.LocalIP()
 
 	fsm := elevator.InitElevator(localIP, &client.Channels)
-	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, fsm)
 
-	select {}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go network.InitMasterSlaveNetwork(ctx, ac, &client, masterData, backupData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, fsm)
+
+	time.Sleep(5*time.Second)
+
+	fmt.Printf("Trying to cancel all go routines")
+	cancel()
+
+	select{}
 }

@@ -3,7 +3,6 @@ package network
 import (
 	"net"
 	"sync"
-
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )

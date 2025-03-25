@@ -6,7 +6,7 @@ import (
 	"math/rand/v2"
 	"net"
 	"time"
-
+	"context"
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
@@ -71,11 +71,19 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	}
 }
 
-func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
+func ClientSendMessagesFromSendChan(ctx context.Context, client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
 
 	fmt.Println("Ready to send msg to master")
-	for msg := range sendChan {
-		SendMessage(client, msg, conn)
+	for {
+		select {
+		case <- ctx.Done():
+			fmt.Printf("Shutting down ClientSendMessagesFromSendChan")
+			return
+		default:
+			for msg := range sendChan {
+				SendMessage(client, msg, conn)
+			}
+		}
 	}
 }
 
