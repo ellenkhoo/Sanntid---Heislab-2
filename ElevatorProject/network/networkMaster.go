@@ -201,9 +201,9 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			client.Channels.SendChan <- orderMsg
 		}
 
-		for _, conn := range ac.Conns {
-			ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
-		}
+		// for _, conn := range ac.Conns {
+		// 	ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
+		// }
 
 	case sharedConsts.AcknowledgeMessage:
 		var clientID string

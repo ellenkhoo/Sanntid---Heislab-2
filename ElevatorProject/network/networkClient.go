@@ -100,39 +100,51 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		clientConn.Worldview = backupData
 		clientConn.ClientMtx.Unlock()
 
-		// Marshal backupData
-		backupIDJSON, err := json.Marshal(clientID)
+		elevatorDataJSON, err := json.Marshal(backupData)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
 			return
 		}
 
-		backupMsg := sharedConsts.Message{
-			Type:    sharedConsts.AcknowledgeMessage,
-			Target:  sharedConsts.TargetMaster,
-			Payload: backupIDJSON,
+		elevatorMsg := sharedConsts.Message{
+			Payload: elevatorDataJSON,
 		}
 
-		fmt.Println("Sending ack")
-		clientConn.Channels.SendChan <- backupMsg
+		clientConn.Channels.ElevatorChan <- elevatorMsg
 
-	case sharedConsts.UpdateOrdersMessage:
+		// // Marshal backupData
+		// backupIDJSON, err := json.Marshal(clientID)
+		// if err != nil {
+		// 	fmt.Println("Error marshalling backup data: ", err)
+		// 	return
+		// }
 
-		if clientID != clientConn.HostIP {
-			fmt.Println("I am not on the master computer")
+		// backupMsg := sharedConsts.Message{
+		// 	Type:    sharedConsts.AcknowledgeMessage,
+		// 	Target:  sharedConsts.TargetMaster,
+		// 	Payload: backupIDJSON,
+		// }
+
+		// fmt.Println("Sending ack")
+		// clientConn.Channels.SendChan <- backupMsg
+
+	// case sharedConsts.UpdateOrdersMessage:
+
+	// 	if clientID != clientConn.HostIP {
+	// 		fmt.Println("I am not on the master computer")
 			
-			elevatorDataJSON, err := json.Marshal(clientConn.Worldview)
-			if err != nil {
-				fmt.Println("Error marshalling backup data: ", err)
-				return
-			}
+	// 		elevatorDataJSON, err := json.Marshal(clientConn.Worldview)
+	// 		if err != nil {
+	// 			fmt.Println("Error marshalling backup data: ", err)
+	// 			return
+	// 		}
 
-			elevatorMsg := sharedConsts.Message{
-				Payload: elevatorDataJSON,
-			}
+	// 		elevatorMsg := sharedConsts.Message{
+	// 			Payload: elevatorDataJSON,
+	// 		}
 
-			clientConn.Channels.ElevatorChan <- elevatorMsg
-		}
+	// 		clientConn.Channels.ElevatorChan <- elevatorMsg
+	// 	}
 	// case heartbeat: //
 	// 	// start timer
 	// case timeout:
