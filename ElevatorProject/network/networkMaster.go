@@ -54,6 +54,7 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	newConn := MasterConnectionInfo{
 		ClientIP: remoteIP,
 		HostConn: conn,
+		HeartbeatTimer: time.NewTimer(5*time.Second),
 	}
 
 	fmt.Printf("NewConn. ClientIP: %s", newConn.ClientIP)
