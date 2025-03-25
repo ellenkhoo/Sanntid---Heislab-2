@@ -61,6 +61,7 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 
 	ac.mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
+	//newConn.ClientTimers[remoteIP] = newCnewConn.HeartbeatTimer
 	ac.mutex.Unlock()
 }
 
@@ -106,6 +107,7 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 		}
 	}
 }
+
 
 func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientConnectionInfo, ackTracker *AcknowledgeTracker) {
 
