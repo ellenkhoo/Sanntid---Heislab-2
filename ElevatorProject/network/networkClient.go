@@ -147,18 +147,18 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 
 		// 		clientConn.Channels.ElevatorChan <- elevatorMsg
 		// 	}
-		case sharedConsts.Heartbeat: 
-			var heartbeat string 
-			err := json.Unmarshal(msg.Payload, &heartbeat)
-			if err != nil {
-				fmt.Println("Error decoding heartbeat message: ", err)
-				return
-			}
-			if heartbeat == "HB" {	
-				clientConn.HeartbeatTimer.Reset(7 * time.Second)
+	case sharedConsts.Heartbeat: 
+		var heartbeat string 
+		err := json.Unmarshal(msg.Payload, &heartbeat)
+		if err != nil {
+			fmt.Println("Error decoding heartbeat message: ", err)
+			return
+		}
+		if heartbeat == "HB" {	
+			clientConn.HeartbeatTimer.Reset(7 * time.Second)
 				
-				fmt.Println("Received heartbeat from master")
-			}
+			fmt.Println("Received heartbeat from master")
+		}
 		// 	// start timer
 		// case timeout:
 		// 	// start master
