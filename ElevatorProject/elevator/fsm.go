@@ -1,7 +1,6 @@
 package elevator
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -44,20 +43,7 @@ func (fsm *FSM) HandleRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 		if ShouldClearImmediately(fsm.El) {
 			fmt.Println("Should clear order immediately")
 			start_timer <- timers.DoorOpenDuration
-
-			elevStatesJSON, err := json.Marshal(fsm.El.ElevStates)
-			if err != nil {
-				fmt.Println("Error marshalling elevStates: ", err)
-				return
-			}
-
-			msg := sharedConsts.Message{
-				Type:    sharedConsts.CurrentStateMessage,
-				Target:  sharedConsts.TargetMaster,
-				Payload: elevStatesJSON,
-			}
-
-			networkChannels.SendChan <- msg
+			SendCurrentState(networkChannels, *fsm.El)
 		} else {
 			fmt.Println("Shouldn't clear order immediately")
 		}
