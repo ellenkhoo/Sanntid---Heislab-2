@@ -39,8 +39,16 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChan
 			continue
 		}
 
-		go ReceiveMessage(networkChannels.ReceiveChan, hostConn)
-		go ac.AddHostConnection(hostConn, networkChannels.SendChan)
+		// TEST
+		tcpConn, err := ConfigureTCPConn(hostConn)
+		if err != nil {
+			fmt.Println("Failed to configure TCP settings")
+			hostConn.Close()
+			continue
+		}
+
+		go ReceiveMessage(networkChannels.ReceiveChan, tcpConn)
+		go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
 	}
 }
 
@@ -80,7 +88,7 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 	}
 }
 
-func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientConnectionInfo, ackTracker *AcknowledgeTracker) {
+func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientConnectionInfo) {
 
 	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {

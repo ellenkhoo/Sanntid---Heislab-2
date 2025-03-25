@@ -1,8 +1,6 @@
 package main
 
 import (
-	"time"
-
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
@@ -20,18 +18,17 @@ func main() {
 		ElevatorChan: make(chan sharedConsts.Message),
 		UpdateChan:   make(chan string),
 	}
-	
+
 	ac := network.CreateActiveConnections()
 	client := network.ClientConnectionInfo{}
 	client.Channels = *networkChannels
 	masterData := network.CreateMasterData()
 	backupData := network.CreateBackupData()
-	ackTracker := network.NewAcknowledgeTracker(client.Channels.SendChan, 1*time.Second)
 
 	localIP, _ := localip.LocalIP()
 
 	fsm := elevator.InitElevator(localIP, &client.Channels)
-	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, ackTracker, network.BcastPort, network.TCPPort, networkChannels, fsm)
+	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, network.BcastPort, network.TCPPort, networkChannels, fsm)
 
 	select {}
 }

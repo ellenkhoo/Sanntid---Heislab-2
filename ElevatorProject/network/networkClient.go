@@ -47,6 +47,7 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 		return nil, false
 	}
 
+	tcpConn, err := ConfigureTCPConn(conn)
 	if err != nil {
 		fmt.Println("Error reading from master:", err)
 		conn.Close()
@@ -54,7 +55,7 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 	}
 
 	fmt.Printf("Connected to master at %s\n: ", masterIP)
-	return conn, true
+	return tcpConn, true
 }
 
 // When a new connection is established on the client side, this function updates clientConnctionInfo

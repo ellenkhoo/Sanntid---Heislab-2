@@ -84,7 +84,7 @@ func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.N
 	}
 }
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, backupData *BackupData, ackTracker *AcknowledgeTracker, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, backupData *BackupData, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 	var id string
 	flag.StringVar(&id, "id", "", "id of this peer")
 	flag.Parse()
@@ -116,7 +116,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 	} else {
 		// No master found, announce ourselves as the master
 		masterID = id
-		client.ID = id 
+		client.ID = id
 		client.HostIP = masterID
 		fmt.Printf("Going to announce master. MasterID: %s\n", id)
 		go AnnounceMaster(id, bcastPort)
@@ -128,7 +128,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		select {
 		case m := <-networkChannels.MasterChan:
 			fmt.Println("Master received a message")
-			go masterData.HandleReceivedMessagesToMaster(ac, m, client, ackTracker)
+			go masterData.HandleReceivedMessagesToMaster(ac, m, client)
 		case e := <-networkChannels.ElevatorChan:
 			fmt.Println("Going to update my worldview")
 			go client.UpdateElevatorWorldview(fsm, e)
