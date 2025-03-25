@@ -160,6 +160,7 @@ func ClearAtCurrentFloor(e *Elevator) *Elevator {
 
 		default:
 			e.RequestsToDo[e.ElevStates.Floor][B_HallUp] = false
+			e.Dirn = elevio.MD_Up
 			//e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false
 		}
 
