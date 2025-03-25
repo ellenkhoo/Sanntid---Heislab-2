@@ -112,6 +112,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 			client.AddClientConnection(id, clientConn, networkChannels)
 			go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
 			go ClientSendMessagesFromSendChan(client, networkChannels.SendChan, clientConn)
+			//go client.StartListeningForHeartbeats()
 			go client.ClientHandleHeartbeatTimeout()
 		}
 	} else {
@@ -123,7 +124,7 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		go AnnounceMaster(id, bcastPort)
 		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
 		go ac.MasterSendMessages(client)
-		go ac.MasterSendHeartbeats(client.Channels.SendChan)
+		go ac.MasterSendHeartbeats(networkChannels.HeartbeatChan)
 	}
 
 	for {

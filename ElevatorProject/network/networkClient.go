@@ -84,6 +84,7 @@ func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan 
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
 
 	// clientID := clientConn.ID
+	fmt.Println("Received message:", msg)
 
 	switch msg.Type {
 
@@ -148,6 +149,8 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		// 		clientConn.Channels.ElevatorChan <- elevatorMsg
 		// 	}
 	case sharedConsts.Heartbeat: 
+		fmt.Println("er i case heartbeat")
+		//msg := <- clientConn.Channels.HeartbeatChan 
 		var heartbeat string 
 		err := json.Unmarshal(msg.Payload, &heartbeat)
 		if err != nil {
@@ -156,9 +159,11 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 		if heartbeat == "HB" {	
 			clientConn.HeartbeatTimer.Reset(7 * time.Second)
-				
+						
 			fmt.Println("Received heartbeat from master")
-		}
+			}
+		
+		
 		// 	// start timer
 		// case timeout:
 		// 	// start master

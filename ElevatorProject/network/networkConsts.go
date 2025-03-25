@@ -55,6 +55,8 @@ type MasterConnectionInfo struct {
 	ClientIP string
 	HostConn net.Conn
 	HeartbeatTimer *time.Timer
+	//Channels sharedConsts.NetworkChannels
+
 }
 
 type ClientConnectionInfo struct {

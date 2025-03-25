@@ -43,4 +43,5 @@ type NetworkChannels struct {
 	BackupChan   chan Message
 	ElevatorChan chan Message
 	UpdateChan   chan string
+	HeartbeatChan chan Message
 }

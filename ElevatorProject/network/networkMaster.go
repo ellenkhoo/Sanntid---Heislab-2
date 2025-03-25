@@ -8,6 +8,7 @@ import (
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
+	//"github.com/ellenkhoo/ElevatorProject/heartbeat"
 	"github.com/ellenkhoo/ElevatorProject/hra"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
@@ -54,10 +55,12 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	newConn := MasterConnectionInfo{
 		ClientIP: remoteIP,
 		HostConn: conn,
-		HeartbeatTimer: time.NewTimer(5*time.Second),
+		HeartbeatTimer: time.NewTimer(10*time.Second),
 	}
 
 	fmt.Printf("NewConn. ClientIP: %s", newConn.ClientIP)
+	//newConn.Channels.HeartbeatChan = make(chan sharedConsts.Message, 10)
+
 
 	ac.mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
@@ -106,6 +109,17 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 			}
 		}
 	}
+	// for heartbeatMsg := range client.Channels.HeartbeatChan {
+	// 	switch heartbeatMsg.Target {
+	// 	case sharedConsts.TargetClient:
+	// 		fmt.Println("sending heartbeat to client")
+	// 		for clients := range ac.Conns{
+	// 			targetConn = ac.Conns[clients].HostConn
+	// 			SendMessage(client, heartbeatMsg, targetConn)
+	// 		}
+	// 	}
+		
+	// }
 }
 
 

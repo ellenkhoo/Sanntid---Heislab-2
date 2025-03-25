@@ -19,6 +19,7 @@ func main() {
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message),
 		UpdateChan:   make(chan string),
+		HeartbeatChan: make(chan sharedConsts.Message, 100),
 	}
 
 	// Start network and store connections
