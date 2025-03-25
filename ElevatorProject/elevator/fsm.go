@@ -43,7 +43,7 @@ func (fsm *FSM) HandleRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 		if ShouldClearImmediately(fsm.El) {
 			fmt.Println("Should clear order immediately")
 			start_timer <- timers.DoorOpenDuration
-			SendCurrentState(networkChannels, *fsm.El)
+			//SendCurrentState(networkChannels, *fsm.El)
 		} else {
 			fmt.Println("Shouldn't clear order immediately")
 		}
