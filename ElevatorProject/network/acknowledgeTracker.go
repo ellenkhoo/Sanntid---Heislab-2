@@ -34,6 +34,7 @@ func (ackTracker *AcknowledgeTracker) AwaitAcknowledge(clientID string, worldvie
 				fmt.Println("Acknowledgement not received from:", clientID)
 				ackTracker.RetryChannel <- worldviewMsg
 				retryCount++
+				fmt.Println("retryCount:", retryCount)
 			} else {
 				break
 			}

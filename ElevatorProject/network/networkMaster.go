@@ -257,6 +257,9 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 				client.Channels.ElevatorChan <- elevatorMsg
 			}
+		} else {
+			fmt.Println("Have not received all acks")
+			break
 		}
 	}
 }

@@ -33,6 +33,7 @@ func SendCurrentState(networkChannels *sharedConsts.NetworkChannels, elevator El
 		Payload: elevStatesJSON,
 	}
 	//Send message
+	fmt.Println("Sending msg on chan")
 	networkChannels.SendChan <- stateMsg
 }
 
@@ -50,6 +51,7 @@ func SendLocalOrder(order elevio.ButtonEvent, networkChannels *sharedConsts.Netw
 		Payload: orderJSON,
 	}
 	// Send message
+	fmt.Println("Sending msg on chan")
 	networkChannels.SendChan <- reqMsg
 }
 
