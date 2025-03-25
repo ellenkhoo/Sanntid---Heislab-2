@@ -1,7 +1,7 @@
 
 * TCP-instillinger, timeout
-* KeepAlive
-* Send mld til backup først, så sende til heisene
-* UPDATE: tester at alle er backup
+* KeepAlive?
 * Oppdater readme-er!
 * Fjern netverk-modul-ting som ikke brukes!
+
+if permission denied in hra: chmod +x ./hallRequestAssigner/hall_request_assigner

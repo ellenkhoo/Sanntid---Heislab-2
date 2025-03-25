@@ -156,6 +156,10 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			Payload: clientDataJSON,
 		}
 
+		if client.ID == client.HostIP {
+			client.Channels.ElevatorChan <- orderMsg
+		}
+
 		// Send message to clients
 		if len(ac.Conns) >= 1 {
 			client.Channels.SendChan <- orderMsg

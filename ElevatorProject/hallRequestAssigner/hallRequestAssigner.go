@@ -48,9 +48,9 @@ func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequ
 	var cmd string
 	os := runtime.GOOS
 	if os == "windows" {
-		cmd = "./hra/hall_request_assigner.exe"
+		cmd = "./hallRequestAssigner/hall_request_assigner.exe"
 	} else {
-		cmd = "./hra/hall_request_assigner"
+		cmd = "./hallRequestAssigner/hall_request_assigner"
 	}
 
 	ret, err := exec.Command(cmd, "-i", string(jsonBytes)).CombinedOutput()

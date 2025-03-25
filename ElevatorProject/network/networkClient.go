@@ -11,10 +11,6 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
-func RandRange(min, max int) int {
-	return rand.IntN(max-min) + min
-}
-
 func ListenForMaster(port string) (string, bool) {
 	addr, _ := net.ResolveUDPAddr("udp", "0.0.0.0"+":"+port)
 	conn, err := net.ListenUDP("udp", addr)
@@ -26,9 +22,10 @@ func ListenForMaster(port string) (string, bool) {
 	defer conn.Close()
 
 	buffer := make([]byte, 1024)
+
+	// Each program listens for a random time, t, to ensure only one becomes master
 	t := time.Duration(RandRange(800, 1500))
-	fmt.Printf("Waiting for %d ms\n", t)
-	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond)) //ensures that only one remains master
+	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond))
 	_, remoteAddr, err := conn.ReadFromUDP(buffer)
 	if err != nil {
 		fmt.Println("No master found, becoming master.")
@@ -37,6 +34,10 @@ func ListenForMaster(port string) (string, bool) {
 
 	fmt.Println("Master found at: ", remoteAddr.IP.String())
 	return remoteAddr.IP.String(), true
+}
+
+func RandRange(min, max int) int {
+	return rand.IntN(max-min) + min
 }
 
 func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
@@ -56,9 +57,9 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 	return conn, true
 }
 
-// When a new connection is established on the client side, this function adds it to the list of active connections
+// When a new connection is established on the client side, this function updates clientConnctionInfo
 func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, networkChannels *sharedConsts.NetworkChannels) {
-	//defer conn.Close()
+
 	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
 
 	fmt.Println("Adding client connection")
@@ -79,24 +80,20 @@ func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan 
 	}
 }
 
-// Messages sent to a client means that the data is meant both for an elevator thread and the potential backup
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
-
-	// clientID := clientConn.ID
 
 	switch msg.Type {
 
 	case sharedConsts.MasterWorldviewMessage:
 		fmt.Println("Received master worldview message")
 		data := msg.Payload
-		var masterData BackupData
-		err := json.Unmarshal(data, &masterData)
+		var backupData BackupData
+		err := json.Unmarshal(data, &backupData)
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 			return
 		}
 
-		backupData := UpdateBackupData(masterData)
 		clientConn.ClientMtx.Lock()
 		clientConn.Worldview = backupData
 		clientConn.ClientMtx.Unlock()
@@ -112,44 +109,6 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		clientConn.Channels.ElevatorChan <- elevatorMsg
-
-		// // Marshal backupData
-		// backupIDJSON, err := json.Marshal(clientID)
-		// if err != nil {
-		// 	fmt.Println("Error marshalling backup data: ", err)
-		// 	return
-		// }
-
-		// backupMsg := sharedConsts.Message{
-		// 	Type:    sharedConsts.AcknowledgeMessage,
-		// 	Target:  sharedConsts.TargetMaster,
-		// 	Payload: backupIDJSON,
-		// }
-
-		// fmt.Println("Sending ack")
-		// clientConn.Channels.SendChan <- backupMsg
-
-		// case sharedConsts.UpdateOrdersMessage:
-
-		// 	if clientID != clientConn.HostIP {
-		// 		fmt.Println("I am not on the master computer")
-
-		// 		elevatorDataJSON, err := json.Marshal(clientConn.Worldview)
-		// 		if err != nil {
-		// 			fmt.Println("Error marshalling backup data: ", err)
-		// 			return
-		// 		}
-
-		// 		elevatorMsg := sharedConsts.Message{
-		// 			Payload: elevatorDataJSON,
-		// 		}
-
-		// 		clientConn.Channels.ElevatorChan <- elevatorMsg
-		// 	}
-		// case heartbeat: //
-		// 	// start timer
-		// case timeout:
-		// 	// start master
 	}
 }
 
@@ -174,8 +133,7 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 	globalHallRequests := elevatorData.GlobalHallRequests
 
 	fsm.Fsm_mtx.Lock()
-
-	// requestsToDo = assigend requests + cab requests
+	// requestsToDo = assigendRequests + cabRequests
 	for floor := 0; floor < elevator.N_FLOORS; floor++ {
 		for button := 0; button < elevator.N_BUTTONS-1; button++ {
 			if assignedRequests[floor][button] {
@@ -194,11 +152,9 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 
 	fsm.El.AssignedRequests = assignedRequests
 	fsm.El.GlobalHallRequests = globalHallRequests
-	fmt.Println("RequestsToDo after update:", fsm.El.RequestsToDo)
-	fmt.Println("GlobalHallRequests: ", fsm.El.GlobalHallRequests)
 	fsm.Fsm_mtx.Unlock()
 
-	sendMsg := "You are ready to do things"
+	sendMsg := "You have an updated worldview"
 	clientConn.Channels.UpdateChan <- sendMsg
 }
 
@@ -216,17 +172,4 @@ func UpdateElevatorData(backupData BackupData, elevatorID string) ElevatorReques
 	}
 
 	return elevatorData
-}
-
-func UpdateBackupData(masterData BackupData) BackupData {
-
-	AllAssignedRequests := masterData.AllAssignedRequests
-	globalHallRequests := masterData.GlobalHallRequests
-
-	backupData := BackupData{
-		GlobalHallRequests:  globalHallRequests,
-		AllAssignedRequests: AllAssignedRequests,
-	}
-
-	return backupData
 }
