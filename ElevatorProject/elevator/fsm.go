@@ -32,6 +32,7 @@ func (fsm *FSM) InitBetweenFloors() {
 
 func (fsm *FSM) HandleRequestsToDo(networkChannels *sharedConsts.NetworkChannels, start_timer chan time.Duration) {
 	PrintElevator(*fsm.El)
+	fsm.SetAllLights()
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
@@ -59,7 +60,6 @@ func (fsm *FSM) HandleRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 		fsm.Fsm_mtx.Unlock()
 	}
 
-	fsm.SetAllLights()
 	fmt.Println("\nNew state:")
 	PrintElevator(*fsm.El)
 }
