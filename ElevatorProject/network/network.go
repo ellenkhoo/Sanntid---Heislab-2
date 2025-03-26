@@ -73,11 +73,9 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receive
 				fmt.Println("Connection reset by peer")
 				HandleClosedConnection(client, ac, conn)
 			}
-		}
-
 		fmt.Println("Error decoding message: ", err)
 		break
-
+		}
 		receiveChan <- msg
 	}
 }
