@@ -52,8 +52,13 @@ func SendMessage(ac *ActiveConnections, client *ClientConnectionInfo, msg shared
 			if netErr.Err.Error() == "use of closed network connection" {
 				fmt.Println("The connection is closed, unable to send message.")
 				HandleClosedConnection(client, ac, conn)
-			}
+			} 
+		} else if err == io.EOF {
+			fmt.Println("Connection closed")
+			// blir ordre fordelt korrekt uten å gjøre noe?
+			HandleClosedConnection(client, ac, conn)
 		}
+		return
 	}
 }
 
