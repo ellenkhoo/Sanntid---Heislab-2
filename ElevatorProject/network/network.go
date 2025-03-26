@@ -69,10 +69,15 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receive
 				fmt.Println("Connection closed")
 				// blir ordre fordelt korrekt uten å gjøre noe?
 				HandleClosedConnection(client, ac, conn)
+			} else if opErr, ok := err.(*net.OpError); ok && opErr.Op == "read" {
+				fmt.Println("Connection reset by peer")
+				HandleClosedConnection(client, ac, conn)
 			}
-			fmt.Println("Error decoding message: ", err)
-			break
 		}
+
+		fmt.Println("Error decoding message: ", err)
+		break
+
 		receiveChan <- msg
 	}
 }
