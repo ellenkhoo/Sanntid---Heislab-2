@@ -82,6 +82,7 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receive
 			break
 		}
 		receiveChan <- msg
+		fmt.Println("msg sent in receiveMessage.")
 	}
 }
 
