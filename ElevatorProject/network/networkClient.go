@@ -126,6 +126,7 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		clientConn.ClientMtx.Lock()
 		clientConn.BackupData.MastersActiveConnectionsIPs = connectionData
 		clientConn.ClientMtx.Unlock()
+		fmt.Println("done updating activeconnections")
 
 	case sharedConsts.PriorCabRequestsMessage:
 		clientConn.Channels.ElevatorChan <- msg

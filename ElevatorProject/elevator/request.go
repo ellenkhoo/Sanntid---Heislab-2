@@ -118,6 +118,7 @@ func ClearAtCurrentFloor(e *Elevator) *Elevator {
 
 	e.RequestsToDo[e.ElevStates.Floor][B_Cab] = false
 	e.ElevStates.CabRequests[e.ElevStates.Floor] = false
+	fmt.Println("Cleared cab request at ", e.ElevStates.Floor)
 
 	switch e.Dirn {
 	case MD_Up:

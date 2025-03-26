@@ -89,7 +89,7 @@ func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, conn net.
 	}
 
 	// Send activeConnections to backup
-	ac.SendActiveConnections(sendChan)
+	//ac.SendActiveConnections(sendChan)
 }
 
 func ExistsPriorCabRequests(AllElevStates map[string]elevator.ElevStates, targetIP string) bool {

@@ -11,8 +11,8 @@ func main() {
 
 	// Initialize network channels
 	networkChannels := &sharedConsts.NetworkChannels{
-		SendChan:     make(chan sharedConsts.Message),
-		ReceiveChan:  make(chan sharedConsts.Message),
+		SendChan:     make(chan sharedConsts.Message, 200),
+		ReceiveChan:  make(chan sharedConsts.Message, 200),
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message),
