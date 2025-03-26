@@ -23,12 +23,13 @@ func main() {
 	client := network.ClientConnectionInfo{}
 	client.Channels = *networkChannels
 	masterData := network.CreateMasterData()
-	backupData := network.CreateBackupData()
 
-	localIP, _ := localip.LocalIP()
+	id, _ := localip.LocalIP()
 
-	fsm := elevator.InitElevator(localIP, &client.Channels)
-	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, network.BcastPort, network.TCPPort, networkChannels, fsm)
+	fsm := elevator.InitElevator(id, &client.Channels)
+	go network.RouteMessages(&client, networkChannels)
+
+	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm)
 
 	select {}
 }

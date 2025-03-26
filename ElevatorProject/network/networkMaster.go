@@ -28,7 +28,7 @@ func AnnounceMaster(localIP string, port string) {
 	}
 }
 
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientConnectionInfo, port string, networkChannels *sharedConsts.NetworkChannels) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
@@ -47,13 +47,13 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChan
 			continue
 		}
 
-		go ReceiveMessage(networkChannels.ReceiveChan, tcpConn)
-		go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
+		go ReceiveMessage(client, ac, networkChannels.ReceiveChan, tcpConn)
+		go ac.AddHostConnection(masterData, tcpConn, networkChannels.SendChan)
 	}
 }
 
 // Adds the host's connection with a client to ActiveConnections
-func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan sharedConsts.Message) {
+func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, conn net.Conn, sendChan chan sharedConsts.Message) {
 
 	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
@@ -67,6 +67,69 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	ac.mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
+
+	// Check for any previously saved cab requests
+	if ExistsPriorCabRequests(masterData.AllElevStates, remoteIP) {
+
+		priorCabRequests := masterData.AllElevStates[remoteIP].CabRequests
+
+		priorCabRequestsJSON, err := json.Marshal(priorCabRequests)
+		if err != nil {
+			fmt.Println("Error marshalling priorCabRequests: ", err)
+			return
+		}
+
+		priorCabRequestmsg := sharedConsts.Message{
+			Type:    sharedConsts.PriorCabRequestsMessage,
+			Target:  sharedConsts.TargetClient,
+			Payload: priorCabRequestsJSON,
+		}
+
+		sendChan <- priorCabRequestmsg
+	}
+
+	// Send activeConnections to backup
+	ac.SendActiveConnections(sendChan)
+}
+
+func ExistsPriorCabRequests(AllElevStates map[string]elevator.ElevStates, targetIP string) bool {
+
+	elevState, exists := AllElevStates[targetIP]
+	if !exists {
+		fmt.Println("No elevator state found for IP:", targetIP)
+		return false
+	}
+
+	for _, cabRequest := range elevState.CabRequests {
+		if cabRequest {
+			// If any cabRequest is true, return false (not empty)
+			return true
+		}
+	}
+	// Otherwise, the ElevStates is not empty
+	return false
+}
+
+func (ac *ActiveConnections) SendActiveConnections(sendChan chan sharedConsts.Message) {
+
+	var IPs []string
+	for _, conn := range ac.Conns {
+		IPs = append(IPs, conn.ClientIP)
+	}
+
+	activeConnectionsDataJSON, err := json.Marshal(IPs)
+	if err != nil {
+		fmt.Println("Error marshalling activeConnections: ", err)
+		return
+	}
+
+	activeConnectionsMessage := sharedConsts.Message{
+		Type:    sharedConsts.ActiveConnectionsMessage,
+		Target:  sharedConsts.TargetClient,
+		Payload: activeConnectionsDataJSON,
+	}
+
+	sendChan <- activeConnectionsMessage
 }
 
 func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
@@ -82,7 +145,7 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 		case sharedConsts.TargetClient:
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
-				SendMessage(client, msg, targetConn)
+				SendMessage(ac, client, msg, targetConn)
 			}
 		}
 	}
@@ -94,20 +157,22 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 	switch msg.Type {
 	case sharedConsts.LocalRequestMessage:
 
-		var request elevator.ButtonEvent
-		err := json.Unmarshal(msg.Payload, &request)
-		if err != nil {
-			fmt.Println("Error unmarshalling payload: ", err)
-			return
-		}
+		if len(ac.Conns) >= 1 {
+			var request elevator.ButtonEvent
+			err := json.Unmarshal(msg.Payload, &request)
+			if err != nil {
+				fmt.Println("Error unmarshalling payload: ", err)
+				return
+			}
 
-		fmt.Println("Received request: ", request)
-		floor := request.Floor
-		button := request.Button
-		masterData.mutex.Lock()
-		fmt.Println("Updating globalHallRequests")
-		masterData.GlobalHallRequests[floor][button] = true
-		masterData.mutex.Unlock()
+			fmt.Println("Received request: ", request)
+			floor := request.Floor
+			button := request.Button
+			masterData.mutex.Lock()
+			fmt.Println("Updating globalHallRequests")
+			masterData.GlobalHallRequests[floor][button] = true
+			masterData.mutex.Unlock()
+		}
 
 	case sharedConsts.CurrentStateMessage:
 
@@ -139,7 +204,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		}
 		masterData.mutex.Unlock()
 
-		backupData := BackupData{
+		backupData := Worldview{
 			GlobalHallRequests:  masterData.GlobalHallRequests,
 			AllAssignedRequests: masterData.AllAssignedRequests,
 		}

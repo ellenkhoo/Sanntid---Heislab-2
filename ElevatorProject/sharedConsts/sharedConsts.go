@@ -2,25 +2,19 @@ package sharedConsts
 
 import "encoding/json"
 
-// This module defines shared constants, message types, and communication channels 
-// used by both the network and elevator modules. It ensures consistency in inter-module 
+// This module defines shared constants, message types, and communication channels
+// used by both the network and elevator modules. It ensures consistency in inter-module
 // communication by standardizing message structures and types.
-
-type HelloMsg struct {
-	Message string
-	Iter    int
-}
 
 type MessageType int
 
 const (
 	MasterWorldviewMessage MessageType = iota
 	UpdateOrdersMessage
-	AcknowledgeMessage
 	LocalRequestMessage
 	CurrentStateMessage
-	HelloMessage
-	RankMessage
+	ActiveConnectionsMessage
+	PriorCabRequestsMessage
 )
 
 type MessageTarget int
@@ -44,5 +38,6 @@ type NetworkChannels struct {
 	MasterChan   chan Message
 	BackupChan   chan Message
 	ElevatorChan chan Message
+	RestartChan  chan string
 	UpdateChan   chan string
 }

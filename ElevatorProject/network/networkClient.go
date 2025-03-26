@@ -70,14 +70,15 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 		HostIP:     remoteIP,
 		ClientConn: clientConn,
 		Channels:   *networkChannels,
+		BackupData: *CreateBackupData(),
 	}
 }
 
-func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
+func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
 
 	fmt.Println("Ready to send msg to master")
 	for msg := range sendChan {
-		SendMessage(client, msg, conn)
+		SendMessage(ac, client, msg, conn)
 	}
 }
 
@@ -88,18 +89,18 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 	case sharedConsts.MasterWorldviewMessage:
 		fmt.Println("Received master worldview message")
 		data := msg.Payload
-		var backupData BackupData
-		err := json.Unmarshal(data, &backupData)
+		var masterWorldview Worldview
+		err := json.Unmarshal(data, &masterWorldview)
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 			return
 		}
 
 		clientConn.ClientMtx.Lock()
-		clientConn.Worldview = backupData
+		clientConn.BackupData.Worldview = masterWorldview
 		clientConn.ClientMtx.Unlock()
 
-		elevatorDataJSON, err := json.Marshal(backupData)
+		elevatorDataJSON, err := json.Marshal(masterWorldview)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
 			return
@@ -110,6 +111,25 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		clientConn.Channels.ElevatorChan <- elevatorMsg
+
+	case sharedConsts.ActiveConnectionsMessage:
+		fmt.Println("Received active connections message")
+
+		data := msg.Payload
+		var connectionData []string
+		err := json.Unmarshal(data, &connectionData)
+		if err != nil {
+			fmt.Println("Error decoding message: ", err)
+			return
+		}
+
+		clientConn.ClientMtx.Lock()
+		clientConn.BackupData.MastersActiveConnectionsIPs = connectionData
+		clientConn.ClientMtx.Unlock()
+
+	case sharedConsts.PriorCabRequestsMessage:
+		clientConn.Channels.ElevatorChan <- msg
+
 	}
 }
 
@@ -119,14 +139,24 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 	fmt.Println("RequestsToDo before update:", fsm.El.RequestsToDo)
 	clientID := clientConn.ID
 
-	var masterData BackupData
-	err := json.Unmarshal(msg.Payload, &masterData)
-	if err != nil {
-		fmt.Println("Error decoding message to elevator: ", err)
-		return
+	var masterWorldview Worldview
+	var priorCabRequests [elevator.N_FLOORS]bool
+	err1 := json.Unmarshal(msg.Payload, &masterWorldview)
+	if err1 != nil {
+		fmt.Println("Error decoding message to elevator: ", err1)
+		err2 := json.Unmarshal(msg.Payload, &priorCabRequests)
+		if err2 != nil {
+			fmt.Println("Error decoding message to elevator: ", err2)
+		}
+
+		// handle cab Update
+		mergedCabRequests := MergeCabRequests(fsm.El.ElevStates.CabRequests, priorCabRequests)
+		fsm.Fsm_mtx.Lock()
+		fsm.El.ElevStates.CabRequests = mergedCabRequests
+		fsm.Fsm_mtx.Unlock()
 	}
 
-	elevatorData := UpdateElevatorData(masterData, clientID)
+	elevatorData := UpdateElevatorData(masterWorldview, clientID)
 	fmt.Println("ElevatorData: ", elevatorData)
 	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
 
@@ -160,12 +190,12 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func UpdateElevatorData(backupData BackupData, elevatorID string) ElevatorRequest {
+func UpdateElevatorData(backupWorldview Worldview, elevatorID string) ElevatorRequest {
 
 	fmt.Println("My id: ", elevatorID)
-	localAssignedRequests := backupData.AllAssignedRequests[elevatorID]
+	localAssignedRequests := backupWorldview.AllAssignedRequests[elevatorID]
 	fmt.Println("assigned requests to me", localAssignedRequests)
-	globalHallRequests := backupData.GlobalHallRequests
+	globalHallRequests := backupWorldview.GlobalHallRequests
 
 	elevatorData := ElevatorRequest{
 		GlobalHallRequests: globalHallRequests,
@@ -173,4 +203,16 @@ func UpdateElevatorData(backupData BackupData, elevatorID string) ElevatorReques
 	}
 
 	return elevatorData
+}
+
+func MergeCabRequests(currentCabRequests [elevator.N_FLOORS]bool, priorCabRequests [elevator.N_FLOORS]bool) [elevator.N_FLOORS]bool {
+
+	mergedCabRequests := [elevator.N_FLOORS]bool{false, false, false, false}
+	for floor := 0; floor < elevator.N_FLOORS; floor++ {
+		if currentCabRequests[floor] || priorCabRequests[floor] {
+			mergedCabRequests[floor] = true
+		}
+	}
+
+	return mergedCabRequests
 }
