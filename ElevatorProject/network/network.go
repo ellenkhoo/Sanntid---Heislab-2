@@ -73,18 +73,19 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receive
 				fmt.Println("Connection reset by peer")
 				HandleClosedConnection(client, ac, conn)
 			}
-		fmt.Println("Error decoding message: ", err)
-		break
+			fmt.Println("Error decoding message: ", err)
+			break
 		}
 		receiveChan <- msg
 	}
 }
 
 func HandleClosedConnection(client *ClientConnectionInfo, ac *ActiveConnections, conn net.Conn) {
+	fmt.Println("At handle disconnection")
 	conn.Close()
 	if client.ID == client.HostIP {
 		// Slave disconnected
-
+		fmt.Println("Slave disconnected")
 		// Remove from active connections
 		for i, connInfo := range ac.Conns {
 			if connInfo.HostConn == conn {
@@ -92,14 +93,18 @@ func HandleClosedConnection(client *ClientConnectionInfo, ac *ActiveConnections,
 				fmt.Println("Removed connection. AC now:", ac.Conns)
 			}
 		}
+		fmt.Println("Going to send active connections")
 		ac.SendActiveConnections(client.Channels.SendChan)
 	} else {
 		// Master disconnected
+		fmt.Println("Master disconnected")
 		clientID := client.ID
 		if ShouldBecomeMaster(clientID, ac) {
+			fmt.Println("I should become master")
 			msg := "master"
 			client.Channels.RestartChan <- msg
 		} else {
+			fmt.Println("I should become slave")
 			msg := "slave"
 			client.Channels.RestartChan <- msg
 		}
@@ -185,6 +190,7 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 				fmt.Println("Going to update my worldview")
 				client.UpdateElevatorWorldview(fsm, e)
 			case r := <-networkChannels.RestartChan:
+				fmt.Println("Received message on restartChan:", r)
 				if r == "master" {
 					fmt.Print("AC: ", ac)
 					go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
