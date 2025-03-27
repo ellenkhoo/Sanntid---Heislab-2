@@ -156,11 +156,23 @@ func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnection
 			fmt.Printf("  Lost:     %q\n", p.Lost)
 
 			// Remove lost connection from ActiveConnections
-			for _, ID := range p.Lost {
+			for _, lostID := range p.Lost {
 				for j, connInfo := range ac.Conns {
-					if connInfo.ClientIP == ID {
-						ac.Conns = append(ac.Conns[:j], ac.Conns[j+1:]...)
-						fmt.Println("Removed connection. AC now:", ac.Conns)
+					if connInfo.ClientIP == lostID {
+						ac.Conns[j].ClientIP = ""
+						fmt.Println("Removed IP of connection. AC now:", ac.Conns)
+						break
+					}
+				}
+			}
+
+			// Add new connection to ac
+			for _, newID := range p.New {
+				for j, connInfo := range ac.Conns {
+					if connInfo.ClientIP == "" {
+						ac.Conns[j].ClientIP = string(newID)
+						fmt.Println("Added client ID back to AC", string(newID))
+						break
 					}
 				}
 			}

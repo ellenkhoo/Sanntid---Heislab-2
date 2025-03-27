@@ -1,11 +1,12 @@
 package peers
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/conn"
 	"fmt"
 	"net"
 	"sort"
 	"time"
+
+	"github.com/ellenkhoo/ElevatorProject/network/network_functions/conn"
 )
 
 type PeerUpdate struct {
@@ -15,7 +16,7 @@ type PeerUpdate struct {
 }
 
 const interval = 15 * time.Millisecond
-const timeout = 500 * time.Millisecond
+const timeout = 50 * time.Millisecond
 
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
 
