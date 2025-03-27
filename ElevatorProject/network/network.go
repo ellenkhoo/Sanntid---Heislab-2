@@ -38,7 +38,7 @@ func CreateBackupData() *BackupData {
 
 func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At SendMessage")
-	if client.ID == client.HostIP && !(msg.Type == sharedConsts.PriorCabRequestsMessage){
+	if client.ID == client.HostIP && !(msg.Type == sharedConsts.PriorCabRequestsMessage) {
 		client.Channels.ReceiveChan <- msg
 	}
 	fmt.Println("The message is to a remote client")
@@ -177,19 +177,21 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 			case e := <-networkChannels.ElevatorChan:
 				fmt.Println("Going to update my worldview")
 				go client.UpdateElevatorWorldview(fsm, e)
-				// case r := <-networkChannels.RestartChan:
-				// 	fmt.Println("Received message on restartChan:", r)
-				// 	if r == "master" {
-				// 		fmt.Print("AC: ", ac)
-				// 		go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
-				// 	} else if r == "slave" {
-				// 		var masterID string = ""
-				// 		masterID, found := ListenForMaster(bcastPort)
-				// 		if found {
-				// 			go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
-				// 		}
-				// 	}
-				// 	return
+			case r := <-networkChannels.RestartChan:
+				fmt.Println("Received message on restartChan:", r)
+				if r == "master" {
+					fmt.Print("AC: ", ac)
+					fmt.Println("Going to try to init master")
+					go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+				} else if r == "slave" {
+					var masterID string = ""
+					fmt.Println("Listening for a new master")
+					masterID, found := ListenForMaster(bcastPort)
+					if found {
+						go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+					}
+				}
+				return
 			}
 		}
 	}
@@ -208,20 +210,31 @@ func HandleClosedConnection(client *ClientConnectionInfo, ac *ActiveConnections,
 				fmt.Println("Removed connection. AC now:", ac.Conns)
 			}
 		}
-		// fmt.Println("Going to send active connections")
-		// ac.SendActiveConnections(client.Channels.SendChan)
+		fmt.Println("Going to send active connections")
+		ac.SendActiveConnections(client.Channels.SendChan)
 	} else {
 		// Master disconnected
 		fmt.Println("Master disconnected")
-		// clientID := client.ID
-		// if ShouldBecomeMaster(clientID, ac) {
-		// 	fmt.Println("I should become master")
-		// 	msg := "master"
-		// 	client.Channels.RestartChan <- msg
-		// } else {
-		// 	fmt.Println("I should become slave")
-		// 	msg := "slave"
-		// 	client.Channels.RestartChan <- msg
-		// }
+		clientID := client.ID
+		if ShouldBecomeMaster(clientID, client.BackupData.MastersActiveConnectionsIPs) {
+			fmt.Println("I should become master")
+			msg := "master"
+			client.Channels.RestartChan <- msg
+		} else {
+			fmt.Println("I should become slave")
+			msg := "slave"
+			client.Channels.RestartChan <- msg
+		}
 	}
+}
+
+func ShouldBecomeMaster(clientID string, mastersActiveConnections []string) bool {
+	fmt.Println("AC at master dead:", mastersActiveConnections)
+	for _, ID := range mastersActiveConnections {
+		fmt.Println("My ID:", clientID, "connID:", ID)
+		if ID > clientID {
+			return false
+		}
+	}
+	return true
 }

@@ -20,6 +20,7 @@ func main() {
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message, 100),
+		RestartChan: make(chan string),
 		UpdateChan:   make(chan string),
 	}
 

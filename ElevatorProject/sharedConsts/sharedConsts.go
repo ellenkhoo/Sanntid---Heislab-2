@@ -23,7 +23,6 @@ const (
 	PriorCabRequestsMessage
 )
 
-
 type MessageTarget int
 
 const (
@@ -45,5 +44,6 @@ type NetworkChannels struct {
 	MasterChan   chan Message
 	BackupChan   chan Message
 	ElevatorChan chan Message
+	RestartChan  chan string
 	UpdateChan   chan string
 }

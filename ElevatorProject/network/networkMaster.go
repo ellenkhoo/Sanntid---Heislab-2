@@ -30,6 +30,8 @@ func AnnounceMaster(localIP string, port string) {
 
 func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientConnectionInfo, port string, networkChannels *sharedConsts.NetworkChannels) {
 
+	fmt.Println("At listenAndAccept")
+
 	ln, _ := net.Listen("tcp", ":"+port)
 
 	for {
