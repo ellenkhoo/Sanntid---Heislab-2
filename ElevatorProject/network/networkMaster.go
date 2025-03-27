@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
@@ -28,7 +29,7 @@ func AnnounceMaster(localIP string, port string) {
 	}
 }
 
-func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientConnectionInfo, port string, networkChannels *sharedConsts.NetworkChannels) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientConnectionInfo, port string, networkChannels *sharedConsts.NetworkChannels, wg *sync.WaitGroup) {
 
 	fmt.Println("At listenAndAccept")
 
@@ -49,7 +50,7 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, 
 			continue
 		}
 
-		go ReceiveMessage(masterData, client, ac, client.Channels, tcpConn)
+		go ReceiveMessage(masterData, client, ac, client.Channels, tcpConn, wg)
 		//go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
 	}
 }
@@ -74,8 +75,8 @@ func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, clientID 
 
 		priorCabRequests := masterData.AllElevStates[clientID].CabRequests
 
-		cabRequestsWithID := CabRequestsWithID {
-			ID: clientID, 
+		cabRequestsWithID := CabRequestsWithID{
+			ID:          clientID,
 			CabRequests: priorCabRequests,
 		}
 
@@ -95,7 +96,6 @@ func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, clientID 
 		sendChan <- priorCabRequestmsg
 		fmt.Println("sent prior cabrequest")
 	}
-
 
 	fmt.Println("Sending acitveConnections", ac.Conns)
 	ac.SendActiveConnections(sendChan)

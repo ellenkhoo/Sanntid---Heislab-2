@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
@@ -59,7 +60,9 @@ func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg shared
 	}
 }
 
-func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *ActiveConnections, networkChannels sharedConsts.NetworkChannels, conn net.Conn) {
+func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *ActiveConnections, networkChannels sharedConsts.NetworkChannels, conn net.Conn, wg *sync.WaitGroup) {
+	defer wg.Done()
+
 	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
 
@@ -92,7 +95,7 @@ func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *Ac
 		networkChannels.ReceiveChan <- msg
 
 		select {
-		case _, ok := <-client.Channels.RestartChan:
+		case _, ok := <-client.Channels.StopChan:
 			if !ok {
 				fmt.Println("Attempting to shutdown ReceiveMessage")
 				return
@@ -122,24 +125,24 @@ func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.N
 	}
 }
 func InitNetwork(ID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData,
-	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM, wg *sync.WaitGroup) {
 
 	var masterID string = ""
 	masterID, found := ListenForMaster(bcastPort)
 	if found {
-		go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+		go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm, wg)
 	} else {
-		go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+		go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm, wg)
 	}
 }
 
-func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM, wg *sync.WaitGroup) {
 
 	client.ID = masterID
 	client.HostIP = masterID
 	fmt.Printf("Going to announce master. MasterID: %s\n", masterID)
 	go AnnounceMaster(masterID, bcastPort)
-	go ac.ListenAndAcceptConnections(masterData, client, TCPPort, networkChannels)
+	go ac.ListenAndAcceptConnections(masterData, client, TCPPort, networkChannels, wg)
 	go ac.MasterSendMessages(client)
 	fmt.Println("AC: ", ac.Conns)
 
@@ -156,7 +159,7 @@ func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnection
 }
 
 func InitSlave(ID string, masterID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData,
-	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM, slavesWaitGroup *sync.WaitGroup) {
 
 	clientConn, success := ConnectToMaster(masterID, TCPPort)
 	if success {
@@ -177,8 +180,9 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 		fmt.Println("Sent ID message to master")
 
 		client.AddClientConnection(ID, clientConn, networkChannels)
-		go ReceiveMessage(masterData, client, ac, client.Channels, clientConn)
-		go ClientSendMessagesFromSendChan(ac, client, networkChannels.SendChan, clientConn)
+		slavesWaitGroup.Add(2)
+		go ReceiveMessage(masterData, client, ac, client.Channels, clientConn, slavesWaitGroup)
+		go ClientSendMessagesFromSendChan(ac, client, networkChannels.SendChan, clientConn, slavesWaitGroup)
 
 		for {
 			select {
@@ -192,13 +196,20 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 				if r == "master" {
 					fmt.Print("AC: ", ac)
 					fmt.Println("Going to try to init master")
-					go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+					fmt.Println("Closing StopChan")
+
+					//Close all goroutines started by InitSlave
+					networkChannels.StopChan <- true
+					close(networkChannels.StopChan)
+					slavesWaitGroup.Wait()
+
+					go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm, slavesWaitGroup)
 				} else if r == "slave" {
 					var masterID string = ""
 					fmt.Println("Listening for a new master")
 					masterID, found := ListenForMaster(bcastPort)
 					if found {
-						go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+						go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm, slavesWaitGroup)
 					}
 				}
 				return

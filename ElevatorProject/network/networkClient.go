@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"net"
+	"sync"
 	"time"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
@@ -70,7 +71,8 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	}
 }
 
-func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
+func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn, wg *sync.WaitGroup) {
+	defer wg.Done()
 
 	fmt.Println("Ready to send msg to master")
 	for msg := range sendChan {
@@ -78,9 +80,9 @@ func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnect
 	}
 
 	select {
-	case _, ok := <-client.Channels.RestartChan:
+	case _, ok := <-client.Channels.StopChan:
 		if !ok {
-			fmt.Println("Attempting to shutdown ReceiveMessage")
+			fmt.Println("Attempting to shutdown ClientSndMessagesFromSendChan")
 			return
 		}
 	default:

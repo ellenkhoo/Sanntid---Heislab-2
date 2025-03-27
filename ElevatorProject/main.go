@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
@@ -20,8 +21,9 @@ func main() {
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message, 100),
-		RestartChan: make(chan string),
+		RestartChan:  make(chan string),
 		UpdateChan:   make(chan string),
+		StopChan:     make(chan bool),
 	}
 
 	ac := network.CreateActiveConnections()
@@ -56,8 +58,10 @@ func main() {
 
 	fmt.Println("Assigned ID:", id)
 
+	var slavesWaitGroup sync.WaitGroup
+
 	fsm := elevator.InitElevator(id, &client.Channels)
-	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm)
+	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm, &slavesWaitGroup)
 
 	select {}
 }

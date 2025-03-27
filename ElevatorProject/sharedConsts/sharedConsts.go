@@ -46,4 +46,5 @@ type NetworkChannels struct {
 	ElevatorChan chan Message
 	RestartChan  chan string
 	UpdateChan   chan string
+	StopChan     chan bool
 }
