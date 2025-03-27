@@ -166,15 +166,17 @@ func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnection
 				}
 			}
 
+			fmt.Println("p.New:", p.New)
 			// Add new connection to ac
-			for j, connInfo := range ac.Conns {
-				if connInfo.ClientIP == "" {
-					ac.Conns[j].ClientIP = p.New
-					fmt.Println("Added client ID back to AC", p.New)
-					break
+			if len(p.New) == len(masterID) {
+				for j, connInfo := range ac.Conns {
+					if connInfo.ClientIP == "" {
+						ac.Conns[j].ClientIP = p.New
+						fmt.Println("Added client ID back to AC", p.New)
+						break
+					}
 				}
 			}
-
 		}
 	}
 }
