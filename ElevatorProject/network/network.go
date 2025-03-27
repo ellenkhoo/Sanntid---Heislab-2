@@ -1,8 +1,6 @@
 package network
 
 import (
-	//"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
-	//"github.com/ellenkhoo/ElevatorProject/network/network_functions/peers"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -10,7 +8,6 @@ import (
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
-	//"time"
 )
 
 func CreateActiveConnections() *ActiveConnections {
@@ -41,6 +38,15 @@ func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn ne
 	err := encoder.Encode(msg)
 	if err != nil {
 		fmt.Println("Error encoding message: ", err)
+		if netErr, ok := err.(*net.OpError); ok && netErr.Op == "write" {
+			if netErr.Err.Error() == "use of closed network connection" {
+				fmt.Println("The connection is closed, unable to send message")
+				// handle disconnection
+			}
+		} else if err == io.EOF {
+			fmt.Println("Connection closed")
+			// handle disconnection
+		}
 		return
 	}
 }
@@ -55,9 +61,13 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receive
 		if err != nil {
 			if err == io.EOF {
 				fmt.Println("Connection closed")
+				// handle disconnection
+			} else if opErr, ok := err.(*net.OpError); ok && opErr.Op == "read" {
+				fmt.Println("Connection reset by peer")
+				// handle disconnection
 			}
 			fmt.Println("Error decoding message: ", err)
-			continue // eller continue?
+			break
 		}
 		receiveChan <- msg
 	}
