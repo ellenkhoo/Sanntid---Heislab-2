@@ -167,15 +167,14 @@ func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnection
 			}
 
 			// Add new connection to ac
-			for _, newID := range p.New {
-				for j, connInfo := range ac.Conns {
-					if connInfo.ClientIP == "" {
-						ac.Conns[j].ClientIP = string(newID)
-						fmt.Println("Added client ID back to AC", string(newID))
-						break
-					}
+			for j, connInfo := range ac.Conns {
+				if connInfo.ClientIP == "" {
+					ac.Conns[j].ClientIP = p.New
+					fmt.Println("Added client ID back to AC", p.New)
+					break
 				}
 			}
+
 		}
 	}
 }
@@ -229,7 +228,7 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 					// start master
 					fmt.Println("I am alone on the network and should become master")
 				}
-				
+
 			case r := <-networkChannels.RestartChan:
 				fmt.Println("Received message on restartChan:", r)
 				if r == "master" {
