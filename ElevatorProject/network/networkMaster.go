@@ -89,7 +89,7 @@ func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, conn net.
 	}
 
 	// Send activeConnections to backup
-	//ac.SendActiveConnections(sendChan)
+	ac.SendActiveConnections(sendChan)
 }
 
 func ExistsPriorCabRequests(AllElevStates map[string]elevator.ElevStates, targetIP string) bool {
@@ -229,9 +229,9 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			Payload: clientDataJSON,
 		}
 
-		if client.ID == client.HostIP {
-			client.Channels.ElevatorChan <- orderMsg
-		}
+		// if client.ID == client.HostIP {
+		// 	client.Channels.ElevatorChan <- orderMsg
+		// }
 
 		// Send message to clients
 		if len(ac.Conns) >= 1 {
