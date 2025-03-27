@@ -91,10 +91,14 @@ func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *Ac
 
 		networkChannels.ReceiveChan <- msg
 
-		shouldRestart := <-client.Channels.RestartChan
-		fmt.Println(shouldRestart)
-		if shouldRestart == "master" {
-			return
+		select {
+		case _, ok := <-client.Channels.RestartChan:
+			if !ok {
+				fmt.Println("Attempting to shutdown ReceiveMessage")
+				return
+			}
+		default:
+			//Do nothing
 		}
 	}
 }

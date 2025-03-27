@@ -77,9 +77,14 @@ func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnect
 		SendMessage(client, ac, msg, conn)
 	}
 
-	shouldReturn := <-client.Channels.RestartChan
-	if shouldReturn == "master" {
-		return
+	select {
+	case _, ok := <-client.Channels.RestartChan:
+		if !ok {
+			fmt.Println("Attempting to shutdown ReceiveMessage")
+			return
+		}
+	default:
+		//Do nothing
 	}
 }
 

@@ -9,7 +9,7 @@ import (
 )
 
 var BcastPort = "9999"
-var TCPPort = "8085"
+var TCPPort = "8080"
 
 // Keeping track of connections
 type MasterConnectionInfo struct {
