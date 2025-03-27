@@ -31,16 +31,29 @@ func main() {
 	go network.RouteMessages(&client, networkChannels)
 
 	var id string
-	flag.StringVar(&id, "id", "", "id of this peer")
+	var num int
+
+	// Define command-line flags
+	flag.StringVar(&id, "id", "", "ID of this peer")
+	flag.IntVar(&num, "num", 0, "Custom number for the peer ID")
 	flag.Parse()
+
 	if id == "" {
 		localIP, err := localip.LocalIP()
 		if err != nil {
 			fmt.Println(err)
 			localIP = "DISCONNECTED"
 		}
-		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+
+		// Use the provided number if given, otherwise fallback to process ID
+		if num > 0 {
+			id = fmt.Sprintf("peer-%s-%d", localIP, num)
+		} else {
+			id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+		}
 	}
+
+	fmt.Println("Assigned ID:", id)
 
 	fsm := elevator.InitElevator(id, &client.Channels)
 	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm)
