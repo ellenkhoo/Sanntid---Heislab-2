@@ -145,7 +145,7 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
 		case sharedConsts.TargetClient:
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
-				SendMessage(ac, client, msg, targetConn)
+				go SendMessage(ac, client, msg, targetConn)
 			}
 		}
 	}
