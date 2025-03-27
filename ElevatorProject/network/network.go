@@ -90,6 +90,12 @@ func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *Ac
 		}
 
 		networkChannels.ReceiveChan <- msg
+
+		shouldRestart := <-client.Channels.RestartChan
+		fmt.Println(shouldRestart)
+		if shouldRestart == "master" {
+			return
+		}
 	}
 }
 

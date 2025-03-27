@@ -76,6 +76,11 @@ func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnect
 	for msg := range sendChan {
 		SendMessage(client, ac, msg, conn)
 	}
+
+	shouldReturn := <-client.Channels.RestartChan
+	if shouldReturn == "master" {
+		return
+	}
 }
 
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
