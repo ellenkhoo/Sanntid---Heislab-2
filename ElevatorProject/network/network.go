@@ -2,10 +2,8 @@ package network
 
 import (
 	//"github.com/ellenkhoo/ElevatorProject/network/network_functions/bcast"
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
 	//"github.com/ellenkhoo/ElevatorProject/network/network_functions/peers"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io"
 	"net"
@@ -47,7 +45,7 @@ func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn ne
 	}
 }
 
-func ReceiveMessage(receiveChan chan sharedConsts.Message, conn net.Conn) {
+func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receiveChan chan sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
 
@@ -83,46 +81,27 @@ func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.N
 		}
 	}
 }
+func InitNetwork(ID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData,
+	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 
-func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, backupData *BackupData, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
-	var id string
-	flag.StringVar(&id, "id", "", "id of this peer")
-	flag.Parse()
-
-	// If no ID is given, use the local IP and process ID
-	if id == "" {
-		localIP, err := localip.LocalIP()
-		if err != nil {
-			fmt.Println(err)
-			localIP = "DISCONNECTED"
-		}
-		id = localIP
-		//id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-		fmt.Printf("id: %s", id)
-	}
-
-	go RouteMessages(client, networkChannels)
-	// Listen for the master
 	var masterID string = ""
 	masterID, found := ListenForMaster(bcastPort)
 	if found {
-		//Try to connect to the master
-		clientConn, success := ConnectToMaster(masterID, TCPPort)
-		if success {
-			client.AddClientConnection(id, clientConn, networkChannels)
-			go ReceiveMessage(networkChannels.ReceiveChan, clientConn)
-			go ClientSendMessagesFromSendChan(client, networkChannels.SendChan, clientConn)
-		}
+		go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
 	} else {
-		// No master found, announce ourselves as the master
-		masterID = id
-		client.ID = id
-		client.HostIP = masterID
-		fmt.Printf("Going to announce master. MasterID: %s\n", id)
-		go AnnounceMaster(id, bcastPort)
-		go ac.ListenAndAcceptConnections(TCPPort, networkChannels)
-		go ac.MasterSendMessages(client)
+		go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
 	}
+}
+
+func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData, bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+
+	client.ID = masterID
+	client.HostIP = masterID
+	fmt.Printf("Going to announce master. MasterID: %s\n", masterID)
+	go AnnounceMaster(masterID, bcastPort)
+	go ac.ListenAndAcceptConnections(masterData, client, TCPPort, networkChannels)
+	go ac.MasterSendMessages(client)
+	fmt.Println("AC: ", ac.Conns)
 
 	for {
 		select {
@@ -132,6 +111,40 @@ func InitMasterSlaveNetwork(ac *ActiveConnections, client *ClientConnectionInfo,
 		case e := <-networkChannels.ElevatorChan:
 			fmt.Println("Going to update my worldview")
 			go client.UpdateElevatorWorldview(fsm, e)
+		}
+	}
+}
+
+func InitSlave(ID string, masterID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData,
+	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
+
+	clientConn, success := ConnectToMaster(masterID, TCPPort)
+	if success {
+		client.AddClientConnection(ID, clientConn, networkChannels)
+		go ReceiveMessage(client, ac, networkChannels.ReceiveChan, clientConn)
+		go ClientSendMessagesFromSendChan(ac, client, networkChannels.SendChan, clientConn)
+
+		for {
+			select {
+			case b := <-networkChannels.BackupChan:
+				client.HandleReceivedMessageToClient(b)
+			case e := <-networkChannels.ElevatorChan:
+				fmt.Println("Going to update my worldview")
+				client.UpdateElevatorWorldview(fsm, e)
+				// case r := <-networkChannels.RestartChan:
+				// 	fmt.Println("Received message on restartChan:", r)
+				// 	if r == "master" {
+				// 		fmt.Print("AC: ", ac)
+				// 		go InitMaster(ID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+				// 	} else if r == "slave" {
+				// 		var masterID string = ""
+				// 		masterID, found := ListenForMaster(bcastPort)
+				// 		if found {
+				// 			go InitSlave(ID, masterID, ac, client, masterData, bcastPort, TCPPort, networkChannels, fsm)
+				// 		}
+				// 	}
+				// 	return
+			}
 		}
 	}
 }

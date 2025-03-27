@@ -1,6 +1,10 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"os"
+
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
 	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
@@ -23,12 +27,23 @@ func main() {
 	client := network.ClientConnectionInfo{}
 	client.Channels = *networkChannels
 	masterData := network.CreateMasterData()
-	backupData := network.CreateBackupData()
 
-	localIP, _ := localip.LocalIP()
+	go network.RouteMessages(&client, networkChannels)
 
-	fsm := elevator.InitElevator(localIP, &client.Channels)
-	go network.InitMasterSlaveNetwork(ac, &client, masterData, backupData, network.BcastPort, network.TCPPort, networkChannels, fsm)
+	var id string
+	flag.StringVar(&id, "id", "", "id of this peer")
+	flag.Parse()
+	if id == "" {
+		localIP, err := localip.LocalIP()
+		if err != nil {
+			fmt.Println(err)
+			localIP = "DISCONNECTED"
+		}
+		id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+	}
+
+	fsm := elevator.InitElevator(id, &client.Channels)
+	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm)
 
 	select {}
 }

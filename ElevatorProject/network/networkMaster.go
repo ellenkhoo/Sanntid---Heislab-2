@@ -28,7 +28,7 @@ func AnnounceMaster(localIP string, port string) {
 	}
 }
 
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientConnectionInfo, port string, networkChannels *sharedConsts.NetworkChannels) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
@@ -47,7 +47,7 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChan
 			continue
 		}
 
-		go ReceiveMessage(networkChannels.ReceiveChan, tcpConn)
+		go ReceiveMessage(client, ac, networkChannels.ReceiveChan, tcpConn)
 		go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
 	}
 }
