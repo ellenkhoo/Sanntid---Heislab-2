@@ -71,6 +71,24 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	ac.SendActiveConnections(sendChan)
 }
 
+func ExistsPriorCabRequests(AllElevStates map[string]elevator.ElevStates, targetIP string) bool {
+
+	elevState, exists := AllElevStates[targetIP]
+	if !exists {
+		fmt.Println("No elevator state found for IP:", targetIP)
+		return false
+	}
+
+	for _, cabRequest := range elevState.CabRequests {
+		if cabRequest {
+			// If any cabRequest is true, return false (not empty)
+			return true
+		}
+	}
+	// Otherwise, the ElevStates is not empty
+	return false
+}
+
 func (ac *ActiveConnections) SendActiveConnections(sendChan chan sharedConsts.Message) {
 
 	var IPs []string

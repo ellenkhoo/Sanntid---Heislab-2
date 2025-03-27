@@ -61,13 +61,10 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 // When a new connection is established on the client side, this function updates clientConnctionInfo
 func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, networkChannels *sharedConsts.NetworkChannels) {
 
-	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
-
 	fmt.Println("Adding client connection")
 
 	*client = ClientConnectionInfo{
 		ID:         id,
-		HostIP:     remoteIP,
 		ClientConn: clientConn,
 		Channels:   *networkChannels,
 	}
