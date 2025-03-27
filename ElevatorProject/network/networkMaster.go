@@ -204,7 +204,12 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			ClearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
 		}
 
-		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
+		activeElevStates := make(map[string]elevator.ElevStates)
+		for _, conn := range ac.Conns {
+			activeElevStates[conn.ClientIP] = masterData.AllElevStates[conn.ClientIP]
+		}
+
+		assignedOrders := hra.SendStateToHRA(activeElevStates, masterData.GlobalHallRequests)
 		masterData.mutex.Lock()
 
 		for ID, orders := range *assignedOrders {
