@@ -88,18 +88,18 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 	case sharedConsts.MasterWorldviewMessage:
 		fmt.Println("Received master worldview message")
 		data := msg.Payload
-		var backupData BackupData
-		err := json.Unmarshal(data, &backupData)
+		var mastersWorldview Worldview
+		err := json.Unmarshal(data, &mastersWorldview)
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 			return
 		}
 
 		clientConn.ClientMtx.Lock()
-		clientConn.Worldview = backupData
+		clientConn.BackupData.Worldview = mastersWorldview
 		clientConn.ClientMtx.Unlock()
 
-		elevatorDataJSON, err := json.Marshal(backupData)
+		elevatorDataJSON, err := json.Marshal(mastersWorldview)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
 			return
@@ -110,6 +110,22 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		}
 
 		clientConn.Channels.ElevatorChan <- elevatorMsg
+	case sharedConsts.ActiveConnectionsMessage:
+		fmt.Println("Received active connections message")
+
+		data := msg.Payload
+		var connectionData []string
+		err := json.Unmarshal(data, &connectionData)
+		if err != nil {
+			fmt.Println("Error decoding message: ", err)
+			return
+		}
+
+		clientConn.ClientMtx.Lock()
+		clientConn.BackupData.MastersActiveConnectionsIPs = connectionData
+		clientConn.ClientMtx.Unlock()
+		fmt.Println("done updating activeconnections:", clientConn.BackupData.MastersActiveConnectionsIPs)
+
 	}
 }
 
@@ -119,14 +135,14 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 	fmt.Println("RequestsToDo before update:", fsm.El.RequestsToDo)
 	clientID := clientConn.ID
 
-	var masterData BackupData
-	err := json.Unmarshal(msg.Payload, &masterData)
+	var mastersWorldview Worldview
+	err := json.Unmarshal(msg.Payload, &mastersWorldview)
 	if err != nil {
 		fmt.Println("Error decoding message to elevator: ", err)
 		return
 	}
 
-	elevatorData := UpdateElevatorData(masterData, clientID)
+	elevatorData := UpdateElevatorData(mastersWorldview, clientID)
 	fmt.Println("ElevatorData: ", elevatorData)
 	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
 
@@ -160,7 +176,7 @@ func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FS
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func UpdateElevatorData(backupData BackupData, elevatorID string) ElevatorRequest {
+func UpdateElevatorData(backupData Worldview, elevatorID string) ElevatorRequest {
 
 	fmt.Println("My id: ", elevatorID)
 	localAssignedRequests := backupData.AllAssignedRequests[elevatorID]

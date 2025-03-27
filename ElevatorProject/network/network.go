@@ -22,12 +22,20 @@ func CreateMasterData() *MasterData {
 	}
 }
 
-func CreateBackupData() *BackupData {
-	return &BackupData{
+func CreateWorldview() *Worldview {
+	return &Worldview{
 		GlobalHallRequests:  [elevator.N_FLOORS][2]bool{},
 		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
 	}
 }
+
+func CreateBackupData() *BackupData {
+	return &BackupData{
+		Worldview:                   *CreateWorldview(),
+		MastersActiveConnectionsIPs: []string{},
+	}
+}
+
 func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At SendMessage")
 	if client.ID == client.HostIP {
@@ -166,12 +174,12 @@ func HandleClosedConnection(client *ClientConnectionInfo, ac *ActiveConnections,
 		// Slave disconnected
 		fmt.Println("Slave disconnected")
 		// Remove from active connections
-		// for i, connInfo := range ac.Conns {
-		// 	if connInfo.HostConn == conn {
-		// 		ac.Conns = append(ac.Conns[:i], ac.Conns[i+1:]...)
-		// 		fmt.Println("Removed connection. AC now:", ac.Conns)
-		// 	}
-		// }
+		for i, connInfo := range ac.Conns {
+			if connInfo.HostConn == conn {
+				ac.Conns = append(ac.Conns[:i], ac.Conns[i+1:]...)
+				fmt.Println("Removed connection. AC now:", ac.Conns)
+			}
+		}
 		// fmt.Println("Going to send active connections")
 		// ac.SendActiveConnections(client.Channels.SendChan)
 	} else {

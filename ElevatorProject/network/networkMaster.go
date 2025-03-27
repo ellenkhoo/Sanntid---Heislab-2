@@ -67,6 +67,32 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	ac.mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
+
+	ac.SendActiveConnections(sendChan)
+}
+
+func (ac *ActiveConnections) SendActiveConnections(sendChan chan sharedConsts.Message) {
+
+	var IPs []string
+	for _, conn := range ac.Conns {
+		IPs = append(IPs, conn.ClientIP)
+	}
+
+	activeConnectionsDataJSON, err := json.Marshal(IPs)
+	if err != nil {
+		fmt.Println("Error marshalling activeConnections: ", err)
+		return
+	}
+
+	activeConnectionsMessage := sharedConsts.Message{
+		Type:    sharedConsts.ActiveConnectionsMessage,
+		Target:  sharedConsts.TargetClient,
+		Payload: activeConnectionsDataJSON,
+	}
+
+	fmt.Println("Master sending activeConnections")
+	sendChan <- activeConnectionsMessage
+	fmt.Println("Master sent activeConnections")
 }
 
 func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
@@ -139,7 +165,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 		}
 		masterData.mutex.Unlock()
 
-		backupData := BackupData{
+		backupData := Worldview{
 			GlobalHallRequests:  masterData.GlobalHallRequests,
 			AllAssignedRequests: masterData.AllAssignedRequests,
 		}

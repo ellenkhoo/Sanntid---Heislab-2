@@ -21,11 +21,11 @@ type ActiveConnections struct {
 	Conns []MasterConnectionInfo
 }
 type ClientConnectionInfo struct {
-	ID     string
-	HostIP string
+	ID         string
+	HostIP     string
 	ClientConn net.Conn
 	Channels   sharedConsts.NetworkChannels
-	Worldview  BackupData
+	BackupData BackupData
 	ClientMtx  sync.Mutex
 }
 
@@ -33,13 +33,18 @@ type MasterData struct {
 	GlobalHallRequests  [elevator.N_FLOORS][2]bool            `json:"globalHallRequests"`
 	AllAssignedRequests map[string][elevator.N_FLOORS][2]bool `json:"allAssignedRequests"`
 	AllElevStates       map[string]elevator.ElevStates        `json:"allElevStates"`
-	BackupData          BackupData
+	BackupData          Worldview
 	mutex               sync.Mutex
 }
 
-type BackupData struct {
+type Worldview struct {
 	GlobalHallRequests  [elevator.N_FLOORS][2]bool            `json:"globalHallRequests"`
 	AllAssignedRequests map[string][elevator.N_FLOORS][2]bool `json:"allAssignedRequests"`
+}
+
+type BackupData struct {
+	Worldview                   Worldview
+	MastersActiveConnectionsIPs []string
 }
 
 type ElevatorRequest struct {
