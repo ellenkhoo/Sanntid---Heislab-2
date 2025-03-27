@@ -28,7 +28,7 @@ func CreateBackupData() *BackupData {
 		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
 	}
 }
-func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn net.Conn) {
+func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At SendMessage")
 	if client.ID == client.HostIP {
 		client.Channels.ReceiveChan <- msg
@@ -41,11 +41,11 @@ func SendMessage(client *ClientConnectionInfo, msg sharedConsts.Message, conn ne
 		if netErr, ok := err.(*net.OpError); ok && netErr.Op == "write" {
 			if netErr.Err.Error() == "use of closed network connection" {
 				fmt.Println("The connection is closed, unable to send message")
-				// handle disconnection
+				HandleClosedConnection(client, ac, conn)
 			}
 		} else if err == io.EOF {
 			fmt.Println("Connection closed")
-			// handle disconnection
+			HandleClosedConnection(client, ac, conn)
 		}
 		return
 	}
@@ -61,10 +61,10 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receive
 		if err != nil {
 			if err == io.EOF {
 				fmt.Println("Connection closed")
-				// handle disconnection
+				HandleClosedConnection(client, ac, conn)
 			} else if opErr, ok := err.(*net.OpError); ok && opErr.Op == "read" {
 				fmt.Println("Connection reset by peer")
-				// handle disconnection
+				HandleClosedConnection(client, ac, conn)
 			}
 			fmt.Println("Error decoding message: ", err)
 			break
@@ -156,5 +156,36 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 				// 	return
 			}
 		}
+	}
+}
+
+func HandleClosedConnection(client *ClientConnectionInfo, ac *ActiveConnections, conn net.Conn) {
+	fmt.Println("At handle disconnection")
+	conn.Close()
+	if client.ID == client.HostIP {
+		// Slave disconnected
+		fmt.Println("Slave disconnected")
+		// Remove from active connections
+		// for i, connInfo := range ac.Conns {
+		// 	if connInfo.HostConn == conn {
+		// 		ac.Conns = append(ac.Conns[:i], ac.Conns[i+1:]...)
+		// 		fmt.Println("Removed connection. AC now:", ac.Conns)
+		// 	}
+		// }
+		// fmt.Println("Going to send active connections")
+		// ac.SendActiveConnections(client.Channels.SendChan)
+	} else {
+		// Master disconnected
+		fmt.Println("Master disconnected")
+		// clientID := client.ID
+		// if ShouldBecomeMaster(clientID, ac) {
+		// 	fmt.Println("I should become master")
+		// 	msg := "master"
+		// 	client.Channels.RestartChan <- msg
+		// } else {
+		// 	fmt.Println("I should become slave")
+		// 	msg := "slave"
+		// 	client.Channels.RestartChan <- msg
+		// }
 	}
 }

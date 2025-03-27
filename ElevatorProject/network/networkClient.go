@@ -77,7 +77,7 @@ func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnect
 
 	fmt.Println("Ready to send msg to master")
 	for msg := range sendChan {
-		SendMessage(client, msg, conn)
+		SendMessage(client, ac, msg, conn)
 	}
 }
 
