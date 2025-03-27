@@ -47,18 +47,18 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, 
 			continue
 		}
 
-		go ReceiveMessage(client, ac, networkChannels.ReceiveChan, tcpConn)
-		go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
+		go ReceiveMessage(client, ac, client.Channels, tcpConn)
+		//go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
 	}
 }
 
 // Adds the host's connection with a client to ActiveConnections
-func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan sharedConsts.Message) {
+func (ac *ActiveConnections) AddHostConnection(clientID string, conn net.Conn, sendChan chan sharedConsts.Message) {
 
-	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
+	//remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
 	newConn := MasterConnectionInfo{
-		ClientIP: remoteIP,
+		ClientIP: clientID,
 		HostConn: conn,
 	}
 
@@ -68,6 +68,7 @@ func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan shar
 	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
 
+	fmt.Println("Sending acitveConnections", ac.Conns)
 	ac.SendActiveConnections(sendChan)
 }
 

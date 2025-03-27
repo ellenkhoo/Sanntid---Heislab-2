@@ -59,7 +59,7 @@ func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg shared
 	}
 }
 
-func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receiveChan chan sharedConsts.Message, conn net.Conn) {
+func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, networkChannels sharedConsts.NetworkChannels, conn net.Conn) {
 	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
 
@@ -77,7 +77,19 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, receive
 			fmt.Println("Error decoding message: ", err)
 			break
 		}
-		receiveChan <- msg
+		if msg.Type == sharedConsts.ClientIDMessage {
+
+			fmt.Println("Received clinetID msg")
+			var clientID string
+			err := json.Unmarshal(msg.Payload, &clientID)
+			if err != nil {
+				fmt.Println("Error unmarshalling payload: ", err)
+				return
+			}
+			go ac.AddHostConnection(clientID, conn, networkChannels.SendChan)
+		}
+
+		networkChannels.ReceiveChan <- msg
 	}
 }
 
@@ -138,8 +150,24 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 
 	clientConn, success := ConnectToMaster(masterID, TCPPort)
 	if success {
+		// Send message to master with ID
+		idJSON, err := json.Marshal(ID)
+		if err != nil {
+			fmt.Println("Error marshaling ID")
+		}
+
+		IDMessage := sharedConsts.Message{
+			Type:    sharedConsts.ClientIDMessage,
+			Target:  sharedConsts.TargetMaster,
+			Payload: idJSON,
+		}
+
+		fmt.Println("Sending ID message to master", ID)
+		client.Channels.SendChan <- IDMessage
+		fmt.Println("Sent ID message to master")
+
 		client.AddClientConnection(ID, clientConn, networkChannels)
-		go ReceiveMessage(client, ac, networkChannels.ReceiveChan, clientConn)
+		go ReceiveMessage(client, ac, client.Channels, clientConn)
 		go ClientSendMessagesFromSendChan(ac, client, networkChannels.SendChan, clientConn)
 
 		for {

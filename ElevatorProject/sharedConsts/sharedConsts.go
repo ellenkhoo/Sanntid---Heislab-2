@@ -19,6 +19,8 @@ const (
 	LocalRequestMessage
 	CurrentStateMessage
 	ActiveConnectionsMessage
+	ClientIDMessage
+
 )
 
 type MessageTarget int
