@@ -19,7 +19,7 @@ func main() {
 		ReceiveChan:  make(chan sharedConsts.Message),
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
-		ElevatorChan: make(chan sharedConsts.Message),
+		ElevatorChan: make(chan sharedConsts.Message, 100),
 		UpdateChan:   make(chan string),
 	}
 

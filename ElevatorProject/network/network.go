@@ -38,7 +38,7 @@ func CreateBackupData() *BackupData {
 
 func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg sharedConsts.Message, conn net.Conn) {
 	fmt.Println("At SendMessage")
-	if client.ID == client.HostIP {
+	if client.ID == client.HostIP && !(msg.Type == sharedConsts.PriorCabRequestsMessage){
 		client.Channels.ReceiveChan <- msg
 	}
 	fmt.Println("The message is to a remote client")
@@ -59,7 +59,7 @@ func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg shared
 	}
 }
 
-func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, networkChannels sharedConsts.NetworkChannels, conn net.Conn) {
+func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *ActiveConnections, networkChannels sharedConsts.NetworkChannels, conn net.Conn) {
 	fmt.Println("At func ReceiveMessage!")
 	decoder := json.NewDecoder(conn)
 
@@ -86,7 +86,7 @@ func ReceiveMessage(client *ClientConnectionInfo, ac *ActiveConnections, network
 				fmt.Println("Error unmarshalling payload: ", err)
 				return
 			}
-			go ac.AddHostConnection(clientID, conn, networkChannels.SendChan)
+			go ac.AddHostConnection(masterData, clientID, conn, networkChannels.SendChan)
 		}
 
 		networkChannels.ReceiveChan <- msg
@@ -167,7 +167,7 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 		fmt.Println("Sent ID message to master")
 
 		client.AddClientConnection(ID, clientConn, networkChannels)
-		go ReceiveMessage(client, ac, client.Channels, clientConn)
+		go ReceiveMessage(masterData, client, ac, client.Channels, clientConn)
 		go ClientSendMessagesFromSendChan(ac, client, networkChannels.SendChan, clientConn)
 
 		for {
@@ -176,7 +176,7 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 				client.HandleReceivedMessageToClient(b)
 			case e := <-networkChannels.ElevatorChan:
 				fmt.Println("Going to update my worldview")
-				client.UpdateElevatorWorldview(fsm, e)
+				go client.UpdateElevatorWorldview(fsm, e)
 				// case r := <-networkChannels.RestartChan:
 				// 	fmt.Println("Received message on restartChan:", r)
 				// 	if r == "master" {

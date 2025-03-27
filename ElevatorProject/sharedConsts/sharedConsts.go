@@ -20,8 +20,9 @@ const (
 	CurrentStateMessage
 	ActiveConnectionsMessage
 	ClientIDMessage
-
+	PriorCabRequestsMessage
 )
+
 
 type MessageTarget int
 

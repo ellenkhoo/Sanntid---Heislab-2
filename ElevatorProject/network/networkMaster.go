@@ -47,13 +47,13 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, 
 			continue
 		}
 
-		go ReceiveMessage(client, ac, client.Channels, tcpConn)
+		go ReceiveMessage(masterData, client, ac, client.Channels, tcpConn)
 		//go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
 	}
 }
 
 // Adds the host's connection with a client to ActiveConnections
-func (ac *ActiveConnections) AddHostConnection(clientID string, conn net.Conn, sendChan chan sharedConsts.Message) {
+func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, clientID string, conn net.Conn, sendChan chan sharedConsts.Message) {
 
 	//remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
@@ -67,6 +67,33 @@ func (ac *ActiveConnections) AddHostConnection(clientID string, conn net.Conn, s
 	ac.mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
 	ac.mutex.Unlock()
+
+	if ExistsPriorCabRequests(masterData.AllElevStates, clientID) {
+
+		priorCabRequests := masterData.AllElevStates[clientID].CabRequests
+
+		cabRequestsWithID := CabRequestsWithID {
+			ID: clientID, 
+			CabRequests: priorCabRequests,
+		}
+
+		cabRequestsWithIDJSON, err := json.Marshal(cabRequestsWithID)
+		if err != nil {
+			fmt.Println("Error marshalling final priorCabRequests: ", err)
+			return
+		}
+
+		priorCabRequestmsg := sharedConsts.Message{
+			Type:    sharedConsts.PriorCabRequestsMessage,
+			Target:  sharedConsts.TargetClient,
+			Payload: cabRequestsWithIDJSON,
+		}
+
+		fmt.Println("sending prior cabrequest", priorCabRequests)
+		sendChan <- priorCabRequestmsg
+		fmt.Println("sent prior cabrequest")
+	}
+
 
 	fmt.Println("Sending acitveConnections", ac.Conns)
 	ac.SendActiveConnections(sendChan)

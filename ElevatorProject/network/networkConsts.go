@@ -9,7 +9,7 @@ import (
 )
 
 var BcastPort = "9999"
-var TCPPort = "8081"
+var TCPPort = "8085"
 
 // Keeping track of connections
 type MasterConnectionInfo struct {
@@ -50,4 +50,9 @@ type BackupData struct {
 type ElevatorRequest struct {
 	GlobalHallRequests [elevator.N_FLOORS][2]bool `json:"globalHallRequests"`
 	AssignedRequests   [elevator.N_FLOORS][2]bool `json:"assignedRequests"`
+}
+
+type CabRequestsWithID struct {
+	ID          string                  `json:"id"`
+	CabRequests [elevator.N_FLOORS]bool `json:"cabRequests"`
 }

@@ -123,25 +123,41 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 		clientConn.ClientMtx.Unlock()
 		fmt.Println("done updating activeconnections:", clientConn.BackupData.MastersActiveConnectionsIPs)
 
+	case sharedConsts.PriorCabRequestsMessage:
+		fmt.Print("sending prior cabrequests to elevatorchan")
+		clientConn.Channels.ElevatorChan <- msg
+		fmt.Print("sent prior cabrequests to elevatorchan")
 	}
 }
 
 func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedConsts.Message) {
 
 	fmt.Println("At UpdateElevatorWorldview\n")
-	fmt.Println("RequestsToDo before update:", fsm.El.RequestsToDo)
 	clientID := clientConn.ID
 
 	var mastersWorldview Worldview
-	err := json.Unmarshal(msg.Payload, &mastersWorldview)
-	if err != nil {
-		fmt.Println("Error decoding message to elevator: ", err)
-		return
+	var priorCabRequestsWithID CabRequestsWithID
+	err1 := json.Unmarshal(msg.Payload, &mastersWorldview)
+	if err1 != nil {
+		fmt.Println("Error decoding worldview message to elevator: ", err1)
+
+	}
+
+	err2 := json.Unmarshal(msg.Payload, &priorCabRequestsWithID)
+	fmt.Println("my id in cabRequest stuff:\n", clientID)
+	if err2 != nil {
+		fmt.Println("Error decoding cabRequest message to elevator: ", err2)
+	}
+
+	fmt.Println("prior id", priorCabRequestsWithID.ID)
+	if clientID == priorCabRequestsWithID.ID {
+		mergedCabRequests := MergeCabRequests(fsm.El.ElevStates.CabRequests, priorCabRequestsWithID.CabRequests)
+		fsm.Fsm_mtx.Lock()
+		fsm.El.ElevStates.CabRequests = mergedCabRequests
+		fsm.Fsm_mtx.Unlock()
 	}
 
 	elevatorData := UpdateElevatorData(mastersWorldview, clientID)
-	fmt.Println("ElevatorData: ", elevatorData)
-	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
 
 	assignedRequests := elevatorData.AssignedRequests
 	globalHallRequests := elevatorData.GlobalHallRequests
@@ -186,4 +202,19 @@ func UpdateElevatorData(backupData Worldview, elevatorID string) ElevatorRequest
 	}
 
 	return elevatorData
+}
+
+func MergeCabRequests(currentCabRequests [elevator.N_FLOORS]bool, priorCabRequests [elevator.N_FLOORS]bool) [elevator.N_FLOORS]bool {
+	fmt.Println("at merge cabrequests")
+	fmt.Println("current cabrequests:", currentCabRequests)
+	fmt.Println("prior cabrequests:", priorCabRequests)
+
+	mergedCabRequests := [elevator.N_FLOORS]bool{false, false, false, false}
+	for floor := 0; floor < elevator.N_FLOORS; floor++ {
+		if currentCabRequests[floor] || priorCabRequests[floor] {
+			mergedCabRequests[floor] = true
+		}
+	}
+
+	return mergedCabRequests
 }
