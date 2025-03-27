@@ -150,10 +150,10 @@ func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnection
 			fmt.Println("Going to update my worldview")
 			go client.UpdateElevatorWorldview(fsm, e)
 		case p := <-peerUpdateChan:
-			fmt.Printf("Peer update:\n")
-			fmt.Printf("  Peers:    %q\n", p.Peers)
-			fmt.Printf("  New:      %q\n", p.New)
-			fmt.Printf("  Lost:     %q\n", p.Lost)
+			// fmt.Printf("Peer update:\n")
+			// fmt.Printf("  Peers:    %q\n", p.Peers)
+			// fmt.Printf("  New:      %q\n", p.New)
+			// fmt.Printf("  Lost:     %q\n", p.Lost)
 
 			// Remove lost connection from ActiveConnections
 			for _, lostID := range p.Lost {
@@ -220,15 +220,16 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 				fmt.Println("Going to update my worldview")
 				go client.UpdateElevatorWorldview(fsm, e)
 			case p := <-peerUpdateChan:
-				fmt.Printf("Peer update:\n")
-				fmt.Printf("  Peers:    %q\n", p.Peers)
-				fmt.Printf("  New:      %q\n", p.New)
-				fmt.Printf("  Lost:     %q\n", p.Lost)
+				// fmt.Printf("Peer update:\n")
+				// fmt.Printf("  Peers:    %q\n", p.Peers)
+				// fmt.Printf("  New:      %q\n", p.New)
+				// fmt.Printf("  Lost:     %q\n", p.Lost)
 
 				if len(p.Peers) == 1 {
 					// start master
 					fmt.Println("I am alone on the network and should become master")
 				}
+				
 			case r := <-networkChannels.RestartChan:
 				fmt.Println("Received message on restartChan:", r)
 				if r == "master" {

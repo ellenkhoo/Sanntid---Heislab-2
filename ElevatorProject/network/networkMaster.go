@@ -206,8 +206,11 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 		activeElevStates := make(map[string]elevator.ElevStates)
 		for _, conn := range ac.Conns {
-			activeElevStates[conn.ClientIP] = masterData.AllElevStates[conn.ClientIP]
+			if conn.ClientIP != "" {
+				activeElevStates[conn.ClientIP] = masterData.AllElevStates[conn.ClientIP]
+			}
 		}
+		
 		activeElevStates[client.ID] = masterData.AllElevStates[client.ID]
 
 		assignedOrders := hra.SendStateToHRA(activeElevStates, masterData.GlobalHallRequests)
