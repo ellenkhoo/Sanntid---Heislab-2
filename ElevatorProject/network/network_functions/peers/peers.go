@@ -1,11 +1,13 @@
 package peers
 
 import (
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/conn"
 	"fmt"
 	"net"
 	"sort"
+	"sync"
 	"time"
+
+	"github.com/ellenkhoo/ElevatorProject/network/network_functions/conn"
 )
 
 type PeerUpdate struct {
@@ -17,8 +19,9 @@ type PeerUpdate struct {
 const interval = 15 * time.Millisecond
 const timeout = 500 * time.Millisecond
 
-func Transmitter(port int, id string, transmitEnable <-chan bool) {
+func Transmitter(port int, id string, transmitEnable <-chan bool, StopChan chan bool, wg *sync.WaitGroup) {
 
+	defer wg.Done()
 	conn := conn.DialBroadcastUDP(port)
 	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("255.255.255.255:%d", port))
 
@@ -27,15 +30,21 @@ func Transmitter(port int, id string, transmitEnable <-chan bool) {
 		select {
 		case enable = <-transmitEnable:
 		case <-time.After(interval):
+		case _, ok := <- StopChan:
+			if !ok {
+				return
+			}
 		}
 		if enable {
 			conn.WriteTo([]byte(id), addr)
+
 		}
 	}
 }
 
-func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
+func Receiver(port int, peerUpdateCh chan<- PeerUpdate, StopChan chan bool, wg *sync.WaitGroup) {
 
+	defer wg.Done()
 	var buf [1024]byte
 	var p PeerUpdate
 	lastSeen := make(map[string]time.Time)
@@ -82,6 +91,14 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 			sort.Strings(p.Peers)
 			sort.Strings(p.Lost)
 			peerUpdateCh <- p
+		}
+		select {
+		case _, ok := <- StopChan:
+			if !ok {
+				return
+			}
+		default:
+			continue
 		}
 	}
 }

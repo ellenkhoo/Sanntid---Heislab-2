@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
@@ -58,10 +57,8 @@ func main() {
 
 	fmt.Println("Assigned ID:", id)
 
-	var slavesWaitGroup sync.WaitGroup
-
 	fsm := elevator.InitElevator(id, &client.Channels)
-	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm, &slavesWaitGroup)
+	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm)
 
 	select {}
 }

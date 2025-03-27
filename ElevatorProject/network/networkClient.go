@@ -71,23 +71,36 @@ func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn ne
 	}
 }
 
-func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn, wg *sync.WaitGroup) {
+func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn, wg *sync.WaitGroup, fsm *elevator.FSM) {
 	defer wg.Done()
 
 	fmt.Println("Ready to send msg to master")
-	for msg := range sendChan {
-		SendMessage(client, ac, msg, conn)
+	// for msg := range sendChan {
+	// 	SendMessage(client, ac, msg, conn)
+
+	// 	select {
+	// 	case _, ok := <-client.Channels.StopChan:
+	// 		if !ok {
+	// 			fmt.Println("Attempting to shutdown ClientSndMessagesFromSendChan")
+	// 			return
+	// 		}
+	// 	default:
+	// 		//Do nothing
+	// 	}
+	// }
+
+	for {
+		select {
+		case msg := <-sendChan:
+			SendMessage(client, ac, msg, conn, fsm)
+		case _, ok := <-client.Channels.StopChan:
+			if !ok {
+				fmt.Println("Attempting to shutdown ClientSndMessagesFromSendChan")
+				return
+			}
+		}
 	}
 
-	select {
-	case _, ok := <-client.Channels.StopChan:
-		if !ok {
-			fmt.Println("Attempting to shutdown ClientSndMessagesFromSendChan")
-			return
-		}
-	default:
-		//Do nothing
-	}
 }
 
 func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {

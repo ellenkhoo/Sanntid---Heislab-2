@@ -12,7 +12,8 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
-func AnnounceMaster(localIP string, port string) {
+func AnnounceMaster(localIP string, port string, StopChan chan bool, wg *sync.WaitGroup) {
+	defer wg.Done()
 	fmt.Println("Announcing master")
 	broadcastAddr := "255.255.255.255" + ":" + port
 	conn, err := net.Dial("udp", broadcastAddr)
@@ -26,10 +27,19 @@ func AnnounceMaster(localIP string, port string) {
 		msg := "I am Master"
 		conn.Write([]byte(msg))
 		time.Sleep(100 * time.Millisecond)
+
+		select {
+		case _, ok := <-StopChan:
+			if !ok {
+				return
+			}
+		default:
+			continue
+		}
 	}
 }
 
-func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientConnectionInfo, port string, networkChannels *sharedConsts.NetworkChannels, wg *sync.WaitGroup) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientConnectionInfo, port string, networkChannels *sharedConsts.NetworkChannels, wg *sync.WaitGroup, fsm *elevator.FSM) {
 
 	fmt.Println("At listenAndAccept")
 
@@ -50,14 +60,14 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, 
 			continue
 		}
 
-		go ReceiveMessage(masterData, client, ac, client.Channels, tcpConn, wg)
+		go ReceiveMessage(masterData, client, ac, client.Channels, tcpConn, wg, fsm)
 		//go ac.AddHostConnection(tcpConn, networkChannels.SendChan)
 	}
 }
 
 // Adds the host's connection with a client to ActiveConnections
-func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, clientID string, conn net.Conn, sendChan chan sharedConsts.Message) {
-
+func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, clientID string, conn net.Conn, networkChannels sharedConsts.NetworkChannels, wg *sync.WaitGroup) {
+	defer wg.Done()
 	//remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
 
 	newConn := MasterConnectionInfo{
@@ -93,12 +103,12 @@ func (ac *ActiveConnections) AddHostConnection(masterData *MasterData, clientID 
 		}
 
 		fmt.Println("sending prior cabrequest", priorCabRequests)
-		sendChan <- priorCabRequestmsg
+		networkChannels.SendChan <- priorCabRequestmsg
 		fmt.Println("sent prior cabrequest")
 	}
 
 	fmt.Println("Sending acitveConnections", ac.Conns)
-	ac.SendActiveConnections(sendChan)
+	ac.SendActiveConnections(networkChannels.SendChan)
 }
 
 func ExistsPriorCabRequests(AllElevStates map[string]elevator.ElevStates, targetIP string) bool {
@@ -143,20 +153,42 @@ func (ac *ActiveConnections) SendActiveConnections(sendChan chan sharedConsts.Me
 	fmt.Println("Master sent activeConnections")
 }
 
-func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
+func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo, StopChan chan bool, wg *sync.WaitGroup, fsm *elevator.FSM) {
 
+	defer wg.Done()
 	fmt.Println("Arrived at masterSend")
 	var targetConn net.Conn
-	for msg := range client.Channels.SendChan {
-		switch msg.Target {
+	// for msg := range client.Channels.SendChan {
+	// 	switch msg.Target {
 
-		case sharedConsts.TargetMaster:
-			client.Channels.MasterChan <- msg
+	// 	case sharedConsts.TargetMaster:
+	// 		client.Channels.MasterChan <- msg
 
-		case sharedConsts.TargetClient:
-			for clients := range ac.Conns {
-				targetConn = ac.Conns[clients].HostConn
-				SendMessage(client, ac, msg, targetConn)
+	// 	case sharedConsts.TargetClient:
+	// 		for clients := range ac.Conns {
+	// 			targetConn = ac.Conns[clients].HostConn
+	// 			SendMessage(client, ac, msg, targetConn)
+	// 		}
+	// 	}
+	// }
+
+	for {
+		select {
+		case msg := <-client.Channels.SendChan:
+			switch msg.Target {
+
+			case sharedConsts.TargetMaster:
+				client.Channels.MasterChan <- msg
+
+			case sharedConsts.TargetClient:
+				for clients := range ac.Conns {
+					targetConn = ac.Conns[clients].HostConn
+					SendMessage(client, ac, msg, targetConn, fsm)
+				}
+			}
+		case _, ok := <-StopChan:
+			if !ok {
+				return
 			}
 		}
 	}
