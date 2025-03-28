@@ -1,36 +1,22 @@
 package elevator
 
-import (
-	"fmt"
-
-	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
-)
-
 type DirnBehaviourPair struct {
-	Dirn      elevio.MotorDirection
+	Dirn      MotorDirection
 	Behaviour ElevatorBehaviour
 }
 
-func ClearAllRequests(e Elevator) {
-	fmt.Printf("Clearing all requests!\n")
-	for f := 0; f < N_FLOORS; f++ {
-		for b := 0; b < N_BUTTONS; b++ {
-			e.RequestsToDo[f][b] = false
-		}
-	}
-	for f := 0; f < N_FLOORS; f++ {
-		for b := 0; b < N_BUTTONS; b++ {
-			if e.RequestsToDo[f][b] {
-				fmt.Printf("Order at floor %d not cleared", f)
-			}
+func ClearAllRequests(elevator Elevator) {
+	for floor := 0; floor < N_FLOORS; floor++ {
+		for button := 0; button < N_BUTTONS; button++ {
+			elevator.RequestsToDo[floor][button] = false
 		}
 	}
 }
 
-func RequestsAbove(e Elevator) bool {
-	for f := e.ElevStates.Floor + 1; f < N_FLOORS; f++ {
-		for btn := 0; btn < N_BUTTONS; btn++ {
-			if e.RequestsToDo[f][btn] {
+func RequestsAbove(elevator Elevator) bool {
+	for floor := elevator.ElevStates.CurrentFloor + 1; floor < N_FLOORS; floor++ {
+		for button := 0; button < N_BUTTONS; button++ {
+			if elevator.RequestsToDo[floor][button] {
 				return true
 			}
 		}
@@ -38,10 +24,10 @@ func RequestsAbove(e Elevator) bool {
 	return false
 }
 
-func RequestsBelow(e Elevator) bool {
-	for f := 0; f < e.ElevStates.Floor; f++ {
-		for btn := 0; btn < N_BUTTONS; btn++ {
-			if e.RequestsToDo[f][btn] {
+func RequestsBelow(elevator Elevator) bool {
+	for floor := 0; floor < elevator.ElevStates.CurrentFloor; floor++ {
+		for button := 0; button < N_BUTTONS; button++ {
+			if elevator.RequestsToDo[floor][button] {
 				return true
 			}
 		}
@@ -49,124 +35,102 @@ func RequestsBelow(e Elevator) bool {
 	return false
 }
 
-func RequestsHere(e Elevator) bool {
-	for btn := 0; btn < N_BUTTONS; btn++ {
-		if e.RequestsToDo[e.ElevStates.Floor][btn] {
+func RequestsHere(elevator Elevator) bool {
+	for button := 0; button < N_BUTTONS; button++ {
+		if elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][button] {
 			return true
 		}
 	}
 	return false
 }
 
-func ChooseDirection(e Elevator) DirnBehaviourPair {
-	switch e.Dirn {
-	case elevio.MD_Up:
-		if RequestsAbove(e) {
-			return DirnBehaviourPair{elevio.MD_Up, EB_Moving}
-		} else if RequestsHere(e) {
-			return DirnBehaviourPair{elevio.MD_Down, EB_DoorOpen}
-		} else if RequestsBelow(e) {
-			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
+func ChooseDirection(elevator Elevator) DirnBehaviourPair {
+	switch elevator.Dirn {
+	case MD_Up:
+		if RequestsAbove(elevator) {
+			return DirnBehaviourPair{MD_Up, EB_Moving}
+		} else if RequestsHere(elevator) {
+			return DirnBehaviourPair{MD_Down, EB_DoorOpen}
+		} else if RequestsBelow(elevator) {
+			return DirnBehaviourPair{MD_Down, EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
+			return DirnBehaviourPair{MD_Stop, EB_Idle}
 		}
 
-	case elevio.MD_Down:
-		if RequestsBelow(e) {
-			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
-		} else if RequestsHere(e) {
-			return DirnBehaviourPair{elevio.MD_Up, EB_DoorOpen}
-		} else if RequestsAbove(e) {
-			return DirnBehaviourPair{elevio.MD_Up, EB_Moving}
+	case MD_Down:
+		if RequestsBelow(elevator) {
+			return DirnBehaviourPair{MD_Down, EB_Moving}
+		} else if RequestsHere(elevator) {
+			return DirnBehaviourPair{MD_Up, EB_DoorOpen}
+		} else if RequestsAbove(elevator) {
+			return DirnBehaviourPair{MD_Up, EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
+			return DirnBehaviourPair{MD_Stop, EB_Idle}
 		}
 
-	case elevio.MD_Stop:
-		if RequestsHere(e) {
-			return DirnBehaviourPair{elevio.MD_Stop, EB_DoorOpen}
-		} else if RequestsBelow(e) {
-			return DirnBehaviourPair{elevio.MD_Down, EB_Moving}
-		} else if RequestsAbove(e) {
-			return DirnBehaviourPair{elevio.MD_Up, EB_Moving}
+	case MD_Stop:
+		if RequestsHere(elevator) {
+			return DirnBehaviourPair{MD_Stop, EB_DoorOpen}
+		} else if RequestsBelow(elevator) {
+			return DirnBehaviourPair{MD_Down, EB_Moving}
+		} else if RequestsAbove(elevator) {
+			return DirnBehaviourPair{MD_Up, EB_Moving}
 		} else {
-			return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
+			return DirnBehaviourPair{MD_Stop, EB_Idle}
 		}
 	default:
-		return DirnBehaviourPair{elevio.MD_Stop, EB_Idle}
+		return DirnBehaviourPair{MD_Stop, EB_Idle}
 	}
 }
 
-func ShouldStop(e Elevator) bool {
-	switch e.Dirn {
-	case elevio.MD_Down:
-		return e.RequestsToDo[e.ElevStates.Floor][B_HallDown] ||
-			e.RequestsToDo[e.ElevStates.Floor][B_Cab] ||
-			!RequestsBelow(e)
-	case elevio.MD_Up:
-		return e.RequestsToDo[e.ElevStates.Floor][B_HallUp] ||
-			e.RequestsToDo[e.ElevStates.Floor][B_Cab] ||
-			!RequestsAbove(e)
+func ShouldStop(elevator Elevator) bool {
+	switch elevator.Dirn {
+	case MD_Down:
+		return elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallDown] ||
+			elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_Cab] ||
+			!RequestsBelow(elevator)
+	case MD_Up:
+		return elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallUp] ||
+			elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_Cab] ||
+			!RequestsAbove(elevator)
 	default:
 		return true
 	}
 }
 
-func ShouldClearImmediately(e *Elevator) bool {
-	switch e.Config.ClearRequestVariant {
-	// case "CV_All":
-	// 	return e.ElevStates.Floor == btn_floor
+func ShouldClearImmediately(elevator *Elevator) bool {
 
-	case "CV_InDirn":
-		if e.RequestsToDo[e.ElevStates.Floor][B_Cab] {
-			fmt.Println("Cab call at", e.ElevStates.Floor)
-			e.RequestsToDo[e.ElevStates.Floor][B_Cab] = false
-			return true
-		}
-		return (e.Dirn == elevio.MD_Up && e.RequestsToDo[e.ElevStates.Floor][B_HallUp]) ||
-			(e.Dirn == elevio.MD_Down && e.RequestsToDo[e.ElevStates.Floor][B_HallDown]) ||
-			e.Dirn == elevio.MD_Stop
-
-	default:
-		return false
+	if elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_Cab] {
+		elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_Cab] = false
+		return true
 	}
+	return (elevator.Dirn == MD_Up && elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallUp]) ||
+		(elevator.Dirn == MD_Down && elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallDown]) ||
+		elevator.Dirn == MD_Stop
 }
 
-func ClearAtCurrentFloor(e *Elevator) *Elevator {
-	switch e.Config.ClearRequestVariant {
-	case "CV_All":
-		for btn := 0; btn < N_BUTTONS; btn++ {
-			e.RequestsToDo[e.ElevStates.Floor][btn] = false
+func ClearAtCurrentFloor(elevator *Elevator) *Elevator {
+
+	elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_Cab] = false
+	elevator.ElevStates.CabRequests[elevator.ElevStates.CurrentFloor] = false
+
+	switch elevator.Dirn {
+	case MD_Up:
+		if !RequestsAbove(*elevator) && !elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallUp] {
+			elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallDown] = false
 		}
+		elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallUp] = false
 
-	case "CV_InDirn":
-		fmt.Println("Setting cab request to false at floor", e.ElevStates.Floor)
-		e.RequestsToDo[e.ElevStates.Floor][B_Cab] = false
-		e.ElevStates.CabRequests[e.ElevStates.Floor] = false
-		fmt.Print("Cab at floor is", e.ElevStates.CabRequests[e.ElevStates.Floor])
-
-		switch e.Dirn {
-		case elevio.MD_Up:
-			if !RequestsAbove(*e) && !e.RequestsToDo[e.ElevStates.Floor][B_HallUp] {
-				e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false
-			}
-			e.RequestsToDo[e.ElevStates.Floor][B_HallUp] = false
-
-		case elevio.MD_Down:
-			if !RequestsBelow(*e) && !e.RequestsToDo[e.ElevStates.Floor][B_HallDown] {
-				e.RequestsToDo[e.ElevStates.Floor][B_HallUp] = false
-			}
-			e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false
-
-		default:
-			e.RequestsToDo[e.ElevStates.Floor][B_HallUp] = false
-			e.Dirn = elevio.MD_Up
-			//e.RequestsToDo[e.ElevStates.Floor][B_HallDown] = false
+	case MD_Down:
+		if !RequestsBelow(*elevator) && !elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallDown] {
+			elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallUp] = false
 		}
+		elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallDown] = false
 
 	default:
-		break
+		elevator.RequestsToDo[elevator.ElevStates.CurrentFloor][B_HallUp] = false
+		elevator.Dirn = MD_Up
 	}
 
-	return e
+	return elevator
 }

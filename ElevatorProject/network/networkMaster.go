@@ -7,13 +7,11 @@ import (
 	"time"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
-	elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
-	"github.com/ellenkhoo/ElevatorProject/hra"
+	hra "github.com/ellenkhoo/ElevatorProject/hallRequestAssigner"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 func AnnounceMaster(localIP string, port string) {
-	fmt.Println("Announcing master")
 	broadcastAddr := "255.255.255.255" + ":" + port
 	conn, err := net.Dial("udp", broadcastAddr)
 	if err != nil {
@@ -25,12 +23,11 @@ func AnnounceMaster(localIP string, port string) {
 	for {
 		msg := "I am Master"
 		conn.Write([]byte(msg))
-		time.Sleep(1 * time.Second) //announces every second, maybe it should happen more frequently?
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
-// Master listenes and accepts connections
-func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChannels *sharedConsts.NetworkChannels) {
+func (ac *ActiveConnections) ListenAndAcceptConnections(masterData *MasterData, client *ClientInfo, port string, networkChannels *sharedConsts.NetworkChannels) {
 
 	ln, _ := net.Listen("tcp", ":"+port)
 
@@ -41,91 +38,133 @@ func (ac *ActiveConnections) ListenAndAcceptConnections(port string, networkChan
 			continue
 		}
 
-		go ReceiveMessage(networkChannels.ReceiveChan, hostConn)
-		go ac.AddHostConnection(hostConn, networkChannels.SendChan)
+		tcpConn, err := ConfigureTCPConn(hostConn)
+		if err != nil {
+			fmt.Println("Failed to configure TCP settings")
+			hostConn.Close()
+			continue
+		}
+
+		go ReceiveTCPMessage(masterData, client, ac, client.Channels, tcpConn)
 	}
 }
 
-// Adds the host's connection with the relevant client in the list of active connections
-func (ac *ActiveConnections) AddHostConnection(conn net.Conn, sendChan chan sharedConsts.Message) {
-
-	remoteIP, _, _ := net.SplitHostPort(conn.RemoteAddr().String())
+// Adds the host's connection with a client to ActiveConnections
+func (ac *ActiveConnections) MasterAddConnection(masterData *MasterData, clientID string, conn net.Conn, sendChan chan sharedConsts.Message) {
 
 	newConn := MasterConnectionInfo{
-		ClientIP: remoteIP,
+		ClientID: clientID,
 		HostConn: conn,
 	}
 
-	fmt.Printf("NewConn. ClientIP: %s", newConn.ClientIP)
-
-	ac.mutex.Lock()
+	ac.AC_mutex.Lock()
 	ac.Conns = append(ac.Conns, newConn)
-	ac.mutex.Unlock()
+	ac.AC_mutex.Unlock()
+
+	if ExistsPriorCabRequests(masterData.AllElevStates, clientID) {
+		SendPriorCabRequests(masterData, clientID, sendChan)
+	}
+
+	ac.SendActiveConnectionsToClient(sendChan)
 }
 
-func (ac *ActiveConnections) MasterSendMessages(client *ClientConnectionInfo) {
+func ExistsPriorCabRequests(AllElevStates map[string]elevator.ElevStates, targetID string) bool {
 
-	fmt.Println("Arrived at masterSend")
+	elevState, exists := AllElevStates[targetID]
+	if !exists {
+		fmt.Println("No elevator state found for IP:", targetID)
+		return false
+	}
+
+	for _, cabRequest := range elevState.CabRequests {
+		if cabRequest {
+			return true
+		}
+	}
+
+	return false
+}
+
+func SendPriorCabRequests(masterData *MasterData, clientID string, sendChan chan sharedConsts.Message) {
+	priorCabRequests := masterData.AllElevStates[clientID].CabRequests
+
+	cabRequestsWithID := CabRequestsWithID{
+		ID:          clientID,
+		CabRequests: priorCabRequests,
+	}
+
+	cabRequestsWithIDJSON, err := json.Marshal(cabRequestsWithID)
+	if err != nil {
+		fmt.Println("Error marshalling final priorCabRequests: ", err)
+		return
+	}
+
+	priorCabRequestmsg := sharedConsts.Message{
+		Type:    sharedConsts.PriorCabRequestsMessage,
+		Target:  sharedConsts.TargetClient,
+		Payload: cabRequestsWithIDJSON,
+	}
+
+	sendChan <- priorCabRequestmsg
+}
+
+func (ac *ActiveConnections) SendActiveConnectionsToClient(sendChan chan sharedConsts.Message) {
+
+	var IPs []string
+	for _, conn := range ac.Conns {
+		IPs = append(IPs, conn.ClientID)
+	}
+
+	activeConnectionsDataJSON, err := json.Marshal(IPs)
+	if err != nil {
+		fmt.Println("Error marshalling activeConnections: ", err)
+		return
+	}
+
+	activeConnectionsMessage := sharedConsts.Message{
+		Type:    sharedConsts.ActiveConnectionsMessage,
+		Target:  sharedConsts.TargetClient,
+		Payload: activeConnectionsDataJSON,
+	}
+
+	sendChan <- activeConnectionsMessage
+}
+
+func (ac *ActiveConnections) MasterSendMessages(client *ClientInfo) {
+
 	var targetConn net.Conn
 	for msg := range client.Channels.SendChan {
 		switch msg.Target {
-		// Må sende worldview til backup først, så til heis
-		// case sharedConsts.TargetBackup:
-		// 	fmt.Println("Backup is target")
-		// 	for clients := range ac.Conns {
-		// 		targetConn = ac.Conns[clients].HostConn
-		// 		SendMessage(client, msg, targetConn)
-		// 	}
-
-		// if targetConn != nil {
-		// 	encoder := json.NewEncoder(targetConn)
-		// 	fmt.Println("Sending message:", msg)
-		// 	err := encoder.Encode(msg)
-		// 	if err != nil {
-		// 		fmt.Println("Error encoding message: ", err)
-		// 		return
-		// } else {
-		// 	// If targetConn is nil, log a message or handle the case
-		// 	fmt.Println("No valid connection found for the message")
-		// }
 
 		case sharedConsts.TargetMaster:
 			client.Channels.MasterChan <- msg
 
-		// case sharedConsts.TargetElevator:
-		// 	// do something
 		case sharedConsts.TargetClient:
-			// Send to remote clients
-			fmt.Println("Message is to client")
 			for clients := range ac.Conns {
 				targetConn = ac.Conns[clients].HostConn
-				fmt.Println("IP of client:", ac.Conns[clients].ClientIP)
-				SendMessage(client, msg, targetConn)
+				SendTCPMessage(client, ac, msg, targetConn)
 			}
 		}
 	}
 }
 
-func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientConnectionInfo, ackTracker *AcknowledgeTracker) {
+func (masterData *MasterData) HandleReceivedMessageToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientInfo) {
 
-	fmt.Println("At handleMessagesToMaster")
 	switch msg.Type {
-	case sharedConsts.LocalRequestMessage:
+	case sharedConsts.LocalHallRequestMessage:
 
-		var request elevio.ButtonEvent
+		var request elevator.ButtonEvent
 		err := json.Unmarshal(msg.Payload, &request)
 		if err != nil {
 			fmt.Println("Error unmarshalling payload: ", err)
 			return
 		}
 
-		fmt.Println("Received request: ", request)
 		floor := request.Floor
 		button := request.Button
-		masterData.mutex.Lock()
-		fmt.Println("Updating globalHallRequests")
+		masterData.MasterData_mutex.Lock()
 		masterData.GlobalHallRequests[floor][button] = true
-		masterData.mutex.Unlock()
+		masterData.MasterData_mutex.Unlock()
 
 	case sharedConsts.CurrentStateMessage:
 
@@ -136,145 +175,75 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			return
 		}
 
-		fmt.Printf("Received current state from elevator: %#v\n", elevMessage.ElevStates)
-
-		// If currentState is valid
+		// Check if the current state is valid
 		if elevMessage.ElevStates.Behaviour != "" {
-			ID := elevMessage.ElevStates.IP
-			masterData.mutex.Lock()
-			fmt.Println("Updating allElevStates")
+			ID := elevMessage.ElevStates.ID
+			masterData.MasterData_mutex.Lock()
 			masterData.AllElevStates[ID] = elevMessage.ElevStates
-			masterData.mutex.Unlock()
+			masterData.MasterData_mutex.Unlock()
 			requestsToDo := elevMessage.RequestsToDo
-			Requests_clearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
+			ClearHallRequestAtCurrentFloor(requestsToDo, masterData, ID)
 		}
 
-		assignedOrders := hra.SendStateToHRA(masterData.AllElevStates, masterData.GlobalHallRequests)
-		masterData.mutex.Lock()
+		activeElevStates := make(map[string]elevator.ElevStates)
+		for _, conn := range ac.Conns {
+			if conn.ClientID != "" {
+				activeElevStates[conn.ClientID] = masterData.AllElevStates[conn.ClientID]
+			}
+		}
+		activeElevStates[client.ID] = masterData.AllElevStates[client.ID]
+
+		assignedOrders := hra.HallRequestAssigner(activeElevStates, masterData.GlobalHallRequests)
+
+		masterData.MasterData_mutex.Lock()
 		for ID, orders := range *assignedOrders {
 			masterData.AllAssignedRequests[ID] = orders
-			fmt.Println("Assigned orders for ID: ", ID, " are: ", orders)
 		}
-		masterData.mutex.Unlock()
+		masterData.MasterData_mutex.Unlock()
 
-		backupData := BackupData{
+		backupData := GlobalRequestsWorldview{
 			GlobalHallRequests:  masterData.GlobalHallRequests,
 			AllAssignedRequests: masterData.AllAssignedRequests,
 		}
 
-		// Update local backupdata
-		masterData.mutex.Lock()
+		// Update local backupData to keep track of what's been sent
+		masterData.MasterData_mutex.Lock()
 		masterData.BackupData = backupData
-		masterData.mutex.Unlock()
+		masterData.MasterData_mutex.Unlock()
 
-		// Marshal clientData
-		fmt.Println("Data to be marshaled:", backupData)
 		clientDataJSON, err := json.Marshal(backupData)
 		if err != nil {
 			fmt.Println("Error marshalling clientData: ", err)
 			return
 		}
 
-		// Create message
 		orderMsg := sharedConsts.Message{
 			Type:    sharedConsts.MasterWorldviewMessage,
 			Target:  sharedConsts.TargetClient,
 			Payload: clientDataJSON,
 		}
-		// Send message
-		if client.ID == client.HostIP {
-			// If the elevator is on the master PC, send an ACK immediately
-			masterIDJSON, err := json.Marshal(client.ID)
-			if err != nil {
-				fmt.Println("Error marshalling backup data: ", err)
-				return
-			}
-			masterACK := sharedConsts.Message{
-				Type:    sharedConsts.AcknowledgeMessage,
-				Target:  sharedConsts.TargetMaster,
-				Payload: masterIDJSON,
-			}
-			client.Channels.MasterChan <- masterACK
+
+		// Send message to master's elevator
+		if client.ID == client.HostID {
+			client.Channels.ElevatorChan <- orderMsg
 		}
 
+		// Send message to clients
 		if len(ac.Conns) >= 1 {
-			fmt.Println("Sending worldview on sendChan")
 			client.Channels.SendChan <- orderMsg
-		}
-
-		// for _, conn := range ac.Conns {
-		// 	ackTracker.AwaitAcknowledge(conn.ClientIP, orderMsg)
-		// }
-
-	case sharedConsts.AcknowledgeMessage:
-		var clientID string
-		err := json.Unmarshal(msg.Payload, &clientID)
-		if err != nil {
-			fmt.Println("Error decoding Acknowledgement:", err)
-			return
-		}
-		ackTracker.Acknowledge(clientID)
-
-		if ackTracker.AllAcknowledged() {
-			fmt.Println("All acknowledgments received. Orders can be sent to elevators.")
-
-			// Data to remote clients
-			clientData := "Send requests to elevator"
-			clientDataJSON, err := json.Marshal(clientData)
-			if err != nil {
-				fmt.Println("Error marshalling backup data: ", err)
-				return
-			}
-
-			clientMsg := sharedConsts.Message{
-				Type:    sharedConsts.UpdateOrdersMessage,
-				Target:  sharedConsts.TargetClient,
-				Payload: clientDataJSON,
-			}
-
-			client.Channels.SendChan <- clientMsg
-			// var targetConn net.Conn
-			// for clients := range ac.Conns {
-			// 	targetConn = ac.Conns[clients].HostConn
-			// 	SendMessage(client, clientMsg, targetConn)
-			// }
-
-			// Data to local client
-			if client.ID == client.HostIP {
-				fmt.Println("Sending update to local client as well")
-				elevatorData := masterData.BackupData
-
-				elevatorDataJSON, err := json.Marshal(elevatorData)
-				if err != nil {
-					fmt.Println("Error marshalling backup data: ", err)
-					return
-				}
-
-				elevatorMsg := sharedConsts.Message{
-					Type:    sharedConsts.UpdateOrdersMessage,
-					Target:  sharedConsts.TargetElevator,
-					Payload: elevatorDataJSON,
-				}
-
-				client.Channels.ElevatorChan <- elevatorMsg
-			}
-		} else {
-			fmt.Println("Have not received all acks")
-			break
 		}
 	}
 }
 
-func Requests_clearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData *MasterData, ID string) {
-	// Compare the elevator's requestsToDo with the assigned requests
+// Compares the elevator's requestsToDo with the master's assigned requests for the relevant elevator
+func ClearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData *MasterData, ID string) {
 
-	for f := 0; f < elevator.N_FLOORS; f++ {
-		for btn := 0; btn < elevator.N_BUTTONS-1; btn++ {
-			if RequestsToDo[f][btn] != masterData.AllAssignedRequests[ID][f][btn] {
-				masterData.mutex.Lock()
-				masterData.GlobalHallRequests[f][btn] = false
-				masterData.mutex.Unlock()
-				fmt.Println("GlobalHallRequest cleared at floor", f, "Btn:", btn)
+	for floor := 0; floor < elevator.N_FLOORS; floor++ {
+		for button := 0; button < elevator.N_BUTTONS-1; button++ {
+			if RequestsToDo[floor][button] != masterData.AllAssignedRequests[ID][floor][button] {
+				masterData.MasterData_mutex.Lock()
+				masterData.GlobalHallRequests[floor][button] = false
+				masterData.MasterData_mutex.Unlock()
 			}
 		}
 	}
