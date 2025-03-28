@@ -21,10 +21,10 @@ type HRAInput struct {
 	States       map[string]HRAElevState    `json:"states"`
 }
 
-func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequest [elevator.N_FLOORS][2]bool) *map[string][elevator.N_FLOORS][2]bool {
+func HallRequestAssigner(allElevStates map[string]elevator.ElevStates, globalHallRequest [elevator.N_FLOORS][2]bool) *map[string][elevator.N_FLOORS][2]bool {
 	inputFormatHRA := make(map[string]HRAElevState)
-	for id, state := range allElevStates {
-		inputFormatHRA[fmt.Sprintf("%s", id)] = HRAElevState{
+	for ID, state := range allElevStates {
+		inputFormatHRA[fmt.Sprintf("%s", ID)] = HRAElevState{
 			Behaviour:   state.Behaviour,
 			Floor:       state.CurrentFloor,
 			Direction:   state.Direction,
@@ -37,7 +37,6 @@ func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequ
 		States:       inputFormatHRA,
 	}
 
-	// Marshal input
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
 		fmt.Println("json.Marshal error: ", err)

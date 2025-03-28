@@ -14,25 +14,6 @@ var _numFloors int
 var _elevioMtx sync.Mutex
 var _conn net.Conn
 
-type Button ButtonType
-
-type Dirn int
-
-type MotorDirection int
-
-const (
-	MD_Up   MotorDirection = 1
-	MD_Down                = -1
-	MD_Stop                = 0
-)
-
-type ButtonType int
-
-type ButtonEvent struct {
-	Floor  int        `json:"floor"`
-	Button ButtonType `json:"button"`
-}
-
 func InitializeElevatorDriver(addr string, numFloors int) {
 	if _initialized {
 		fmt.Println("Driver already initialized!")
@@ -46,6 +27,15 @@ func InitializeElevatorDriver(addr string, numFloors int) {
 		panic(err.Error())
 	}
 	_initialized = true
+}
+
+type Button ButtonType
+
+type ButtonType int
+
+type ButtonEvent struct {
+	Floor  int        `json:"floor"`
+	Button ButtonType `json:"button"`
 }
 
 func SetMotorDirection(dir MotorDirection) {
@@ -271,11 +261,11 @@ func FormatElevStates(elevator Elevator) MessageToMaster {
 	fmt.Println("ElevStates after formatting:", elevator.ElevStates)
 
 	UpdatedElevStates := ElevStates{
-		Behaviour:   behaviourStr,
-		CurrentFloor:       elevator.ElevStates.CurrentFloor,
-		Direction:   directionStr,
-		CabRequests: elevator.ElevStates.CabRequests,
-		ID:          elevator.ElevStates.ID,
+		Behaviour:    behaviourStr,
+		CurrentFloor: elevator.ElevStates.CurrentFloor,
+		Direction:    directionStr,
+		CabRequests:  elevator.ElevStates.CabRequests,
+		ID:           elevator.ElevStates.ID,
 	}
 
 	return MessageToMaster{

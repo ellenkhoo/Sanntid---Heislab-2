@@ -7,7 +7,7 @@ import (
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
+	"github.com/ellenkhoo/ElevatorProject/network/networkResources/localip"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
@@ -20,12 +20,12 @@ func main() {
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message, 100),
-		RestartChan: make(chan string),
+		RestartChan:  make(chan string),
 		UpdateChan:   make(chan string),
 	}
 
 	ac := network.CreateActiveConnections()
-	client := network.ClientConnectionInfo{}
+	client := network.ClientInfo{}
 	client.Channels = *networkChannels
 	masterData := network.CreateMasterData()
 
