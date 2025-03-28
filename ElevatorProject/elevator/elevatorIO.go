@@ -272,10 +272,10 @@ func FormatElevStates(elevator Elevator) MessageToMaster {
 
 	UpdatedElevStates := ElevStates{
 		Behaviour:   behaviourStr,
-		Floor:       elevator.ElevStates.Floor,
+		CurrentFloor:       elevator.ElevStates.CurrentFloor,
 		Direction:   directionStr,
 		CabRequests: elevator.ElevStates.CabRequests,
-		IP:          elevator.ElevStates.IP,
+		ID:          elevator.ElevStates.ID,
 	}
 
 	return MessageToMaster{

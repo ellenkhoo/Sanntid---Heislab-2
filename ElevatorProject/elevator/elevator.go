@@ -1,10 +1,8 @@
 package elevator
 
 import (
-	"fmt"
 	"time"
 
-	//elevio "github.com/ellenkhoo/ElevatorProject/elevator/Driver"
 	"github.com/ellenkhoo/ElevatorProject/timers"
 )
 
@@ -25,11 +23,11 @@ const (
 )
 
 type ElevStates struct {
-	Behaviour   string         `json:"behaviour"`
-	Floor       int            `json:"floor"`
-	Direction   string         `json:"direction"`
-	CabRequests [N_FLOORS]bool `json:"cabRequests"`
-	IP          string         `json:"ip"`
+	Behaviour    string         `json:"behaviour"`
+	CurrentFloor int            `json:"floor"`
+	Direction    string         `json:"direction"`
+	CabRequests  [N_FLOORS]bool `json:"cabRequests"`
+	ID           string         `json:"ip"`
 }
 
 type MessageToMaster struct {
@@ -48,40 +46,14 @@ type Elevator struct {
 	DoorOpenDuration   time.Duration
 }
 
-func PrintElevator(e Elevator) {
-	fmt.Println(" +-----------------+")
-	fmt.Printf("|floor = %-2d          |\n", e.ElevStates.Floor)
-	fmt.Printf("  |dirn  = %-12.12s|\n", e.Dirn)
-	fmt.Printf("  |behav = %-12.12s|\n", e.Behaviour)
-	fmt.Println(" +-----------------+")
-	fmt.Println("  |  | up  | dn  | cab |")
-
-	for f := N_FLOORS - 1; f >= 0; f-- {
-		fmt.Printf("| %d", f)
-		for btn := 0; btn < N_BUTTONS; btn++ {
-			if (f == N_FLOORS-1 && btn == B_HallUp) || (f == 0 && btn == B_HallDown) {
-				fmt.Print("|       ")
-			} else {
-				if e.RequestsToDo[f][btn] {
-					fmt.Print("|   #   ")
-				} else {
-					fmt.Print("|   -   ")
-				}
-			}
-		}
-		fmt.Println("|")
-	}
-	fmt.Println(" +-----------------------+")
-}
-
 func InitializeElevator() *Elevator {
 	return &Elevator{
 		ElevStates: &ElevStates{
-			Behaviour:   "idle",
-			Floor:       -1,
-			Direction:   "stop",
-			CabRequests: [N_FLOORS]bool{false, false, false, false},
-			IP:          "0.0.0.0",
+			Behaviour:    "idle",
+			CurrentFloor: -1,
+			Direction:    "stop",
+			CabRequests:  [N_FLOORS]bool{false, false, false, false},
+			ID:           "0.0.0.0",
 		},
 		Dirn:      MD_Stop,
 		Behaviour: EB_Idle,

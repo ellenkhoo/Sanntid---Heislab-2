@@ -26,7 +26,7 @@ func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequ
 	for id, state := range allElevStates {
 		inputFormatHRA[fmt.Sprintf("%s", id)] = HRAElevState{
 			Behaviour:   state.Behaviour,
-			Floor:       state.Floor,
+			Floor:       state.CurrentFloor,
 			Direction:   state.Direction,
 			CabRequests: state.CabRequests,
 		}

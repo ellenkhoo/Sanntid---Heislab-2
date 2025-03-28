@@ -31,7 +31,7 @@ func (fsm *FSM) InitBetweenFloors() {
 }
 
 func (fsm *FSM) HandleRequestsToDo(networkChannels *sharedConsts.NetworkChannels, start_timer chan time.Duration) {
-	PrintElevator(*fsm.El)
+	//PrintElevator(*fsm.El)
 	fsm.SetAllLights()
 
 	switch fsm.El.Behaviour {
@@ -61,15 +61,15 @@ func (fsm *FSM) HandleRequestsToDo(networkChannels *sharedConsts.NetworkChannels
 	}
 
 	fmt.Println("\nNew state:")
-	PrintElevator(*fsm.El)
+	//PrintElevator(*fsm.El)
 }
 
 func (fsm *FSM) OnFloorArrival(networkChannels *sharedConsts.NetworkChannels, newFloor int, start_timer chan time.Duration) {
 	fmt.Printf("\n\n(%d)\n", newFloor)
-	PrintElevator(*fsm.El)
+	//PrintElevator(*fsm.El)
 
 	fsm.Fsm_mtx.Lock()
-	fsm.El.ElevStates.Floor = newFloor
+	fsm.El.ElevStates.CurrentFloor = newFloor
 	fsm.Fsm_mtx.Unlock()
 
 	SetFloorIndicator(newFloor)
@@ -77,7 +77,7 @@ func (fsm *FSM) OnFloorArrival(networkChannels *sharedConsts.NetworkChannels, ne
 	switch fsm.El.Behaviour {
 	case EB_Moving:
 		if ShouldStop(*fsm.El) {
-			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.ElevStates.Floor)
+			fmt.Printf("Elevator stopping at floor %d \n", fsm.El.ElevStates.CurrentFloor)
 			fsm.Od.MotorDirection(MD_Stop)
 
 			fsm.Fsm_mtx.Lock()
@@ -92,11 +92,11 @@ func (fsm *FSM) OnFloorArrival(networkChannels *sharedConsts.NetworkChannels, ne
 		}
 	}
 	fmt.Println("\nNew state:")
-	PrintElevator(*fsm.El)
+	//PrintElevator(*fsm.El)
 }
 
 func (fsm *FSM) OnDoorTimeout(timerChan chan time.Duration) {
-	PrintElevator(*fsm.El)
+	//PrintElevator(*fsm.El)
 
 	switch fsm.El.Behaviour {
 	case EB_DoorOpen:
@@ -116,5 +116,5 @@ func (fsm *FSM) OnDoorTimeout(timerChan chan time.Duration) {
 	}
 
 	fmt.Println("\nNew state:")
-	PrintElevator(*fsm.El)
+	//PrintElevator(*fsm.El)
 }

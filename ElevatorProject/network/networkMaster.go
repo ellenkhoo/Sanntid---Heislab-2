@@ -178,7 +178,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 
 		// Check if the current state is valid
 		if elevMessage.ElevStates.Behaviour != "" {
-			ID := elevMessage.ElevStates.IP
+			ID := elevMessage.ElevStates.ID
 			masterData.mutex.Lock()
 			masterData.AllElevStates[ID] = elevMessage.ElevStates
 			masterData.mutex.Unlock()

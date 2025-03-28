@@ -106,7 +106,7 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 		case floorInput := <-floorsChan:
 			fmt.Printf("Floor sensor: %d\n", floorInput)
 
-			if floorInput != -1 && floorInput != fsm.El.ElevStates.Floor {
+			if floorInput != -1 && floorInput != fsm.El.ElevStates.CurrentFloor {
 				fsm.OnFloorArrival(networkChannels, floorInput, timerChan)
 				SendCurrentState(networkChannels, *fsm.El)
 			}
