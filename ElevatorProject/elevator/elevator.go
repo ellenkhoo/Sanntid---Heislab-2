@@ -14,6 +14,16 @@ const (
 	EB_Moving
 )
 
+type Dirn int
+
+type MotorDirection int
+
+const (
+	MD_Up   MotorDirection = 1
+	MD_Down                = -1
+	MD_Stop                = 0
+)
+
 const (
 	N_FLOORS   = 4
 	N_BUTTONS  = 3
@@ -24,10 +34,10 @@ const (
 
 type ElevStates struct {
 	Behaviour    string         `json:"behaviour"`
-	CurrentFloor int            `json:"floor"`
+	CurrentFloor int            `json:"currentFloor"`
 	Direction    string         `json:"direction"`
 	CabRequests  [N_FLOORS]bool `json:"cabRequests"`
-	ID           string         `json:"ip"`
+	ID           string         `json:"id"`
 }
 
 type MessageToMaster struct {

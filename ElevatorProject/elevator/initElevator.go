@@ -6,12 +6,12 @@ import (
 )
 
 func InitElevator(localID string, networkChannels *sharedConsts.NetworkChannels) *FSM {
-	InitializeElevatorDriver("localhost:15658", N_FLOORS)
+	InitializeElevatorDriver("localhost:15657", N_FLOORS)
 
-	fsm := FSM{El: InitializeElevator(), Od: GetOutputDevice()}
-	fsm.Fsm_mtx.Lock()
-	fsm.El.ElevStates.ID = localID
-	fsm.Fsm_mtx.Unlock()
+	fsm := FSM{Elevator: InitializeElevator(), OutputDevice: GetOutputDevice()}
+	fsm.FSM_mutex.Lock()
+	fsm.Elevator.ElevStates.ID = localID
+	fsm.FSM_mutex.Unlock()
 
 	go RunElevator(networkChannels, &fsm, timers.MaxDuration)
 

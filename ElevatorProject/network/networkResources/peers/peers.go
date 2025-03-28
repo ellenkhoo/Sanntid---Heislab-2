@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/conn"
+	"github.com/ellenkhoo/ElevatorProject/network/networkResources/conn"
 )
 
 type PeerUpdate struct {

@@ -12,43 +12,43 @@ var BcastPort = "9999"
 var TCPPort = "8085"
 
 type MasterConnectionInfo struct {
-	ClientIP string
+	ClientID string
 	HostConn net.Conn
 }
 
 type ActiveConnections struct {
-	mutex sync.Mutex
-	Conns []MasterConnectionInfo
+	AC_mutex sync.Mutex
+	Conns    []MasterConnectionInfo
 }
 
-type ClientConnectionInfo struct {
-	ID         string
-	HostIP     string
-	ClientConn net.Conn
-	Channels   sharedConsts.NetworkChannels
-	BackupData BackupData
-	ClientMtx  sync.Mutex
+type ClientInfo struct {
+	ID               string
+	HostID           string
+	ClientConn       net.Conn
+	Channels         sharedConsts.NetworkChannels
+	BackupData       BackupData
+	ClientInfo_mutex sync.Mutex
 }
 
 type MasterData struct {
 	GlobalHallRequests  [elevator.N_FLOORS][2]bool            `json:"globalHallRequests"`
 	AllAssignedRequests map[string][elevator.N_FLOORS][2]bool `json:"allAssignedRequests"`
 	AllElevStates       map[string]elevator.ElevStates        `json:"allElevStates"`
-	BackupData          Worldview
-	mutex               sync.Mutex
+	BackupData          GlobalRequestsWorldview
+	MasterData_mutex    sync.Mutex
 }
 
-type Worldview struct {
+type GlobalRequestsWorldview struct {
 	GlobalHallRequests  [elevator.N_FLOORS][2]bool            `json:"globalHallRequests"`
 	AllAssignedRequests map[string][elevator.N_FLOORS][2]bool `json:"allAssignedRequests"`
 }
 
 type BackupData struct {
-	Worldview                   Worldview
-	MastersActiveConnectionsIPs []string
+	GlobalRequestsWorldview     GlobalRequestsWorldview
+	MastersActiveConnectionsIDs []string
 }
 
-type ElevatorRequest struct {
+type LocalRequestsWorldview struct {
 	GlobalHallRequests [elevator.N_FLOORS][2]bool `json:"globalHallRequests"`
 	AssignedRequests   [elevator.N_FLOORS][2]bool `json:"assignedRequests"`
 }

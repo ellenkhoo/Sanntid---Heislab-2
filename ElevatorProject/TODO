@@ -1,7 +1,0 @@
-
-* TCP-instillinger, timeout
-* KeepAlive?
-* Oppdater readme-er!
-* Fjern netverk-modul-ting som ikke brukes!
-
-if permission denied in hra: chmod +x ./hallRequestAssigner/hall_request_assigner

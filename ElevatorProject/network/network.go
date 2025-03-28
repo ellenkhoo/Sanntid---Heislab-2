@@ -7,7 +7,7 @@ import (
 	"net"
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/peers"
+	"github.com/ellenkhoo/ElevatorProject/network/networkResources/peers"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
@@ -23,8 +23,8 @@ func CreateMasterData() *MasterData {
 	}
 }
 
-func CreateWorldview() *Worldview {
-	return &Worldview{
+func CreateWorldview() *GlobalRequestsWorldview {
+	return &GlobalRequestsWorldview{
 		GlobalHallRequests:  [elevator.N_FLOORS][2]bool{},
 		AllAssignedRequests: make(map[string][elevator.N_FLOORS][2]bool),
 	}
@@ -32,13 +32,14 @@ func CreateWorldview() *Worldview {
 
 func CreateBackupData() *BackupData {
 	return &BackupData{
-		Worldview:                   *CreateWorldview(),
-		MastersActiveConnectionsIPs: []string{},
+		GlobalRequestsWorldview:     *CreateWorldview(),
+		MastersActiveConnectionsIDs: []string{},
 	}
 }
 
-func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg sharedConsts.Message, conn net.Conn) {
-	if client.ID == client.HostIP && !(msg.Type == sharedConsts.PriorCabRequestsMessage) {
+func SendTCPMessage(client *ClientInfo, ac *ActiveConnections, msg sharedConsts.Message, conn net.Conn) {
+	// If the message should be sent to the master's elevator
+	if client.ID == client.HostID && !(msg.Type == sharedConsts.PriorCabRequestsMessage) {
 		client.Channels.ReceiveChan <- msg
 	}
 
@@ -59,7 +60,7 @@ func SendMessage(client *ClientConnectionInfo, ac *ActiveConnections, msg shared
 	}
 }
 
-func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *ActiveConnections, networkChannels sharedConsts.NetworkChannels, conn net.Conn) {
+func ReceiveTCPMessage(masterData *MasterData, client *ClientInfo, ac *ActiveConnections, networkChannels sharedConsts.NetworkChannels, conn net.Conn) {
 	decoder := json.NewDecoder(conn)
 
 	for {
@@ -76,6 +77,7 @@ func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *Ac
 			fmt.Println("Error decoding message: ", err)
 			break
 		}
+
 		if msg.Type == sharedConsts.ClientIDMessage {
 
 			var clientID string
@@ -84,25 +86,21 @@ func ReceiveMessage(masterData *MasterData, client *ClientConnectionInfo, ac *Ac
 				fmt.Println("Error unmarshalling payload: ", err)
 				return
 			}
-			go ac.AddHostConnection(masterData, clientID, conn, networkChannels.SendChan)
+			go ac.MasterAddConnection(masterData, clientID, conn, networkChannels.SendChan)
 		}
 
 		networkChannels.ReceiveChan <- msg
 	}
 }
 
-func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.NetworkChannels) {
-	fmt.Println("Router received msg")
+func RouteMessagesToCorrectChannel(client *ClientInfo, networkChannels *sharedConsts.NetworkChannels) {
 	for msg := range networkChannels.ReceiveChan {
 		switch msg.Target {
 		case sharedConsts.TargetMaster:
-			fmt.Println("Msg is to master")
 			networkChannels.MasterChan <- msg
 		case sharedConsts.TargetClient:
-			fmt.Println("Msg is to client")
 			client.HandleReceivedMessageToClient(msg)
 		case sharedConsts.TargetElevator:
-			fmt.Println("Msg is to elevator")
 			networkChannels.ElevatorChan <- msg
 		default:
 			fmt.Println("Unknown message target")
@@ -110,7 +108,7 @@ func RouteMessages(client *ClientConnectionInfo, networkChannels *sharedConsts.N
 	}
 }
 
-func InitNetwork(ID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData,
+func InitNetwork(ID string, ac *ActiveConnections, client *ClientInfo, masterData *MasterData,
 	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 
 	var masterID string = ""
@@ -122,48 +120,47 @@ func InitNetwork(ID string, ac *ActiveConnections, client *ClientConnectionInfo,
 	}
 }
 
-func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData,
+func InitMaster(masterID string, ac *ActiveConnections, client *ClientInfo, masterData *MasterData,
 	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 
-	// Initialize peer update to keep track of what connections are offline
+	// Initialize peer update to keep track of what connections are online
 	peerUpdateChan := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(15647, masterID, peerTxEnable)
 	go peers.Receiver(15647, peerUpdateChan)
 
 	client.ID = masterID
-	client.HostIP = masterID
-	fmt.Printf("Going to announce master. MasterID: %s\n", masterID)
+	client.HostID = masterID
+
 	go AnnounceMaster(masterID, bcastPort)
 	go ac.ListenAndAcceptConnections(masterData, client, TCPPort, networkChannels)
 	go ac.MasterSendMessages(client)
-	fmt.Println("AC: ", ac.Conns)
 
 	for {
 		select {
 		case m := <-networkChannels.MasterChan:
-			fmt.Println("Master received a message")
-			go masterData.HandleReceivedMessagesToMaster(ac, m, client)
+			go masterData.HandleReceivedMessageToMaster(ac, m, client)
+
 		case e := <-networkChannels.ElevatorChan:
-			fmt.Println("Going to update my worldview")
 			go client.UpdateElevatorWorldview(fsm, e)
+
 		case p := <-peerUpdateChan:
 
 			// Remove lost connection from ActiveConnections
 			for _, lostID := range p.Lost {
 				for j, connInfo := range ac.Conns {
-					if connInfo.ClientIP == lostID {
-						ac.Conns[j].ClientIP = ""
+					if connInfo.ClientID == lostID {
+						ac.Conns[j].ClientID = ""
 						break
 					}
 				}
 			}
 
-			// Add new connection to ac
+			// Add new connection to ActiveConnections
 			if len(p.New) == len(masterID) {
 				for j, connInfo := range ac.Conns {
-					if connInfo.ClientIP == "" {
-						ac.Conns[j].ClientIP = p.New
+					if connInfo.ClientID == "" {
+						ac.Conns[j].ClientID = p.New
 						break
 					}
 				}
@@ -172,11 +169,10 @@ func InitMaster(masterID string, ac *ActiveConnections, client *ClientConnection
 	}
 }
 
-func InitSlave(ID string, masterID string, ac *ActiveConnections, client *ClientConnectionInfo, masterData *MasterData,
+func InitSlave(ID string, masterID string, ac *ActiveConnections, client *ClientInfo, masterData *MasterData,
 	bcastPort string, TCPPort string, networkChannels *sharedConsts.NetworkChannels, fsm *elevator.FSM) {
 
-	// Initialize peer update to check if slave disconnects from
-	// network at any time and should become its own master
+	// Initialize peer update to check if slave disconnects from network and should become its own master
 	peerUpdateChan := make(chan peers.PeerUpdate)
 	peerTxEnable := make(chan bool)
 	go peers.Transmitter(15647, ID, peerTxEnable)
@@ -198,23 +194,22 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 
 		client.Channels.SendChan <- IDMessage
 
-		client.AddClientConnection(ID, clientConn, networkChannels)
-		go ReceiveMessage(masterData, client, ac, client.Channels, clientConn)
-		go ClientSendMessagesFromSendChan(ac, client, networkChannels.SendChan, clientConn)
+		client.ClientAddConnection(ID, clientConn, networkChannels)
+		go ReceiveTCPMessage(masterData, client, ac, client.Channels, clientConn)
+		go ClientSendTCPMessagesFromSendChan(ac, client, networkChannels.SendChan, clientConn)
 
 		for {
 			select {
 			case b := <-networkChannels.BackupChan:
 				client.HandleReceivedMessageToClient(b)
-			case e := <-networkChannels.ElevatorChan:
-				fmt.Println("Going to update my worldview")
-				go client.UpdateElevatorWorldview(fsm, e)
-			case p := <-peerUpdateChan:
 
+			case e := <-networkChannels.ElevatorChan:
+				go client.UpdateElevatorWorldview(fsm, e)
+
+			case p := <-peerUpdateChan:
 				if len(p.Peers) == 1 {
 					// Become master
 				}
-
 			case r := <-networkChannels.RestartChan:
 				if r == "master" {
 					// Init master
@@ -233,21 +228,20 @@ func InitSlave(ID string, masterID string, ac *ActiveConnections, client *Client
 	}
 }
 
-func HandleClosedConnection(client *ClientConnectionInfo, ac *ActiveConnections, conn net.Conn) {
-	fmt.Println("At handle disconnection")
+func HandleClosedConnection(client *ClientInfo, ac *ActiveConnections, conn net.Conn) {
 	conn.Close()
-	if client.ID == client.HostIP {
+	if client.ID == client.HostID {
 		// Slave disconnected, remove connection from ActiveConnections
 		for i, connInfo := range ac.Conns {
 			if connInfo.HostConn == conn {
 				ac.Conns = append(ac.Conns[:i], ac.Conns[i+1:]...)
 			}
 		}
-		ac.SendActiveConnections(client.Channels.SendChan)
+		ac.SendActiveConnectionsToClient(client.Channels.SendChan)
 	} else {
 		// Master disconnected
 		clientID := client.ID
-		if ShouldBecomeMaster(clientID, client.BackupData.MastersActiveConnectionsIPs) {
+		if ShouldBecomeMaster(clientID, client.BackupData.MastersActiveConnectionsIDs) {
 			msg := "master"
 			client.Channels.RestartChan <- msg
 		} else {

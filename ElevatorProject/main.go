@@ -7,57 +7,52 @@ import (
 
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 	"github.com/ellenkhoo/ElevatorProject/network"
-	"github.com/ellenkhoo/ElevatorProject/network/network_functions/localip"
+	"github.com/ellenkhoo/ElevatorProject/network/networkResources/localip"
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
 func main() {
 
-	// Initialize network channels
+	// Define client's ID
+	var ID string
+	var num int
+
+	flag.StringVar(&ID, "id", "", "ID of this peer")
+	flag.IntVar(&num, "num", 0, "Custom number for the peer ID")
+	flag.Parse()
+
+	if ID == "" {
+		localIP, err := localip.LocalIP()
+		if err != nil {
+			fmt.Println(err)
+			localIP = "DISCONNECTED"
+		}
+		if num > 0 {
+			ID = fmt.Sprintf("peer-%s-%d", localIP, num)
+		} else {
+			ID = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
+		}
+	}
+
+	// Initialize the system
 	networkChannels := &sharedConsts.NetworkChannels{
 		SendChan:     make(chan sharedConsts.Message, 100),
 		ReceiveChan:  make(chan sharedConsts.Message),
 		MasterChan:   make(chan sharedConsts.Message),
 		BackupChan:   make(chan sharedConsts.Message),
 		ElevatorChan: make(chan sharedConsts.Message, 100),
-		RestartChan: make(chan string),
+		RestartChan:  make(chan string),
 		UpdateChan:   make(chan string),
 	}
 
-	ac := network.CreateActiveConnections()
-	client := network.ClientConnectionInfo{}
+	client := network.ClientInfo{}
 	client.Channels = *networkChannels
+	activeConnections := network.CreateActiveConnections()
 	masterData := network.CreateMasterData()
 
-	go network.RouteMessages(&client, networkChannels)
-
-	var id string
-	var num int
-
-	// Define command-line flags
-	flag.StringVar(&id, "id", "", "ID of this peer")
-	flag.IntVar(&num, "num", 0, "Custom number for the peer ID")
-	flag.Parse()
-
-	if id == "" {
-		localIP, err := localip.LocalIP()
-		if err != nil {
-			fmt.Println(err)
-			localIP = "DISCONNECTED"
-		}
-
-		// Use the provided number if given, otherwise fallback to process ID
-		if num > 0 {
-			id = fmt.Sprintf("peer-%s-%d", localIP, num)
-		} else {
-			id = fmt.Sprintf("peer-%s-%d", localIP, os.Getpid())
-		}
-	}
-
-	fmt.Println("Assigned ID:", id)
-
-	fsm := elevator.InitElevator(id, &client.Channels)
-	go network.InitNetwork(id, ac, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm)
+	fsm := elevator.InitElevator(ID, &client.Channels)
+	go network.RouteMessagesToCorrectChannel(&client, networkChannels)
+	go network.InitNetwork(ID, activeConnections, &client, masterData, network.BcastPort, network.TCPPort, networkChannels, fsm)
 
 	select {}
 }
