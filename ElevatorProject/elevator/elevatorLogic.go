@@ -40,7 +40,7 @@ func SendLocalOrder(order ButtonEvent, networkChannels *sharedConsts.NetworkChan
 	}
 
 	reqMsg := sharedConsts.Message{
-		Type:    sharedConsts.LocalRequestMessage,
+		Type:    sharedConsts.LocalHallRequestMessage,
 		Target:  sharedConsts.TargetMaster,
 		Payload: orderJSON,
 	}
@@ -66,7 +66,7 @@ func RunElevator(networkChannels *sharedConsts.NetworkChannels, fsm *FSM, maxDur
 	go PollFloorSensor(floorsChan)
 	go PollObstructionSwitch(obstructionChan)
 	go PollStopButton(stopChan)
-	go timers.Timer_start(timer, timerChan)
+	go timers.StartTimer(timer, timerChan)
 
 	ClearAllRequests(*fsm.Elevator)
 	fsm.SetAllLights()

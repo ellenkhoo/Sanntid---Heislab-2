@@ -6,7 +6,7 @@ import (
 )
 
 func InitElevator(localID string, networkChannels *sharedConsts.NetworkChannels) *FSM {
-	InitializeElevatorDriver("localhost:15658", N_FLOORS)
+	InitializeElevatorDriver("localhost:15657", N_FLOORS)
 
 	fsm := FSM{Elevator: InitializeElevator(), OutputDevice: GetOutputDevice()}
 	fsm.FSM_mutex.Lock()

@@ -42,7 +42,7 @@ func SetMotorDirection(dir MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})
 }
 
-func SetButtonLamp(button ButtonType, floor int, value bool) {
+func SetButtonLamp(floor int, button ButtonType, value bool) {
 	write([4]byte{2, byte(button), byte(floor), toByte(value)})
 }
 
@@ -62,13 +62,13 @@ func PollButtons(receiver chan<- ButtonEvent) {
 	prev := make([][3]bool, _numFloors)
 	for {
 		time.Sleep(_pollRate)
-		for f := 0; f < _numFloors; f++ {
-			for b := ButtonType(0); b < 3; b++ {
-				v := GetButton(b, f)
-				if v != prev[f][b] && v != false {
-					receiver <- ButtonEvent{f, ButtonType(b)}
+		for floor := 0; floor < _numFloors; floor++ {
+			for button := ButtonType(0); button < 3; button++ {
+				value := GetButton(button, floor)
+				if value != prev[floor][button] && value != false {
+					receiver <- ButtonEvent{floor, ButtonType(button)}
 				}
-				prev[f][b] = v
+				prev[floor][button] = value
 			}
 		}
 	}
@@ -78,11 +78,11 @@ func PollFloorSensor(receiver chan<- int) {
 	prev := -1
 	for {
 		time.Sleep(_pollRate)
-		v := GetFloor()
-		if v != prev && v != -1 {
-			receiver <- v
+		value := GetFloor()
+		if value != prev && value != -1 {
+			receiver <- value
 		}
-		prev = v
+		prev = value
 	}
 }
 
@@ -90,11 +90,11 @@ func PollStopButton(receiver chan<- bool) {
 	prev := false
 	for {
 		time.Sleep(_pollRate)
-		v := GetStop()
-		if v != prev {
-			receiver <- v
+		value := GetStop()
+		if value != prev {
+			receiver <- value
 		}
-		prev = v
+		prev = value
 	}
 }
 
@@ -102,11 +102,11 @@ func PollObstructionSwitch(receiver chan<- bool) {
 	prev := false
 	for {
 		time.Sleep(_pollRate)
-		v := GetObstruction()
-		if v != prev {
-			receiver <- v
+		value := GetObstruction()
+		if value != prev {
+			receiver <- value
 		}
-		prev = v
+		prev = value
 	}
 }
 
@@ -180,49 +180,18 @@ func toBool(a byte) bool {
 
 // Output device
 type ElevOutputDevice struct {
-	FloorIndicator     func(floor int)
 	RequestButtonLight func(floor int, button ButtonType, value bool)
-	DoorLight          func(value int)
-	StopButtonLight    func(value int)
+	DoorLight          func(value bool)
+	StopButtonLight    func(value bool)
 	MotorDirection     func(direction MotorDirection)
-}
-
-func HardwareSetFloorIndicator(floor int) {
-	println("Floor indicator set to:", floor)
-}
-
-func WrapRequestButtonLight(f int, b ButtonType, v bool) {
-	HardwareSetButtonLamp(b, f, v)
-}
-
-func HardwareSetButtonLamp(b ButtonType, f int, v bool) {
-	SetButtonLamp(b, f, v)
-}
-
-func HardwareSetDoorOpenLamp(value int) {
-	print("Door light set to:", value)
-}
-
-func HardwareSetStopLamp(value int) {
-	println("Stop button light set to:", value)
-}
-
-func WrapMotorDirection(d MotorDirection) {
-	HardwareSetMotorDirection(d)
-}
-
-func HardwareSetMotorDirection(d MotorDirection) {
-	fmt.Printf("Setting motor direction to %d\n", d)
-	SetMotorDirection(d)
 }
 
 func GetOutputDevice() *ElevOutputDevice {
 	return &ElevOutputDevice{
-		FloorIndicator:     HardwareSetFloorIndicator,
-		RequestButtonLight: WrapRequestButtonLight,
-		DoorLight:          HardwareSetDoorOpenLamp,
-		StopButtonLight:    HardwareSetStopLamp,
-		MotorDirection:     WrapMotorDirection,
+		RequestButtonLight: SetButtonLamp,
+		DoorLight:          SetDoorOpenLamp,
+		StopButtonLight:    SetStopLamp,
+		MotorDirection:     SetMotorDirection,
 	}
 }
 
@@ -258,7 +227,6 @@ func FormatElevStates(elevator Elevator) MessageToMaster {
 	directionStr := MotorDirectionToString(elevator.Dirn)
 	elevator.ElevStates.Behaviour = behaviourStr
 	elevator.ElevStates.Direction = directionStr
-	fmt.Println("ElevStates after formatting:", elevator.ElevStates)
 
 	UpdatedElevStates := ElevStates{
 		Behaviour:    behaviourStr,

@@ -148,10 +148,10 @@ func (ac *ActiveConnections) MasterSendMessages(client *ClientInfo) {
 	}
 }
 
-func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientInfo) {
+func (masterData *MasterData) HandleReceivedMessageToMaster(ac *ActiveConnections, msg sharedConsts.Message, client *ClientInfo) {
 
 	switch msg.Type {
-	case sharedConsts.LocalRequestMessage:
+	case sharedConsts.LocalHallRequestMessage:
 
 		var request elevator.ButtonEvent
 		err := json.Unmarshal(msg.Payload, &request)
@@ -160,7 +160,6 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			return
 		}
 
-		fmt.Println("Received hall request: ", request)
 		floor := request.Floor
 		button := request.Button
 		masterData.MasterData_mutex.Lock()
@@ -175,8 +174,6 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			fmt.Println("Error unmarshalling payload: ", err)
 			return
 		}
-
-		fmt.Printf("Received current state from elevator: %#v\n", elevMessage.ElevStates)
 
 		// Check if the current state is valid
 		if elevMessage.ElevStates.Behaviour != "" {
@@ -194,15 +191,13 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 				activeElevStates[conn.ClientID] = masterData.AllElevStates[conn.ClientID]
 			}
 		}
-
 		activeElevStates[client.ID] = masterData.AllElevStates[client.ID]
 
 		assignedOrders := hra.HallRequestAssigner(activeElevStates, masterData.GlobalHallRequests)
-		masterData.MasterData_mutex.Lock()
 
+		masterData.MasterData_mutex.Lock()
 		for ID, orders := range *assignedOrders {
 			masterData.AllAssignedRequests[ID] = orders
-			fmt.Println("Assigned orders for ID: ", ID, " are: ", orders)
 		}
 		masterData.MasterData_mutex.Unlock()
 
@@ -228,7 +223,7 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 			Payload: clientDataJSON,
 		}
 
-		// Send message to local elevator
+		// Send message to master's elevator
 		if client.ID == client.HostID {
 			client.Channels.ElevatorChan <- orderMsg
 		}
@@ -240,16 +235,15 @@ func (masterData *MasterData) HandleReceivedMessagesToMaster(ac *ActiveConnectio
 	}
 }
 
-// Compares the elevator's requestsToDo with the master's assigned requests for the relevant client
+// Compares the elevator's requestsToDo with the master's assigned requests for the relevant elevator
 func ClearHallRequestAtCurrentFloor(RequestsToDo [elevator.N_FLOORS][elevator.N_BUTTONS]bool, masterData *MasterData, ID string) {
 
-	for f := 0; f < elevator.N_FLOORS; f++ {
-		for btn := 0; btn < elevator.N_BUTTONS-1; btn++ {
-			if RequestsToDo[f][btn] != masterData.AllAssignedRequests[ID][f][btn] {
+	for floor := 0; floor < elevator.N_FLOORS; floor++ {
+		for button := 0; button < elevator.N_BUTTONS-1; button++ {
+			if RequestsToDo[floor][button] != masterData.AllAssignedRequests[ID][floor][button] {
 				masterData.MasterData_mutex.Lock()
-				masterData.GlobalHallRequests[f][btn] = false
+				masterData.GlobalHallRequests[floor][button] = false
 				masterData.MasterData_mutex.Unlock()
-				fmt.Println("GlobalHallRequest cleared at floor", f, "Btn:", btn)
 			}
 		}
 	}

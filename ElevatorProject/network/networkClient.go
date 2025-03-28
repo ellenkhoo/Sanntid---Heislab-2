@@ -23,7 +23,7 @@ func ListenForMaster(port string) (string, bool) {
 
 	buffer := make([]byte, 1024)
 
-	// Each program listens for a random time, t, to ensure only one becomes master
+	// Each client listens for a random time, t, to ensure only one becomes master
 	t := time.Duration(RandRange(800, 1500))
 	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond))
 	_, remoteAddr, err := conn.ReadFromUDP(buffer)
@@ -57,7 +57,7 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 	return tcpConn, true
 }
 
-// When a new connection is established on the client side, this function updates clientConnctionInfo
+// When a new connection is established on the client side, this function updates clientInfo
 func (client *ClientInfo) ClientAddConnection(id string, clientConn net.Conn, networkChannels *sharedConsts.NetworkChannels) {
 	*client = ClientInfo{
 		ID:         id,
@@ -66,7 +66,7 @@ func (client *ClientInfo) ClientAddConnection(id string, clientConn net.Conn, ne
 	}
 }
 
-func ClientSendMessagesFromSendChan(ac *ActiveConnections, client *ClientInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
+func ClientSendTCPMessagesFromSendChan(ac *ActiveConnections, client *ClientInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
 	for msg := range sendChan {
 		SendTCPMessage(client, ac, msg, conn)
 	}
@@ -76,9 +76,8 @@ func (client *ClientInfo) HandleReceivedMessageToClient(msg sharedConsts.Message
 	switch msg.Type {
 
 	case sharedConsts.MasterWorldviewMessage:
-		data := msg.Payload
 		var mastersWorldview GlobalRequestsWorldview
-		err := json.Unmarshal(data, &mastersWorldview)
+		err := json.Unmarshal(msg.Payload, &mastersWorldview)
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 			return
@@ -101,9 +100,8 @@ func (client *ClientInfo) HandleReceivedMessageToClient(msg sharedConsts.Message
 		client.Channels.ElevatorChan <- elevatorMsg
 
 	case sharedConsts.ActiveConnectionsMessage:
-		data := msg.Payload
 		var connectionData []string
-		err := json.Unmarshal(data, &connectionData)
+		err := json.Unmarshal(msg.Payload, &connectionData)
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 			return
@@ -141,10 +139,10 @@ func (client *ClientInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedC
 		fsm.FSM_mutex.Unlock()
 	}
 
-	elevatorData := UpdateElevatorData(mastersWorldview, clientID)
+	localRequestsWorldview := UpdateLocalRequestsWorldview(mastersWorldview, clientID)
 
-	assignedRequests := elevatorData.AssignedRequests
-	globalHallRequests := elevatorData.GlobalHallRequests
+	assignedRequests := localRequestsWorldview.AssignedRequests
+	globalHallRequests := localRequestsWorldview.GlobalHallRequests
 
 	fsm.FSM_mutex.Lock()
 	for floor := 0; floor < elevator.N_FLOORS; floor++ {
@@ -168,16 +166,16 @@ func (client *ClientInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedC
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func UpdateElevatorData(backupData GlobalRequestsWorldview, elevatorID string) LocalRequestsWorldview {
+func UpdateLocalRequestsWorldview(backupData GlobalRequestsWorldview, elevatorID string) LocalRequestsWorldview {
 	localAssignedRequests := backupData.AllAssignedRequests[elevatorID]
 	globalHallRequests := backupData.GlobalHallRequests
 
-	elevatorData := LocalRequestsWorldview{
+	localRequestsWorldview := LocalRequestsWorldview{
 		GlobalHallRequests: globalHallRequests,
 		AssignedRequests:   localAssignedRequests,
 	}
 
-	return elevatorData
+	return localRequestsWorldview
 }
 
 func MergeCabRequests(currentCabRequests [elevator.N_FLOORS]bool, priorCabRequests [elevator.N_FLOORS]bool) [elevator.N_FLOORS]bool {
