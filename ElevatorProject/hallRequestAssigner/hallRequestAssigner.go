@@ -9,9 +9,6 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/elevator"
 )
 
-// Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
-// This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
-
 type HRAElevState struct {
 	Behaviour   string                  `json:"behaviour"`
 	Floor       int                     `json:"floor"`
@@ -24,38 +21,37 @@ type HRAInput struct {
 	States       map[string]HRAElevState    `json:"states"`
 }
 
-// gjør om elevstate og hallrequest til riktig format til HRA exec-fil
-func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequest [elevator.N_FLOORS][2]bool) *map[string][elevator.N_FLOORS][2]bool {
+func HallRequestAssigner(allElevStates map[string]elevator.ElevStates, globalHallRequest [elevator.N_FLOORS][2]bool) *map[string][elevator.N_FLOORS][2]bool {
 	inputFormatHRA := make(map[string]HRAElevState)
-	for id, state := range allElevStates {
-		inputFormatHRA[fmt.Sprintf("%s", id)] = HRAElevState{
+	for ID, state := range allElevStates {
+		inputFormatHRA[fmt.Sprintf("%s", ID)] = HRAElevState{
 			Behaviour:   state.Behaviour,
-			Floor:       state.Floor,
+			Floor:       state.CurrentFloor,
 			Direction:   state.Direction,
 			CabRequests: state.CabRequests,
 		}
 	}
+
 	input := HRAInput{
 		HallRequests: globalHallRequest,
 		States:       inputFormatHRA,
 	}
 
-	//lager json fil
 	jsonBytes, err := json.Marshal(input)
 	if err != nil {
 		fmt.Println("json.Marshal error: ", err)
 		return nil
 	}
 
+	// Checks what executable should be used
 	var cmd string
 	os := runtime.GOOS
 	if os == "windows" {
-		cmd = "./hra/hall_request_assigner.exe"
+		cmd = "./hallRequestAssigner/hall_request_assigner.exe"
 	} else {
-		cmd = "./hra/hall_request_assigner"
+		cmd = "./hallRequestAssigner/hall_request_assigner"
 	}
 
-	//kjører script med json fil som input
 	ret, err := exec.Command(cmd, "-i", string(jsonBytes)).CombinedOutput()
 	if err != nil {
 		fmt.Println("exec.Command error: ", err)
@@ -63,12 +59,12 @@ func SendStateToHRA(allElevStates map[string]elevator.ElevStates, globalHallRequ
 		return nil
 	}
 
-	//output
 	output := new(map[string][elevator.N_FLOORS][2]bool)
 	err = json.Unmarshal(ret, &output)
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)
 		return nil
 	}
+
 	return output
 }

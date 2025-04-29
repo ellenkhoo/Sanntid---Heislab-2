@@ -11,10 +11,6 @@ import (
 	"github.com/ellenkhoo/ElevatorProject/sharedConsts"
 )
 
-func RandRange(min, max int) int {
-	return rand.IntN(max-min) + min
-}
-
 func ListenForMaster(port string) (string, bool) {
 	addr, _ := net.ResolveUDPAddr("udp", "0.0.0.0"+":"+port)
 	conn, err := net.ListenUDP("udp", addr)
@@ -26,9 +22,10 @@ func ListenForMaster(port string) (string, bool) {
 	defer conn.Close()
 
 	buffer := make([]byte, 1024)
+
+	// Each client listens for a random time, t, to ensure only one becomes master
 	t := time.Duration(RandRange(800, 1500))
-	fmt.Printf("Waiting for %d ms\n", t)
-	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond)) //ensures that only one remains master
+	conn.SetReadDeadline(time.Now().Add(t * time.Millisecond))
 	_, remoteAddr, err := conn.ReadFromUDP(buffer)
 	if err != nil {
 		fmt.Println("No master found, becoming master.")
@@ -39,6 +36,10 @@ func ListenForMaster(port string) (string, bool) {
 	return remoteAddr.IP.String(), true
 }
 
+func RandRange(min, max int) int {
+	return rand.IntN(max-min) + min
+}
+
 func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 	conn, err := net.Dial("tcp", masterIP+":"+listenPort)
 	if err != nil {
@@ -46,62 +47,47 @@ func ConnectToMaster(masterIP string, listenPort string) (net.Conn, bool) {
 		return nil, false
 	}
 
+	tcpConn, err := ConfigureTCPConn(conn)
 	if err != nil {
 		fmt.Println("Error reading from master:", err)
 		conn.Close()
 		return nil, false
 	}
 
-	fmt.Printf("Connected to master at %s\n: ", masterIP)
-	return conn, true
+	return tcpConn, true
 }
 
-// When a new connection is established on the client side, this function adds it to the list of active connections
-func (client *ClientConnectionInfo) AddClientConnection(id string, clientConn net.Conn, networkChannels *sharedConsts.NetworkChannels) {
-	//defer conn.Close()
-	remoteIP, _, _ := net.SplitHostPort(clientConn.RemoteAddr().String())
-
-	fmt.Println("Adding client connection")
-
-	*client = ClientConnectionInfo{
+// When a new connection is established on the client side, this function updates clientInfo
+func (client *ClientInfo) ClientAddConnection(id string, clientConn net.Conn, networkChannels *sharedConsts.NetworkChannels) {
+	*client = ClientInfo{
 		ID:         id,
-		HostIP:     remoteIP,
 		ClientConn: clientConn,
 		Channels:   *networkChannels,
 	}
 }
 
-func ClientSendMessagesFromSendChan(client *ClientConnectionInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
-
-	fmt.Println("Ready to send msg to master")
+func ClientSendTCPMessagesFromSendChan(ac *ActiveConnections, client *ClientInfo, sendChan chan sharedConsts.Message, conn net.Conn) {
 	for msg := range sendChan {
-		SendMessage(client, msg, conn)
+		SendTCPMessage(client, ac, msg, conn)
 	}
 }
 
-// Messages sent to a client means that the data is meant both for an elevator thread and the potential backup
-func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
-
-	// clientID := clientConn.ID
-
+func (client *ClientInfo) HandleReceivedMessageToClient(msg sharedConsts.Message) {
 	switch msg.Type {
 
 	case sharedConsts.MasterWorldviewMessage:
-		fmt.Println("Received master worldview message")
-		data := msg.Payload
-		var masterData BackupData
-		err := json.Unmarshal(data, &masterData)
+		var mastersWorldview GlobalRequestsWorldview
+		err := json.Unmarshal(msg.Payload, &mastersWorldview)
 		if err != nil {
 			fmt.Println("Error decoding message: ", err)
 			return
 		}
 
-		backupData := UpdateBackupData(masterData)
-		clientConn.ClientMtx.Lock()
-		clientConn.Worldview = backupData
-		clientConn.ClientMtx.Unlock()
+		client.ClientInfo_mutex.Lock()
+		client.BackupData.GlobalRequestsWorldview = mastersWorldview
+		client.ClientInfo_mutex.Unlock()
 
-		elevatorDataJSON, err := json.Marshal(backupData)
+		elevatorDataJSON, err := json.Marshal(mastersWorldview)
 		if err != nil {
 			fmt.Println("Error marshalling backup data: ", err)
 			return
@@ -111,122 +97,94 @@ func (clientConn *ClientConnectionInfo) HandleReceivedMessageToClient(msg shared
 			Payload: elevatorDataJSON,
 		}
 
-		clientConn.Channels.ElevatorChan <- elevatorMsg
+		client.Channels.ElevatorChan <- elevatorMsg
 
-		// // Marshal backupData
-		// backupIDJSON, err := json.Marshal(clientID)
-		// if err != nil {
-		// 	fmt.Println("Error marshalling backup data: ", err)
-		// 	return
-		// }
+	case sharedConsts.ActiveConnectionsMessage:
+		var connectionData []string
+		err := json.Unmarshal(msg.Payload, &connectionData)
+		if err != nil {
+			fmt.Println("Error decoding message: ", err)
+			return
+		}
 
-		// backupMsg := sharedConsts.Message{
-		// 	Type:    sharedConsts.AcknowledgeMessage,
-		// 	Target:  sharedConsts.TargetMaster,
-		// 	Payload: backupIDJSON,
-		// }
+		client.ClientInfo_mutex.Lock()
+		client.BackupData.MastersActiveConnectionsIDs = connectionData
+		client.ClientInfo_mutex.Unlock()
 
-		// fmt.Println("Sending ack")
-		// clientConn.Channels.SendChan <- backupMsg
-
-		// case sharedConsts.UpdateOrdersMessage:
-
-		// 	if clientID != clientConn.HostIP {
-		// 		fmt.Println("I am not on the master computer")
-
-		// 		elevatorDataJSON, err := json.Marshal(clientConn.Worldview)
-		// 		if err != nil {
-		// 			fmt.Println("Error marshalling backup data: ", err)
-		// 			return
-		// 		}
-
-		// 		elevatorMsg := sharedConsts.Message{
-		// 			Payload: elevatorDataJSON,
-		// 		}
-
-		// 		clientConn.Channels.ElevatorChan <- elevatorMsg
-		// 	}
-		// case heartbeat: //
-		// 	// start timer
-		// case timeout:
-		// 	// start master
+	case sharedConsts.PriorCabRequestsMessage:
+		client.Channels.ElevatorChan <- msg
 	}
 }
 
-func (clientConn *ClientConnectionInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedConsts.Message) {
+func (client *ClientInfo) UpdateElevatorWorldview(fsm *elevator.FSM, msg sharedConsts.Message) {
+	clientID := client.ID
 
-	fmt.Println("At UpdateElevatorWorldview\n")
-	fmt.Println("RequestsToDo before update:", fsm.El.RequestsToDo)
-	clientID := clientConn.ID
+	var mastersWorldview GlobalRequestsWorldview
+	var priorCabRequestsWithID CabRequestsWithID
+	err1 := json.Unmarshal(msg.Payload, &mastersWorldview)
+	if err1 != nil {
+		fmt.Println("Error decoding worldview message to elevator: ", err1)
 
-	var masterData BackupData
-	err := json.Unmarshal(msg.Payload, &masterData)
-	if err != nil {
-		fmt.Println("Error decoding message to elevator: ", err)
-		return
 	}
 
-	elevatorData := UpdateElevatorData(masterData, clientID)
-	fmt.Println("ElevatorData: ", elevatorData)
-	fmt.Println("CabRequests: ", fsm.El.ElevStates.CabRequests)
+	err2 := json.Unmarshal(msg.Payload, &priorCabRequestsWithID)
+	if err2 != nil {
+		fmt.Println("Error decoding cabRequest message to elevator: ", err2)
+	}
 
-	assignedRequests := elevatorData.AssignedRequests
-	globalHallRequests := elevatorData.GlobalHallRequests
+	if clientID == priorCabRequestsWithID.ID {
+		mergedCabRequests := MergeCabRequests(fsm.Elevator.ElevStates.CabRequests, priorCabRequestsWithID.CabRequests)
+		fsm.FSM_mutex.Lock()
+		fsm.Elevator.ElevStates.CabRequests = mergedCabRequests
+		fsm.FSM_mutex.Unlock()
+	}
 
-	fsm.Fsm_mtx.Lock()
+	localRequestsWorldview := UpdateLocalRequestsWorldview(mastersWorldview, clientID)
 
-	// requestsToDo = assigend requests + cab requests
+	assignedRequests := localRequestsWorldview.AssignedRequests
+	globalHallRequests := localRequestsWorldview.GlobalHallRequests
+
+	fsm.FSM_mutex.Lock()
 	for floor := 0; floor < elevator.N_FLOORS; floor++ {
 		for button := 0; button < elevator.N_BUTTONS-1; button++ {
 			if assignedRequests[floor][button] {
-				fmt.Println("Assigned request at floor: ", floor, " button: ", button)
-				fsm.El.RequestsToDo[floor][button] = true
+				fsm.Elevator.RequestsToDo[floor][button] = true
 			}
 		}
 
-		if fsm.El.ElevStates.CabRequests[floor] {
-			fmt.Println("Assigned cab request at floor: ", floor)
-			fsm.El.RequestsToDo[floor][elevator.B_Cab] = true
-		} else {
-			fmt.Println("No cab request at floor: ", floor)
+		if fsm.Elevator.ElevStates.CabRequests[floor] {
+			fsm.Elevator.RequestsToDo[floor][elevator.B_Cab] = true
 		}
 	}
 
-	fsm.El.AssignedRequests = assignedRequests
-	fsm.El.GlobalHallRequests = globalHallRequests
-	fmt.Println("RequestsToDo after update:", fsm.El.RequestsToDo)
-	fmt.Println("GlobalHallRequests: ", fsm.El.GlobalHallRequests)
-	fsm.Fsm_mtx.Unlock()
+	fsm.Elevator.AssignedRequests = assignedRequests
+	fsm.Elevator.GlobalHallRequests = globalHallRequests
+	fsm.FSM_mutex.Unlock()
 
-	sendMsg := "You are ready to do things"
-	clientConn.Channels.UpdateChan <- sendMsg
+	sendMsg := "You have an updated worldview"
+	client.Channels.UpdateChan <- sendMsg
 }
 
 // This function returns only the assigned requests relevant to a particular elevator + globalHallRequests
-func UpdateElevatorData(backupData BackupData, elevatorID string) ElevatorRequest {
-
-	fmt.Println("My id: ", elevatorID)
+func UpdateLocalRequestsWorldview(backupData GlobalRequestsWorldview, elevatorID string) LocalRequestsWorldview {
 	localAssignedRequests := backupData.AllAssignedRequests[elevatorID]
-	fmt.Println("assigned requests to me", localAssignedRequests)
 	globalHallRequests := backupData.GlobalHallRequests
 
-	elevatorData := ElevatorRequest{
+	localRequestsWorldview := LocalRequestsWorldview{
 		GlobalHallRequests: globalHallRequests,
 		AssignedRequests:   localAssignedRequests,
 	}
 
-	return elevatorData
+	return localRequestsWorldview
 }
 
-func UpdateBackupData(masterData BackupData) BackupData {
-
-	AllAssignedRequests := masterData.AllAssignedRequests
-	globalHallRequests := masterData.GlobalHallRequests
-
-	backupData := BackupData{
-		GlobalHallRequests:  globalHallRequests,
-		AllAssignedRequests: AllAssignedRequests,
+func MergeCabRequests(currentCabRequests [elevator.N_FLOORS]bool, priorCabRequests [elevator.N_FLOORS]bool) [elevator.N_FLOORS]bool {
+	mergedCabRequests := [elevator.N_FLOORS]bool{false, false, false, false}
+	for floor := 0; floor < elevator.N_FLOORS; floor++ {
+		if currentCabRequests[floor] || priorCabRequests[floor] {
+			mergedCabRequests[floor] = true
+		}
 	}
 
-	return backupData
+	return mergedCabRequests
 }
